@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="cs" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Autoservis{% endblock %} · Autoservis</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.0.6/css/pico.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+  <link rel="stylesheet" href="{{ url_for('static', path='app.css') }}?v={{ css_verze() }}">
+  <script src="https://unpkg.com/htmx.org@2.0.4" defer></script>
+</head>
+<body>
+  <header class="horni-lista">
+    <a href="/" class="logo">🔧 Autoservis</a>
+    <form action="/hledat" method="get" class="hledani" role="search">
+      <input type="search" name="q" value="{{ hledany_text if hledany_text is defined else '' }}"
+             placeholder="Hledat SPZ, VIN, jméno, číslo zakázky…" aria-label="Hledat"
+             accesskey="f">
+    </form>
+  </header>
+  {# hlavní menu nahoře jako ve starém systému #}
+  <nav class="menu">
+    <ul>
+      <li><a href="/zakazky" {% if aktivni == 'zakazky' %}aria-current="page"{% endif %}>Zakázky</a></li>
+      <li><a href="/vozidla" {% if aktivni == 'vozidla' %}aria-current="page"{% endif %}>Vozidla</a></li>
+      <li><a href="/zakaznici" {% if aktivni == 'zakaznici' %}aria-current="page"{% endif %}>Zákazníci</a></li>
+      <li><a href="/cenik" {% if aktivni == 'cenik' %}aria-current="page"{% endif %} title="Ceník materiálu">Ceník</a></li>
+      <li><a href="/prace" {% if aktivni == 'prace' %}aria-current="page"{% endif %} title="Ceník prací">Práce</a></li>
+      <li><a href="/faktury" {% if aktivni == 'faktury' %}aria-current="page"{% endif %}>Faktury</a></li>
+      <li><a href="/nastaveni" {% if aktivni == 'nastaveni' %}aria-current="page"{% endif %}>Nastavení</a></li>
+    </ul>
+    <span class="tlumene verze">verze {{ APP_VERSION }}</span>
+  </nav>
+  {# Tlačítka základních akcí stránky – svislý sloupec vlevo (blok "akce" v šabloně stránky) #}
+  {% if false %}{% block akce %}{% endblock %}{% endif %}
+  {% set akce = self.akce()|trim %}
+  <div class="rozvrzeni{% if akce %} s-akcemi{% endif %}">
+    <main class="obsah">
+      {% if chyba %}<p class="chyba" role="alert" {% if chyba.pole is defined and chyba.pole %}data-pole="{{ chyba.pole }}"{% endif %}>{{ chyba }}</p>{% endif %}
+      {% block content %}{% endblock %}
+    </main>
+    {% if akce %}<aside class="akce neni-tisk" aria-label="Akce">{{ akce|safe }}</aside>{% endif %}
+  </div>
+
+  {# Okno databáze vozidel / zákazníků pro výběr do formuláře (obsah načítá HTMX) #}
+  <script>
+    // ---- Potvrzení a upozornění v okně aplikace (místo systémového confirm / alert).
+    // potvrd(text, {ano: "Smazat"}) → Promise<boolean>; s ne: null jen tlačítko OK (upozornění).
+    function potvrd(text, {ano = "Ano", ne = "Ne", nebezpecne = false} = {}) {
+      const d = document.getElementById("okno-potvrzeni");
+      d.querySelector(".potvrzeni-text").textContent = text;
+      const bAno = d.querySelector(".potvrzeni-ano"), bNe = d.querySelector(".potvrzeni-ne");
+      bAno.textContent = ano; bAno.classList.toggle("nebezpecne", nebezpecne);
+      bNe.hidden = ne === null; bNe.textContent = ne || "";
+      return new Promise((hotovo) => {
+        const konec = (vysledek) => { d.close(); bAno.onclick = bNe.onclick = d.oncancel = null; hotovo(vysledek); };
+        bAno.onclick = () => konec(true);
+        bNe.onclick = () => konec(false);
+        d.oncancel = (e) => { e.preventDefault(); konec(false); };  // Esc = Ne
+        d.showModal();
+        (ne === null || !nebezpecne ? bAno : bNe).focus();  // u mazání je výchozí Ne
+      });
+    }
+    const upozorni = (text) => potvrd(text, {ano: "OK", ne: null});
+    // Formulář s data-potvrdit="text" se odešle až po potvrzení (data-potvrdit-ano = text tlačítka).
+    // Skryté pole name="zpet" s data-aktualni dostane adresu stránky, odkud se akce spustila (zachová filtr seznamu).
+    document.addEventListener("submit", async (e) => {
+      const f = e.target;
+      f.querySelectorAll("input[name=zpet][data-aktualni]").forEach((p) => { p.value = location.pathname + location.search; });
+      if (!f.dataset.potvrdit) return;
+      e.preventDefault();
+      if (await potvrd(f.dataset.potvrdit, {ano: f.dataset.potvrditAno || "Ano", nebezpecne: true})) f.submit();
+    });
+
+    // ---- Krátká hláška po uložení („Uloženo“) – server ji předá cookie `zprava` (viz routes._se_zpravou).
+    // Text začínající „!“ = chyba (červeně a déle).
+    function ukazZpravu(text) {
+      const z = document.getElementById("zprava");
+      const chyba = text.startsWith("!");
+      z.textContent = chyba ? text.slice(1) : text; z.hidden = false; z.classList.remove("mizi");
+      z.classList.toggle("zprava-chyba", chyba);
+      z.setAttribute("role", chyba ? "alert" : "status");
+      clearTimeout(z._casovac);
+      z._casovac = setTimeout(() => { z.classList.add("mizi"); setTimeout(() => { z.hidden = true; }, 400); },
+                              chyba ? 8000 : 3000);
+    }
+
+    // ---- Chyba ve formuláři: kurzor do pole, kterého se týká (server ho pošle v data-pole), a zvýraznit ho.
+    function oznacChybnePole(koren) {
+      const hlaska = (koren || document).querySelector(".chyba[data-pole]");
+      if (!hlaska) return;
+      const jmeno = hlaska.dataset.pole;
+      const rozsah = hlaska.closest("#okno-formular-obsah") || document;
+      const pole = rozsah.querySelector(`[name="${jmeno}"]`) ||
+                   rozsah.querySelector(`[name$="_${jmeno}"]`);  // pole s předponou (v_rok_vyroby, k_nazev…)
+      if (!pole) return;
+      pole.setAttribute("aria-invalid", "true");
+      pole.addEventListener("input", () => pole.removeAttribute("aria-invalid"), {once: true});
+      pole.focus();
+      if (pole.select) pole.select();
+    }
+    document.addEventListener("DOMContentLoaded", () => oznacChybnePole());
+    // až po ostatních obsluhách (ty vracejí kurzor do pole, kde uživatel byl)
+    document.addEventListener("htmx:afterSettle", (e) => setTimeout(() => oznacChybnePole(e.detail.target)));
+
+    // ---- Klávesy: Ctrl+Enter = uložit formulář (stránka i okno), Delete = odebrat vybraný řádek mřížky.
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+        const okno = document.getElementById("okno-formular");
+        const form = e.target.closest?.("form.prijem") ||
+                     (okno.open ? okno.querySelector("form.prijem") : document.querySelector(".obsah form.prijem, .obsah form.formular"));
+        if (form) { e.preventDefault(); form.requestSubmit(); }
+        return;
+      }
+      if (e.key === "Delete" && vybranyRadek && !e.target.closest("input, textarea, select, [contenteditable]")
+          && !document.querySelector("dialog[open]")) {
+        const tlacitko = document.querySelector(".akce [data-radek=odebrat]:not(:disabled)");
+        if (tlacitko) { e.preventDefault(); tlacitko.click(); }
+      }
+    });
+    document.addEventListener("DOMContentLoaded", () => {
+      const c = document.cookie.split("; ").find((x) => x.startsWith("zprava="));
+      if (!c) return;
+      document.cookie = "zprava=; Max-Age=0; path=/";
+      ukazZpravu(decodeURIComponent(c.slice(7)).replace(/^"|"$/g, ""));
+    });
+
+    // Chyba HTMX požadavku (např. neaktuální server) nesmí tiše zmizet.
+    document.addEventListener("htmx:responseError", (e) => {
+      upozorni("Akci se nepodařilo provést (chyba " + e.detail.xhr.status + "). " +
+               "Pokud jste aktualizovali program, restartujte aplikaci (zavřít okno spustit.bat a spustit znovu).");
+    });
+    document.addEventListener("htmx:sendError", () => upozorni("Aplikace neodpovídá – je spuštěná?"));
+
+    // Datová mřížka jako v desktopovém programu: klik vybere řádek, dvojklik otevře záznam
+    // (řádek s atributem data-otevrit, nebo první odkaz v řádku).
+    // Tlačítka v pravém sloupci s data-radek="otevrit|upravit" pracují s vybraným řádkem.
+    // data-radek="X": adresa z atributu data-X vybraného řádku (upravit, odebrat, zakazka…);
+    // "otevrit" bez data-otevrit = první odkaz v řádku.
+    // data-radek="odebrat": POST na data-odebrat vybraného řádku po potvrzení (text v data-odebrat-text).
+    const cilRadku = (tr, akce) => akce !== "otevrit" ? tr.dataset[akce]
+      : tr.dataset.otevrit || tr.querySelector("a[href]:not([href='#'])")?.getAttribute("href");
+    function odesliPost(url) {
+      const f = document.createElement("form");
+      f.method = "post"; f.action = url;
+      document.body.appendChild(f); f.submit();
+    }
+    let vybranyRadek = null;
+    const obnovTlacitkaRadku = () => document.querySelectorAll(".akce [data-radek]").forEach((b) => {
+      b.disabled = !(vybranyRadek && cilRadku(vybranyRadek, b.dataset.radek));
+    });
+    document.addEventListener("DOMContentLoaded", obnovTlacitkaRadku);
+    // seznam vyměněný přes HTMX (hledání, řazení): vybraný řádek už neplatí
+    document.addEventListener("htmx:afterSettle", (e) => {
+      if (vybranyRadek && !document.contains(vybranyRadek)) { vybranyRadek = null; obnovTlacitkaRadku(); }
+    });
+    // změna řazení kliknutím na hlavičku se propíše do formuláře filtru (hledání pak řazení zachová)
+    document.addEventListener("htmx:pushedIntoHistory", () => {
+      const razeni = new URLSearchParams(location.search).get("razeni") || "";
+      document.querySelectorAll(".filtr input[name=razeni]").forEach((p) => { p.value = razeni; p.disabled = !razeni; });
+    });
+    document.addEventListener("click", (e) => {
+      const tlacitko = e.target.closest(".akce [data-radek]");
+      if (tlacitko && vybranyRadek) {
+        const cil = cilRadku(vybranyRadek, tlacitko.dataset.radek);
+        if (cil && tlacitko.dataset.radek === "odebrat") {
+          potvrd(vybranyRadek.dataset.odebratText || "Odebrat vybraný řádek?", {ano: "Odebrat", nebezpecne: true})
+            .then((ano) => { if (ano) odesliPost(cil); });
+        }
+        else if (cil && tlacitko.hasAttribute("data-okno")) otevriOkno(cil);
+        else if (cil) window.location.href = cil;
+        return;
+      }
+      const tr = e.target.closest(".obsah tbody tr");
+      if (!tr) return;
+      tr.parentElement.querySelectorAll("tr.vybrany").forEach((r) => r.classList.remove("vybrany"));
+      tr.classList.add("vybrany");
+      vybranyRadek = tr;
+      obnovTlacitkaRadku();
+    });
+    document.addEventListener("dblclick", (e) => {
+      const tr = e.target.closest(".obsah tbody tr");
+      if (!tr || e.target.closest("a, button, input, select, textarea, label")) return;
+      if (tr.hasAttribute("data-pridat")) { pridejRadek(tr); return; }  // okno Přidat z ceníku
+      const cil = cilRadku(tr, "otevrit");
+      // řádek s data-okno (např. ceník) se dvojklikem otevře jako okno
+      if (cil && tr.hasAttribute("data-okno") && !formularNaStrance()) otevriOkno(cil);
+      else if (cil) window.location.href = cil;
+    });
+
+    // ---- Formulář jako okno (nová zakázka, úprava zakázky) – jako okna ve starém systému.
+    // Odkaz / tlačítko s atributem data-okno otevře formulář v dialogu nad aktuální stránkou.
+    // Server s parametrem okno=1 vrátí jen obsah okna; po uložení stránku přesměruje nebo obnoví.
+    const oknoFormulare = () => document.getElementById("okno-formular");
+    let oknoZmeneno = false;
+    let obnovitPoZavreni = false;  // zůstane platné, i když se v okně otevře jiné okno
+    function otevriOkno(url) {
+      if (document.querySelector("#okno-formular-obsah [data-obnovit-po-zavreni]")) obnovitPoZavreni = true;
+      const adresa = new URL(url, window.location.href);
+      adresa.searchParams.set("okno", "1");
+      if (!oknoFormulare().open) kosik = [];  // nové okno Přidat z ceníku začíná s prázdným výběrem
+      htmx.ajax("GET", adresa.pathname + adresa.search, {target: "#okno-formular-obsah", swap: "innerHTML"})
+        .then(() => {
+          const okno = oknoFormulare();
+          oknoZmeneno = false;
+          if (!okno.open) okno.showModal();
+          okno.querySelector("[autofocus]")?.focus();
+        });
+    }
+    // na stránce, která už formulář zobrazuje celý, se okno neotvírá (duplicitní pole)
+    const formularNaStrance = () =>
+      [...document.querySelectorAll("form.prijem")].some((f) => !f.closest("#okno-formular"));
+    async function zavriOkno() {
+      if ((oknoZmeneno || kosik.length) && !(await potvrd("Zavřít okno bez uložení změn?",
+                                        {ano: "Zavřít bez uložení", ne: "Pokračovat v úpravách", nebezpecne: true}))) return;
+      const obsah = document.getElementById("okno-formular-obsah");
+      // okno, které už něco uložilo (např. přidání z ceníku), po zavření obnoví stránku pod sebou
+      const obnovit = obnovitPoZavreni || obsah.querySelector("[data-obnovit-po-zavreni]");
+      obnovitPoZavreni = false;
+      oknoFormulare().close();
+      obsah.innerHTML = "";  // uvolní id polí formuláře
+      if (obnovit) window.location.reload();
+    }
+    document.addEventListener("click", async (e) => {
+      const spoustec = e.target.closest("a[data-okno]");
+      if (spoustec && !formularNaStrance() && !e.ctrlKey && !e.shiftKey && !e.metaKey) {
+        e.preventDefault();
+        // z okna Přidat z ceníku s vybranými položkami: jinam jen po potvrzení (výběr by se ztratil)
+        if (spoustec.closest("#okno-formular") && kosik.length &&
+            !(await potvrd(`Vybrané položky (${kosik.length}) se do zakázky nevloží. Pokračovat?`,
+                           {ano: "Pokračovat", ne: "Zůstat v okně", nebezpecne: true}))) return;
+        kosik = [];
+        otevriOkno(spoustec.getAttribute("href"));
+      }
+      if (e.target.closest("[data-zavrit-okno]")) zavriOkno();
+    });
+    // hledání a okna s data-bez-potvrzeni (výběr z ceníku) nejsou „neuložené změny“
+    document.addEventListener("input", (e) => {
+      if (e.target.closest("#okno-formular") && e.target.type !== "search" && !e.target.closest("[data-bez-potvrzeni]"))
+        oknoZmeneno = true;
+    });
+    document.addEventListener("DOMContentLoaded", () => {
+      // Esc: stejné jako Zrušit (zeptá se, pokud jsou neuložené změny)
+      oknoFormulare().addEventListener("cancel", (e) => { e.preventDefault(); zavriOkno(); });
+    });
+
+    // ---- Dvojice cen bez DPH / s DPH (ceník): psát jde do kteréhokoli pole, druhé se přepočítá podle sazby DPH.
+    // Skryté pole data-cena="zdroj" říká serveru, které pole uživatel psal naposledy („s“ = s DPH).
+    const cisloZPole = (t) => { const c = parseFloat(String(t).replace(/\s/g, "").replace(",", ".")); return isNaN(c) ? null : c; };
+    const naPole = (c) => (Math.round(c * 100) / 100).toFixed(2).replace(".", ",").replace(/,00$/, "");
+    function prepocitejDvojici(dvojice, zdroj) {
+      const sazbaPole = dvojice.closest("form")?.querySelector("[data-sazba-dph]");
+      const sazba = cisloZPole(sazbaPole ? sazbaPole.value : "0") || 0;
+      const bez = dvojice.querySelector('[data-cena="bez"]'), s = dvojice.querySelector('[data-cena="s"]');
+      const pole = dvojice.querySelector('[data-cena="zdroj"]');
+      if (!bez || !s) return;
+      zdroj = zdroj || (pole.value === "s" ? "s" : "bez");
+      pole.value = zdroj === "s" ? "s" : "";
+      const z = zdroj === "s" ? s : bez, cil = zdroj === "s" ? bez : s;
+      const c = cisloZPole(z.value);
+      cil.value = c === null ? "" : naPole(zdroj === "s" ? c / (1 + sazba / 100) : c * (1 + sazba / 100));
+    }
+    document.addEventListener("input", (e) => {
+      const druh = e.target.dataset?.cena;
+      if (druh === "bez" || druh === "s") prepocitejDvojici(e.target.closest(".dvojice-cen"), druh);
+      if (e.target.matches?.("[data-sazba-dph]"))
+        e.target.closest("form").querySelectorAll(".dvojice-cen").forEach((d) => prepocitejDvojici(d));
+    });
+
+    // ---- Formuláře s třídou enter-dalsi: Enter v poli přejde na další pole (formulář neodešle), jako ve starém systému.
+    document.addEventListener("keydown", (e) => {
+      const pole = e.target, form = pole.closest && pole.closest("form.enter-dalsi");
+      if (!form || e.key !== "Enter" || pole.tagName === "TEXTAREA" || pole.type === "submit" || pole.tagName === "BUTTON") return;
+      e.preventDefault();
+      const prvky = [...form.querySelectorAll("input:not([type=hidden]):not([readonly]), select, textarea")]
+        .filter((p) => !p.disabled && p.offsetParent !== null && p.type !== "checkbox" && p.type !== "radio");
+      const dalsi = prvky[prvky.indexOf(pole) + 1];
+      if (dalsi) dalsi.focus();
+    });
+    // Po doplnění panelu (HTMX) vrátit kurzor do pole, kde uživatel právě byl.
+    let fokus = null;
+    document.addEventListener("htmx:beforeSwap", () => {
+      const a = document.activeElement;
+      fokus = a && a.name && a.closest("form.enter-dalsi") ? {form: a.closest("form").id, name: a.name} : null;
+    });
+    document.addEventListener("htmx:afterSettle", () => {
+      const pole = fokus && document.querySelector(`#${fokus.form} [name="${fokus.name}"]`);
+      if (pole && document.activeElement !== pole && !document.getElementById("okno-databaze").open) pole.focus();
+      fokus = null;
+    });
+
+    // ---- Tlačítko Načti u VIN: údaje vozidla z Registru silničních vozidel (GET /vozidla/registr).
+    // Vyplní pole formuláře s předponou `predpona` (v_ na příjmu); pole z `jen_prazdne` jen když jsou prázdná.
+    async function nactiZRegistru(tlacitko, predpona) {
+      const form = tlacitko.closest("form");
+      const pole = (jmeno) => form.querySelector(`[name="${predpona}${jmeno}"]`);
+      const vin = pole("vin").value.replace(/\s/g, "");
+      if (!vin) { upozorni("Nejdřív zadejte VIN vozidla."); pole("vin").focus(); return; }
+      tlacitko.disabled = true; tlacitko.setAttribute("aria-busy", "true");
+      try {
+        const odpoved = await fetch("/vozidla/registr?vin=" + encodeURIComponent(vin));
+        if (!odpoved.ok) throw new Error(odpoved.status);
+        const v = await odpoved.json();
+        if (v.chyba) { upozorni(v.chyba); return; }
+        let zmeneno = 0;
+        for (const [jmeno, hodnota] of Object.entries(v.pole)) {
+          const p = pole(jmeno);
+          if (!p || p.value === hodnota || (v.jen_prazdne.includes(jmeno) && p.value.trim())) continue;
+          p.value = hodnota; zmeneno++;
+          p.classList.add("doplneno-z-registru");
+          p.dispatchEvent(new Event("input", {bubbles: true}));  // okno pozná neuložené změny
+        }
+        ukazZpravu(`Registr vozidel: ${zmeneno ? "doplněno polí: " + zmeneno : "údaje se shodují"}` +
+                   (v.souhrn ? ` (${v.souhrn})` : "") + ". Nezapomeňte uložit.");
+      } catch (e) {
+        upozorni("Načtení z registru vozidel se nepovedlo (" + e.message + ").");
+      } finally {
+        tlacitko.disabled = false; tlacitko.removeAttribute("aria-busy");
+      }
+    }
+
+    // ---- Okno Přidat z ceníku: řádek s data-pridat přidá dvojklik nebo Enter (s množstvím z řádku, předvyplněno 1).
+    // Šipky ↓ ↑ v hledání i v mřížce vybírají řádek, Enter ho přidá.
+    function pridejRadek(tr) {
+      const form = tr.querySelector("form.radek-pridat");
+      const pole = form && form.querySelector("[name=mnozstvi]");
+      if (!form) return;
+      if (pole && !pole.value.trim()) pole.value = "1";
+      form.requestSubmit();
+    }
+    function vyberRadekCeniku(tr) {
+      if (!tr) return;
+      tr.parentElement.querySelectorAll("tr.vybrany").forEach((r) => r.classList.remove("vybrany"));
+      tr.classList.add("vybrany");
+      vybranyRadek = tr;
+      tr.scrollIntoView({block: "nearest"});
+    }
+    document.addEventListener("keydown", (e) => {
+      const okno = e.target.closest?.(".okno-cenik");
+      if (!okno || !["ArrowDown", "ArrowUp", "Enter"].includes(e.key)) return;
+      if (e.target.closest("form.radek-pridat") || e.target.closest("button, a")) return;  // pole množství: Enter = Přidat
+      const radky = [...okno.querySelectorAll(".vyber-cenik tbody tr[data-pridat]")];
+      const vybrany = radky.find((r) => r.classList.contains("vybrany"));
+      if (e.key === "Enter") {
+        e.preventDefault();
+        if (vybrany) pridejRadek(vybrany);
+        else if (radky.length === 1) pridejRadek(radky[0]);  // jediný nalezený řádek
+        return;
+      }
+      e.preventDefault();
+      const i = radky.indexOf(vybrany);
+      vyberRadekCeniku(radky[e.key === "ArrowDown" ? Math.min(i + 1, radky.length - 1) : Math.max(i - 1, 0)]);
+    });
+    // Po přidání (okno se znovu vykreslí) kurzor zpět do hledání a okno nehlásí neuložené změny;
+    // po uložení karty ceníku otevřené z tohoto okna se okno ceníku vrátí.
+    // Výběr v okně Přidat z ceníku („košík“): Přidat jen přidá řádek do seznamu vpravo, do zakázky ho
+    // zapíše až Vložit (všechny najednou). Storno okno zavře a zakázky se nedotkne. Výběr platí, dokud je
+    // okno otevřené (i přes odbočku na kartu položky ceníku); nové okno začíná prázdné (viz otevriOkno).
+    let kosik = [];  // [{id, nazev, jednotka, mnozstvi}]
+    const hlaseniOkna = (text, chyba = false) => {
+      const p = document.querySelector("#okno-formular-obsah .hlaseni-okna");
+      if (p) { p.textContent = text; p.className = "hlaseni-okna " + (chyba ? "chyba" : "uspech"); }
+    };
+    const textMnozstvi = (c) => String(Math.round(c * 1000) / 1000).replace(".", ",");
+    function vykresliKosik() {
+      const panel = document.querySelector("#okno-formular-obsah [data-kosik-panel]");
+      if (!panel) return;
+      const seznam = panel.querySelector("[data-kosik-seznam]");
+      panel.querySelector("[data-kosik-pocet]").textContent = `${kosik.length} položek`;
+      seznam.replaceChildren();
+      if (!kosik.length) {
+        const p = document.createElement("p");
+        p.className = "tlumene"; p.textContent = "Zatím nic – vyberte položky vlevo.";
+        seznam.append(p);
+      }
+      kosik.forEach((k, i) => {
+        const radek = document.createElement("div");
+        radek.className = "na-zakazce-radek";
+        const popis = document.createElement("span");
+        const mn = document.createElement("span");
+        mn.className = "tlumene"; mn.textContent = ` ${textMnozstvi(k.mnozstvi)} ${k.jednotka}`;
+        popis.append(k.nazev, mn);
+        const x = document.createElement("button");
+        x.type = "button"; x.className = "odkaz"; x.title = "Odebrat z výběru"; x.textContent = "✕";
+        x.onclick = () => { kosik.splice(i, 1); vykresliKosik(); hlaseniOkna(`Odebráno z výběru: ${k.nazev}`); };
+        radek.append(popis, x);
+        seznam.append(radek);
+      });
+      oknoZmeneno = kosik.length > 0;  // zavření křížkem / Esc se pak zeptá
+    }
+    // Přidat (tlačítko, Enter v množství, dvojklik) v okně = do výběru, ne na server
+    document.addEventListener("submit", (e) => {
+      const form = e.target.closest("form.radek-pridat[data-kosik]");
+      if (!form) return;
+      e.preventDefault();
+      const pole = form.querySelector("[name=mnozstvi]");
+      const mnozstvi = cisloZPole(pole.value || "1");
+      if (mnozstvi === null || mnozstvi === 0) { hlaseniOkna("Zadejte množství (nesmí být 0).", true); pole.focus(); return; }
+      const id = form.querySelector("[name=polozka_ceniku_id]").value;
+      const stejna = kosik.find((k) => k.id === id);  // stejná položka znovu = sečíst množství
+      if (stejna) stejna.mnozstvi += mnozstvi;
+      else kosik.push({id, nazev: form.dataset.nazev, jednotka: form.dataset.jednotka, mnozstvi});
+      vykresliKosik();
+      hlaseniOkna(`Vybráno: ${form.dataset.nazev} (${textMnozstvi(mnozstvi)} ${form.dataset.jednotka})`);
+      pole.value = "1";
+      const hledani = document.querySelector("#okno-formular-obsah .okno-cenik input[type=search]");
+      if (hledani) { hledani.focus(); hledani.select(); }
+    });
+    async function vlozKosik(zakazkaId) {
+      if (!kosik.length) { oknoZmeneno = false; zavriOkno(); return; }
+      const data = new FormData();
+      kosik.forEach((k) => { data.append("polozka_ceniku_id", k.id); data.append("mnozstvi", String(k.mnozstvi)); });
+      try {
+        const odpoved = await fetch(`/zakazky/${zakazkaId}/polozky/vlozit`, {method: "POST", body: data});
+        if (!odpoved.ok) { hlaseniOkna(await odpoved.text() || `Vložení se nepovedlo (${odpoved.status}).`, true); return; }
+      } catch (chyba) {
+        hlaseniOkna("Vložení se nepovedlo (" + chyba.message + ").", true); return;
+      }
+      kosik = []; oknoZmeneno = false;
+      oknoFormulare().close();
+      window.location.reload();  // hláška „Vloženo položek…“ přijde v cookie
+    }
+    async function stornoOknaCeniku() {
+      if (kosik.length && !(await potvrd(`Zavřít okno? Vybrané položky (${kosik.length}) se do zakázky nevloží.`,
+                                         {ano: "Storno", ne: "Zůstat v okně", nebezpecne: true}))) return;
+      kosik = []; oknoZmeneno = false;
+      zavriOkno();
+    }
+    document.addEventListener("click", (e) => {
+      const b = e.target.closest("[data-vlozit-kosik]");
+      if (b) vlozKosik(b.dataset.vlozitKosik);
+      // tlačítko Smazat přímo v řádku (položky zakázky) – maže hned, bez potvrzení
+      const smazat = e.target.closest("[data-smazat-radek]");
+      if (smazat) { e.stopPropagation(); odesliPost(smazat.dataset.smazatRadek); }
+    });
+    document.addEventListener("htmx:afterSettle", (e) => {
+      if (e.detail.target.id !== "okno-formular-obsah") return;
+      if (e.detail.target.querySelector("[data-bez-potvrzeni]")) oknoZmeneno = false;
+      vykresliKosik();  // okno ceníku znovu vykreslené (např. návrat z karty položky) – výběr zůstane
+      const hledani = e.detail.target.querySelector(".okno-cenik input[type=search]");
+      if (hledani && document.activeElement === document.body) hledani.focus();
+    });
+
+    // ---- Zvýrazněný řádek (např. právě uložená položka ceníku): vybrat ho a odrolovat na něj.
+    document.addEventListener("DOMContentLoaded", () => {
+      const tr = document.querySelector(".obsah tbody tr.zvyrazneny");
+      if (!tr) return;
+      tr.classList.add("vybrany"); vybranyRadek = tr; obnovTlacitkaRadku();
+      tr.scrollIntoView({block: "center"});
+    });
+  </script>
+  {# Okno databáze vozidel / zákazníků pro výběr do formuláře (obsah načítá HTMX) #}
+  <dialog id="okno-databaze" onclick="if (event.target === this) this.close()">
+    <article>
+      <div id="okno-obsah"></div>
+    </article>
+  </dialog>
+  {# Okno formuláře (nová zakázka, úprava zakázky) – obsah načítá HTMX, viz otevriOkno() #}
+  <dialog id="okno-formular" aria-label="Formulář">
+    <div id="okno-formular-obsah"></div>
+  </dialog>
+  {# Potvrzení / upozornění (funkce potvrd a upozorni) – nad všemi ostatními okny #}
+  <dialog id="okno-potvrzeni" class="potvrzeni" aria-label="Potvrzení">
+    <article>
+      <p class="potvrzeni-text"></p>
+      <div class="tlacitka">
+        <button type="button" class="potvrzeni-ano">Ano</button>
+        <button type="button" class="secondary outline potvrzeni-ne">Ne</button>
+      </div>
+    </article>
+  </dialog>
+  <div id="zprava" class="zprava" role="status" aria-live="polite" hidden></div>
+</body>
+</html>

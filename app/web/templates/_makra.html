@@ -1,0 +1,257 @@
+{% macro pole(nazev, popisek, hodnoty, typ='text', povinne=False, placeholder='', extra='') -%}
+<label>{{ popisek }}{% if povinne %} <span class="povinne">*</span>{% endif %}
+  <input type="{{ typ }}" name="{{ nazev }}" value="{{ hodnoty.get(nazev) if hodnoty.get(nazev) is not none else '' }}"
+         {% if povinne %}required{% endif %} placeholder="{{ placeholder }}" {{ extra|safe }}>
+</label>
+{%- endmacro %}
+
+{# Pole VIN s tlačítkem Načti – doplní údaje vozidla z registru vozidel (nactiZRegistru v base.html).
+   `predpona` = předpona jmen polí vozidla ve formuláři ('' ve formuláři vozidla, 'v_' na příjmu). #}
+{% macro pole_vin(hodnoty, predpona='') -%}
+<div class="radek-s-tlacitky">
+  <label class="roztahnout">VIN
+    <input type="text" name="{{ predpona }}vin" value="{{ hodnoty.get(predpona ~ 'vin') or '' }}"
+           maxlength="20" class="vstup-spz" autocomplete="off">
+  </label>
+  <button type="button" class="maly secondary outline" title="Doplnit údaje vozidla z Registru silničních vozidel podle VIN"
+          onclick="nactiZRegistru(this, '{{ predpona }}')">Načti</button>
+</div>
+{%- endmacro %}
+
+{% macro textove_pole(nazev, popisek, hodnoty, povinne=False, radky=3, placeholder='') -%}
+<label>{{ popisek }}{% if povinne %} <span class="povinne">*</span>{% endif %}
+  <textarea name="{{ nazev }}" rows="{{ radky }}" {% if povinne %}required{% endif %}
+            placeholder="{{ placeholder }}">{{ hodnoty.get(nazev) or '' }}</textarea>
+</label>
+{%- endmacro %}
+
+{% macro zacatek_formulare(akce, id, okno, trida='') -%}
+{# Otevření formuláře ve stylu okna (jako Nová zakázka). V okně (okno=True) se odesílá přes HTMX
+   a odpověď (chyba) se vrátí zpět do okna; jinak běžné odeslání celé stránky. Uzavřít </form> v šabloně. #}
+<form method="post" action="{{ akce }}" class="formular prijem enter-dalsi {{ trida }}" id="{{ id }}"
+      {% if okno %}hx-post="{{ akce }}" hx-target="#okno-formular-obsah"{% endif %}>
+  {% if okno %}<input type="hidden" name="okno" value="1">{% endif %}
+{%- endmacro %}
+
+{% macro tlacitka_formulare(id, okno, zpet, ok='Uložit', zakazano='') -%}
+{# Tlačítka do bloku akce (sloupec vlevo): OK a Zrušit (v okně) / Zpět (celá stránka).
+   zakazano = důvod, proč uložit nejde (tlačítko je zašedlé a důvod je pod ním). #}
+  <button type="submit" form="{{ id }}" {% if zakazano %}disabled title="{{ zakazano }}"{% endif %}>{{ ok }}</button>
+  {% if okno %}
+  <button type="button" class="secondary outline" data-zavrit-okno>Zrušit</button>
+  {% else %}
+  <a href="{{ zpet }}" class="secondary outline" role="button">Zpět</a>
+  {% endif %}
+  {% if zakazano %}<p class="poznamka chyba-text">{{ zakazano }}</p>{% endif %}
+  <p class="tlumene poznamka">Enter = další pole · Ctrl+Enter = uložit · Esc = zrušit</p>
+{%- endmacro %}
+
+{% macro tlacitka_karty_z_ceniku(id, z_ceniku, q) -%}
+{# Karta položky ceníku otevřená tlačítkem Upravit v okně Přidat z ceníku: Uložit a Zpět (do okna ceníku). #}
+  <button type="submit" form="{{ id }}">Uložit</button>
+  <button type="button" class="secondary outline" hx-get="/zakazky/{{ z_ceniku }}/cenik" hx-target="#okno-formular-obsah"
+          hx-vals='{{ {"okno": "1", "q": q or ""}|tojson }}'>Zpět</button>
+  <p class="tlumene poznamka">Enter = další pole · Ctrl+Enter = uložit · Esc = zrušit</p>
+{%- endmacro %}
+
+{% macro radek_zakazky_pole(radek) -%}
+{# Karta ceníku otevřená úpravou řádku zakázky: po uložení se změny propíšou i do řádku. #}
+{% if radek %}<input type="hidden" name="radek" value="{{ radek.id }}">
+<p class="upozorneni-ram">Úprava položky zakázky {{ radek.zakazka.cislo }} – změny se uloží do ceníku
+  i do této zakázky. Množství se mění přímo v řádku zakázky.</p>{% endif %}
+{%- endmacro %}
+
+{% macro skryta_pole_z_ceniku(z_ceniku, q) -%}
+{% if z_ceniku %}<input type="hidden" name="z_ceniku" value="{{ z_ceniku }}"><input type="hidden" name="q" value="{{ q }}">{% endif %}
+{%- endmacro %}
+
+{% macro tlacitko_smazat(akce, text, potvrzeni, duvod=None) -%}
+{# Smazání vlevo v akcích. Když smazat nejde (`duvod`), tlačítko zůstane zašedlé a důvod je napsaný pod ním. #}
+{% if duvod %}
+  <button type="button" class="secondary outline" disabled title="{{ duvod }}">{{ text }}</button>
+  <p class="tlumene poznamka">{{ duvod }}</p>
+{% else %}
+  <form method="post" action="{{ akce }}" data-potvrdit="{{ potvrzeni }}" data-potvrdit-ano="Smazat">
+    <button type="submit" class="secondary outline">{{ text }}</button>
+  </form>
+{% endif %}
+{%- endmacro %}
+
+{% macro adresa(ulice, psc, mesto, oddelovac=', ') -%}
+{# „Ulice 1, 110 00 Praha“ – stejný tvar adresy všude. #}
+{{ [ulice, ([psc|psc, mesto]|select|join(' '))]|select|join(oddelovac) }}
+{%- endmacro %}
+
+{% macro stav(zakazka) -%}
+<span class="stav stav-{{ zakazka.stav }}">{{ zakazka.nazev_stavu }}</span>
+{%- endmacro %}
+
+{% macro spz(text) -%}
+{# vozidla ze starého systému bez SPZ mají náhradní SPZ „BEZSPZ-SS…“ – zobrazit krátce, celá je v bublině #}
+{%- if text and text.startswith('BEZSPZ') -%}
+<span class="spz spz-chybi" title="{{ text }}">bez SPZ</span>
+{%- else -%}
+<span class="spz">{{ text }}</span>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro vstup_spz(hodnota, oob=False, autofocus=True) -%}
+{# Pole SPZ při příjmu – po potvrzení (Enter / Tab) dohledá vozidlo. oob=True: přepíše pole po výběru z databáze. #}
+<input type="text" id="spz" name="spz" value="{{ hodnota or '' }}" required {% if not oob and autofocus %}autofocus{% endif %}
+       class="vstup-spz" autocomplete="off" placeholder="např. 1AB 2345"
+       hx-get="/zakazky/nova/vozidlo" hx-trigger="change"
+       hx-target="#vozidlo-udaje" hx-include="#panel-zakaznik, #vozidlo-udaje" hx-sync="this:replace"
+       {% if oob %}hx-swap-oob="true"{% endif %}>
+{%- endmacro %}
+
+{# ---------- datová mřížka: řazení podle sloupce, filtr při psaní, načítání po dávkách ----------
+   Seznam je v <div id="seznam">; řazení, hledání i „Načíst další“ ho mění přes HTMX (bez přenačtení stránky).
+   Makra s `request` importovat s kontextem: {% from "_makra.html" import ... with context %} #}
+
+{% macro hx_seznam(url) -%}
+hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" hx-push-url="true"
+{%- endmacro %}
+
+{% macro hledani_seznamu(placeholder, autofocus=True) -%}
+{# Pole hledání ve formuláři .filtr – výsledky se mění při psaní; zachová řazení. #}
+<input type="search" name="q" value="{{ request.query_params.get('q', '') }}" placeholder="{{ placeholder }}"
+       {% if autofocus %}autofocus{% endif %} autocomplete="off"
+       hx-get="{{ request.url.path }}" hx-trigger="input changed delay:300ms, search" hx-include="closest form"
+       hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" hx-push-url="true">
+{# řazení: po kliknutí na hlavičku ho base.html doplní z adresy (prázdné = vypnuté, aby nebylo v URL) #}
+<input type="hidden" name="razeni" value="{{ request.query_params.get('razeni', '') }}"
+       {% if not request.query_params.get('razeni') %}disabled{% endif %}>
+{%- endmacro %}
+
+{% macro zahlavi(klic, popisek, stranka, trida='') -%}
+{# Hlavička sloupce: klik seřadí vzestupně, další klik sestupně. #}
+{% set aktivni = stranka.razeni.lstrip('-') == klic %}
+{% set sestupne = stranka.razeni.startswith('-') %}
+{% set nove = ('-' ~ klic) if (aktivni and not sestupne) else klic %}
+<th class="razeni {{ trida }}{% if aktivni %} serazeno{% endif %}"
+    {% if aktivni %}aria-sort="{{ 'descending' if sestupne else 'ascending' }}"{% endif %}>
+  <a href="{{ url_s(request, razeni=nove, od=None) }}" {{ hx_seznam(url_s(request, razeni=nove, od=None)) }}
+     title="Seřadit">{{ popisek }}{% if aktivni %}<span class="sipka">{{ '▼' if sestupne else '▲' }}</span>{% endif %}</a>
+</th>
+{%- endmacro %}
+
+{% macro stavovy_radek(stranka, napoveda='Klik = výběr řádku · dvojklik = otevřít') -%}
+<div class="stavovy-radek" id="stav-seznamu">
+  <span>Zobrazeno {{ stranka.do }} z {{ stranka.celkem }}
+    {% if stranka.dalsi is not none %}
+    <button type="button" class="nacist-dalsi" hx-get="{{ url_s(request, od=stranka.dalsi) }}"
+            hx-select="#seznam tbody > tr" hx-target="#seznam tbody" hx-swap="beforeend"
+            hx-select-oob="#stav-seznamu">Načíst další ({{ [stranka.celkem - stranka.do, stranka.polozky|length]|min }})</button>
+    <button type="button" class="nacist-dalsi" hx-get="{{ url_s(request, od=stranka.dalsi, vse_radky=1) }}"
+            hx-select="#seznam tbody > tr" hx-target="#seznam tbody" hx-swap="beforeend"
+            hx-select-oob="#stav-seznamu">Načíst vše</button>
+    {% endif %}
+  </span>
+  <span>{{ napoveda }}</span>
+</div>
+{%- endmacro %}
+
+{% macro tabulka_zakazek(zakazky, ukaz_vozidlo=True, ukaz_zakaznika=True, stranka=None) -%}
+{% if zakazky %}
+<div class="overflow-auto">
+<table class="striped{% if stranka %} seznam-zakazek{% endif %}">
+  <thead><tr>
+    {% if stranka %}
+    {{ zahlavi('cislo', 'Číslo', stranka) }}{{ zahlavi('prijato', 'Přijato', stranka) }}
+    {% if ukaz_vozidlo %}{{ zahlavi('vozidlo', 'Vozidlo', stranka) }}{% endif %}
+    {% if ukaz_zakaznika %}{{ zahlavi('zakaznik', 'Zákazník', stranka) }}{% endif %}
+    {{ zahlavi('pozadavek', 'Požadavek', stranka) }}{{ zahlavi('stav', 'Stav', stranka) }}
+    {% else %}
+    <th>Číslo</th><th>Přijato</th>
+    {% if ukaz_vozidlo %}<th>Vozidlo</th>{% endif %}
+    {% if ukaz_zakaznika %}<th>Zákazník</th>{% endif %}
+    <th>Požadavek</th><th>Stav</th>
+    {% endif %}
+  </tr></thead>
+  <tbody>
+  {% for z in zakazky %}
+    <tr data-otevrit="/zakazky/{{ z.id }}" {% if z.je_otevrena %}data-upravit="/zakazky/{{ z.id }}/upravit"{% endif %}
+        title="Dvojklik otevře zakázku">
+      <td><a href="/zakazky/{{ z.id }}"><strong>{{ z.cislo }}</strong></a></td>
+      <td>{{ z.datum_prijeti|datum }}</td>
+      {% if ukaz_vozidlo %}<td>{{ spz(z.vozidlo.spz) }} <span class="popis-vozidla">{{ z.vozidlo.popis }}</span></td>{% endif %}
+      {% if ukaz_zakaznika %}<td>{{ z.zakaznik.nazev if z.zakaznik else '' }}</td>{% endif %}
+      <td class="zkratit">{{ z.pozadavek }}</td>
+      <td>{{ stav(z) }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="tlumene">Žádné zakázky.</p>
+{% endif %}
+{%- endmacro %}
+
+{% macro volby_zakaznika(pole, vybrany_id, novy, bez, vychozi) -%}
+{# Pevné volby pod výsledky hledání: „Nový zákazník“ a „Bez zákazníka“.
+   vychozi = 'novy' / 'bez' / '' – která volba je zaškrtnutá, když není vybraný konkrétní zákazník. #}
+{% if novy %}
+  <label><input type="radio" name="{{ pole }}" value="novy" {% if not vybrany_id and vychozi == 'novy' %}checked{% endif %}>
+    <strong>Nový zákazník</strong> (vyplňte níže)</label>
+{% endif %}
+{% if bez %}
+  <label><input type="radio" name="{{ pole }}" value="bez" {% if not vybrany_id and vychozi == 'bez' %}checked{% endif %}>
+    <strong>Bez zákazníka</strong> <span class="tlumene">(lze doplnit později)</span></label>
+{% endif %}
+{%- endmacro %}
+
+{# Starší výběr zákazníka přepínači – formuláře už používají panel Zákazník jako na příjmu
+   (_prijem_zakaznik.html); makra zůstávají pro okno Databáze zákazníků a starší adresy. #}
+{% macro vyber_zakaznika(pole, vybrany=None, novy=False, bez=True, vychozi=None) -%}
+{# Hledání zákazníka a výběr přepínačem (existující / nový / bez zákazníka).
+   Hodnota pole: id zákazníka, „novy“ nebo „bez“. #}
+{% set vychozi = vychozi or ('novy' if novy else 'bez') %}
+<div class="vyber-zakaznika">
+  <input type="search" name="q" placeholder="Databáze zákazníků – klikněte, nebo hledejte (jméno, telefon, IČO)…"
+         hx-get="/zakaznici/vyber" hx-trigger="input changed delay:300ms, search, focus once"
+         hx-target="next .vysledky" hx-include="this"
+         onkeydown="if (event.key === 'Enter') event.preventDefault()"
+         hx-vals='{"pole": "{{ pole }}", "novy": "{{ '1' if novy else '' }}", "bez": "{{ '1' if bez else '' }}", "vychozi": "{{ vychozi }}", "vybrany": "{{ vybrany.id if vybrany else '' }}"}'
+         autocomplete="off">
+  <div class="vysledky">
+    {% if vybrany %}
+      <label><input type="radio" name="{{ pole }}" value="{{ vybrany.id }}" checked> {{ vybrany.nazev }}
+        <span class="tlumene">{{ vybrany.telefon or '' }} {{ vybrany.mesto or '' }}</span></label>
+    {% endif %}
+    {{ volby_zakaznika(pole, vybrany.id if vybrany else '', novy, bez, vychozi) }}
+  </div>
+</div>
+{%- endmacro %}
+
+{% macro blok_zakaznika(pole_vyberu, hodnoty, vybrany=None, vychozi='bez', zprava=None, chyba=None) -%}
+{# Celý výběr zákazníka: existující (hledání) / Nový zákazník (pole k_*) / Bez zákazníka.
+   Pole nového zákazníka se ukazují jen u volby „Nový“ (CSS .blok-zakaznika). #}
+{% set zvoleno = hodnoty.get(pole_vyberu) %}
+<div class="blok-zakaznika" id="blok-{{ pole_vyberu }}">
+  {% if zprava %}<p class="uspech">{{ zprava }}</p>{% endif %}
+  <button type="button" class="secondary outline otevrit-okno"
+          hx-get="/zakaznici/okno" hx-vals='{"pole": "{{ pole_vyberu }}"}' hx-target="#okno-obsah"
+          hx-on::after-request="document.getElementById('okno-databaze').showModal()">📋 Databáze zákazníků – najít a vložit</button>
+  {{ vyber_zakaznika(pole_vyberu, vybrany=vybrany, novy=True, bez=True,
+                     vychozi=zvoleno if zvoleno in ('novy', 'bez') else vychozi) }}
+  <div class="novy-zakaznik">
+    {% if chyba %}<p class="chyba" role="alert">{{ chyba }}</p>{% endif %}
+    <div class="mrizka">
+      {{ pole('k_nazev', 'Jméno / firma', hodnoty) }}
+      {{ pole('k_telefon', 'Telefon', hodnoty, typ='tel') }}
+      {{ pole('k_email', 'E-mail', hodnoty, typ='email') }}
+    </div>
+    <div class="mrizka">
+      {{ pole('k_ulice', 'Ulice', hodnoty) }}
+      {{ pole('k_mesto', 'Město', hodnoty) }}
+      {{ pole('k_psc', 'PSČ', hodnoty) }}
+    </div>
+    <div class="mrizka">
+      {{ pole('k_ico', 'IČO', hodnoty) }}
+      {{ pole('k_dic', 'DIČ', hodnoty) }}
+    </div>
+  </div>
+</div>
+{%- endmacro %}
+

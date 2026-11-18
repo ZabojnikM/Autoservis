@@ -1,0 +1,82 @@
+{% extends "_okno.html" if okno else "base.html" %}
+{% from "_makra.html" import pole, textove_pole, zacatek_formulare, tlacitka_formulare, tlacitka_karty_z_ceniku, skryta_pole_z_ceniku, radek_zakazky_pole %}
+{# Okno Materiál – položka ceníku materiálu (práce má vlastní okno prace_form.html) #}
+{% set akce_url = '/cenik/%d/upravit' % polozka.id if polozka else '/cenik/nova' %}
+{% block title %}{{ 'Upravit materiál' if polozka else 'Nový materiál' }}{% endblock %}
+{% block akce %}
+  {% if z_ceniku %}
+  {{ tlacitka_karty_z_ceniku('cenik-form', z_ceniku, q_ceniku) }}
+  {% else %}
+  {{ tlacitka_formulare('cenik-form', okno, '/cenik') }}
+  {% endif %}
+  {% if z_ceniku or radek_zakazky %}
+  {% elif not polozka %}
+  <button type="submit" form="cenik-form" name="dalsi" value="1" class="secondary">Uložit a další</button>
+  {% else %}
+  <form method="post" action="/cenik/{{ polozka.id }}/smazat" class="smazat"
+        data-potvrdit="Smazat materiál z ceníku? Zakázky, kde už je použit, zůstanou beze změny." data-potvrdit-ano="Smazat">
+    <input type="hidden" name="zpet" data-aktualni>
+    <button type="submit" class="secondary outline">Smazat z ceníku</button>
+  </form>
+  {% endif %}
+{% endblock %}
+{% block content %}
+<div class="nadpis-radek">
+  <h1>{% if polozka %}Upravit materiál <span class="oznaceni">{{ polozka.nazev }}</span>{% else %}Nový materiál{% endif %}</h1>
+</div>
+
+{{ zacatek_formulare(akce_url, 'cenik-form', okno, 'uzky') }}
+  <input type="hidden" name="typ" value="material">
+  {{ skryta_pole_z_ceniku(z_ceniku, q_ceniku) }}
+  {{ radek_zakazky_pole(radek_zakazky) }}
+  <fieldset class="panel">
+    <legend>Materiál</legend>
+    {# kód (číslo dílu) je první – podle něj se díl hledá; zůstává nepovinný #}
+    <div class="mrizka">
+      {{ pole('kod', 'Kód / číslo dílu', hodnoty, placeholder='např. GAT 6PK1018', extra='autofocus') }}
+      {{ pole('zamenitelny_dil', 'Zaměnitelný díl', hodnoty, placeholder='kód náhradního dílu') }}
+    </div>
+    {{ pole('nazev', 'Název', hodnoty, povinne=True) }}
+    {% set jednotka = hodnoty.get('jednotka') or 'ks' %}
+    {% set jednotky = ['ks', 'l', 'm', 'cm', 'g', 'kg', 'sada'] %}
+    <div class="mrizka">
+      <label>Jednotka
+        <select name="jednotka">
+          {% for j in jednotky %}<option {% if jednotka == j %}selected{% endif %}>{{ j }}</option>{% endfor %}
+          {% if jednotka not in jednotky %}<option selected>{{ jednotka }}</option>{% endif %}
+        </select>
+      </label>
+      {% if nast.platce_dph %}
+        {{ pole('sazba_dph', 'Sazba DPH %', hodnoty, extra='inputmode="decimal" list="sazby" data-sazba-dph') }}
+      {% endif %}
+    </div>
+  </fieldset>
+
+  <fieldset class="panel">
+    <legend>Ceny za jednotku</legend>
+    {# bez DPH a s DPH – psát jde do kteréhokoli pole, druhé se přepočítá (viz base.html „dvojice cen“) #}
+    {% for klic, nazev in [('cena', 'Prodejní cena'), ('nakupni_cena', 'Nákupní cena')] %}
+    <div class="mrizka dvojice-cen" data-dvojice="{{ klic }}">
+      {% if nast.platce_dph %}
+        {{ pole(klic, nazev ~ ' bez DPH', hodnoty, extra='inputmode="decimal" data-cena="bez"') }}
+        {{ pole(klic ~ '_s', nazev ~ ' s DPH', hodnoty, extra='inputmode="decimal" data-cena="s"') }}
+        <input type="hidden" name="{{ klic }}_zdroj" value="{{ hodnoty.get(klic ~ '_zdroj') or '' }}" data-cena="zdroj">
+      {% else %}
+        {{ pole(klic, nazev, hodnoty, extra='inputmode="decimal"') }}
+      {% endif %}
+    </div>
+    {% endfor %}
+  </fieldset>
+
+  <fieldset class="panel">
+    <legend>Ostatní</legend>
+    {{ textove_pole('poznamka', 'Poznámka', hodnoty, radky=2) }}
+    {% if polozka %}
+    <label class="volba"><input type="checkbox" name="aktivni" value="1" {% if hodnoty.get('aktivni') %}checked{% endif %}>
+      aktivní (vyřazený materiál se nenabízí do zakázek)</label>
+    {% endif %}
+  </fieldset>
+
+  <datalist id="sazby"><option value="21"><option value="12"><option value="0"></datalist>
+</form>
+{% endblock %}

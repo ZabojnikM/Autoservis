@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% from "_makra.html" import spz, adresa, zahlavi, hledani_seznamu, stavovy_radek with context %}
+{% block title %}Zákazníci{% endblock %}
+{% block akce %}
+  <a href="/zakaznici/novy" role="button" data-okno>Nový zákazník</a>
+  <button type="button" class="secondary" data-radek="otevrit">Otevřít</button>
+  <button type="button" class="secondary outline" data-radek="upravit" data-okno>Upravit</button>
+  <p class="tlumene poznamka">Vyberte řádek kliknutím.</p>
+{% endblock %}
+{% block content %}
+<form method="get" class="filtr">
+  {{ hledani_seznamu('Jméno, telefon, e-mail, IČO, ulice, město…') }}
+</form>
+
+<div id="seznam">
+{% if zakaznici %}
+<div class="overflow-auto">
+<table class="striped seznam-zakazniku">
+  <thead><tr>{{ zahlavi('nazev', 'Jméno / firma', stranka) }}{{ zahlavi('telefon', 'Telefon', stranka) }}{{ zahlavi('adresa', 'Adresa', stranka) }}{{ zahlavi('ico', 'IČO', stranka) }}<th>Vozidla</th></tr></thead>
+  <tbody>
+  {% for k in zakaznici %}
+    <tr data-otevrit="/zakaznici/{{ k.id }}" data-upravit="/zakaznici/{{ k.id }}/upravit">
+      <td title="{{ k.nazev }}"><a href="/zakaznici/{{ k.id }}">{{ k.nazev }}</a></td>
+      <td>{{ k.telefon or '' }}</td>
+      {% set adr = adresa(k.ulice, k.psc, k.mesto) %}
+      <td title="{{ adr }}">{{ adr }}</td>
+      <td>{{ k.ico or '' }}</td>
+      <td>{% for v in k.vozidla %}<a href="/vozidla/{{ v.id }}">{{ spz(v.spz) }}</a> {% endfor %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{{ stavovy_radek(stranka) }}
+{% else %}
+<p class="tlumene prazdna-mrizka">{% if q %}Nic nenalezeno.{% else %}Zatím žádní zákazníci.{% endif %}</p>
+{% endif %}
+</div>
+{% endblock %}

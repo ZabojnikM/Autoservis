@@ -1,0 +1,43 @@
+{% from "_makra.html" import spz %}
+{# Okno „Databáze zákazníků“ – stejný seznam jako /zakaznici, s filtrem a tlačítkem Vložit do výběru `pole`. #}
+<header class="okno-hlavicka">
+  <h3>Databáze zákazníků</h3>
+  <button type="button" class="secondary outline maly" onclick="document.getElementById('okno-databaze').close()">✕ Zavřít</button>
+</header>
+<input type="search" name="q" value="{{ q }}" placeholder="Filtr: jméno, telefon, e-mail, IČO, město…" autofocus autocomplete="off"
+       hx-get="/zakaznici/okno" hx-trigger="input changed delay:300ms, search" hx-include="this"
+       hx-vals='{"pole": "{{ pole }}", "cil": "{{ cil }}"}'
+       hx-select="#okno-tabulka" hx-target="#okno-tabulka" hx-swap="outerHTML"
+       onkeydown="if (event.key === 'Enter') event.preventDefault()">
+<div id="okno-tabulka" class="okno-tabulka">
+{% if zakaznici %}
+<table class="striped">
+  <thead><tr><th>Jméno / firma</th><th>Telefon</th><th>Město</th><th>IČO</th><th>Vozidla</th><th></th></tr></thead>
+  <tbody>
+  {% for k in zakaznici %}
+    <tr>
+      <td>{{ k.nazev }}</td>
+      <td>{{ k.telefon or '' }}</td>
+      <td>{{ k.mesto or '' }}</td>
+      <td>{{ k.ico or '' }}</td>
+      <td>{% for v in k.vozidla %}{{ spz(v.spz) }} {% endfor %}</td>
+      <td class="vpravo">
+        {% if cil == 'prijem' %}
+        <button type="button" class="maly" hx-get="/zakazky/nova/zakaznik" hx-vals='{"vybrat_id": "{{ k.id }}"}'
+                hx-target="#panel-zakaznik" hx-swap="outerHTML"
+                hx-on::after-request="document.getElementById('okno-databaze').close()">Vložit</button>
+        {% else %}
+        <button type="button" class="maly" hx-get="/zakaznici/vyber/blok" hx-vals='{"pole": "{{ pole }}", "vybrat_id": "{{ k.id }}"}'
+                hx-target="#blok-{{ pole }}" hx-swap="outerHTML"
+                hx-on::after-request="document.getElementById('okno-databaze').close()">Vložit</button>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if zakaznici|length >= limit %}<p class="tlumene maly-text">Zobrazeno prvních {{ limit }} – upřesněte filtr.</p>{% endif %}
+{% else %}
+<p class="tlumene">{% if q %}Nic nenalezeno – zavřete okno a vyplňte nového zákazníka.{% else %}Zatím žádní zákazníci.{% endif %}</p>
+{% endif %}
+</div>

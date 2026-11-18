@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% from "_makra.html" import spz, stav, tlacitko_smazat, adresa %}
+{% block title %}{{ vozidlo.spz }}{% endblock %}
+{% block akce %}
+  <a href="/zakazky/nova?vozidlo_id={{ vozidlo.id }}" role="button" data-okno>Nová zakázka</a>
+  <a href="/vozidla/{{ vozidlo.id }}/upravit" role="button" class="secondary" data-okno>Upravit vozidlo</a>
+  <button type="button" class="secondary outline" data-radek="otevrit">Otevřít zakázku</button>
+  <button type="button" class="secondary outline" onclick="window.print()">Tisk</button>
+  <hr>
+  {{ tlacitko_smazat('/vozidla/%d/smazat' % vozidlo.id, 'Smazat vozidlo',
+                     'Opravdu smazat vozidlo %s? Smazání nejde vrátit.' % vozidlo.spz,
+                     'Vozidlo má zakázky (historii) – nejde smazat.' if historie else None) }}
+  <hr>
+  <a href="/vozidla" role="button" class="secondary outline">Zpět</a>
+{% endblock %}
+{% block content %}
+{% set v = vozidlo %}
+<div class="nadpis-radek">
+  <h1>{{ spz(v.spz) }} {% if v.znacka or v.model %}{{ v.popis }}{% endif %}</h1>
+</div>
+
+{# karta vozidla: hlavní identifikační údaje pohromadě | technické údaje | termíny a historie | majitel #}
+<div class="hlavicka-zakazky hlavicka-detailu">
+  <section class="panel karta-vozidla">
+    <h2 class="titulek-panelu">Karta vozidla</h2>
+    <dl>
+      <dt>SPZ</dt><dd>{{ spz(v.spz) }}</dd>
+      <dt>Značka</dt><dd class="hlavni-udaj">{{ v.znacka or '—' }}</dd>
+      <dt>Model</dt><dd class="hlavni-udaj">{{ v.model or '—' }}</dd>
+      <dt title="Typ / varianta / verze z technického průkazu">Typ vozidla</dt><dd>{{ v.cislo_motoru or '—' }}</dd>
+      <dt>Kód motoru</dt><dd class="hlavni-udaj">{{ v.kod_motoru or v.motor or '—' }}</dd>
+      <dt>Rok výroby</dt><dd>{{ v.rok_vyroby or '—' }}</dd>
+      <dt>1. registrace</dt><dd>{{ v.datum_registrace|datum or '—' }}</dd>
+      <dt>VIN</dt><dd class="vin">{{ v.vin or '—' }}</dd>
+      <dt>Majitel</dt><dd>{% if v.zakaznik %}<a href="/zakaznici/{{ v.zakaznik.id }}" class="hlavni-udaj">{{ v.zakaznik.nazev }}</a>{% else %}<span class="bez-zakaznika">bez majitele</span>{% endif %}</dd>
+    </dl>
+  </section>
+  <section class="panel">
+    <h2 class="titulek-panelu">Technické údaje</h2>
+    <dl>
+      <dt>Objem</dt><dd>{{ v.objem or '—' }}</dd>
+      <dt>Výkon</dt><dd>{{ v.vykon or '—' }}</dd>
+      <dt>Palivo</dt><dd>{{ v.palivo or '—' }}</dd>
+      <dt>Olej</dt><dd>{{ v.olej or '—' }}</dd>
+      <dt>Barva</dt><dd>{{ v.barva or '—' }}</dd>
+    </dl>
+  </section>
+  <section class="panel">
+    <h2 class="titulek-panelu">Termíny a historie</h2>
+    {% set km = historie|selectattr('tachometr')|map(attribute='tachometr')|list %}
+    <dl>
+      <dt>STK</dt><dd {% if v.termin_stk and v.termin_stk < dnes() %}class="po-terminu" title="Po termínu"{% endif %}>{{ v.termin_stk|datum or '—' }}</dd>
+      <dt>Poslední km</dt><dd>{% if km %}{{ km[0]|cislo }} km{% else %}—{% endif %}</dd>
+      <dt>Návštěvy</dt><dd>{{ historie|length }}{% if historie %} · naposledy {{ historie[0].datum_prijeti|datum }}{% endif %}</dd>
+      <dt title="Součet platných (nestornovaných) dokladů">Vyfakturováno</dt><dd><strong>{{ vyfakturovano|penize }} {{ nast.mena }}</strong></dd>
+      {% if rozpracovano %}<dt title="Otevřené zakázky bez dokladu">Rozpracováno</dt><dd>{{ rozpracovano|penize }} {{ nast.mena }}</dd>{% endif %}
+    </dl>
+  </section>
+  <section class="panel">
+    <h2 class="titulek-panelu">Majitel</h2>
+    {% set k = v.zakaznik %}
+    {% if k %}
+    <p class="hlavni-udaj"><a href="/zakaznici/{{ k.id }}">{{ k.nazev }}</a></p>
+    <dl>
+      {% if k.telefon %}<dt>Telefon</dt><dd><a href="tel:{{ k.telefon }}">{{ k.telefon }}</a></dd>{% endif %}
+      {% if k.email %}<dt>E-mail</dt><dd>{{ k.email }}</dd>{% endif %}
+      {% if k.ulice or k.mesto %}<dt>Adresa</dt><dd>{{ adresa(k.ulice, k.psc, k.mesto) }}</dd>{% endif %}
+    </dl>
+    {% else %}
+    <p class="hlavni-udaj bez-zakaznika">Bez majitele</p>
+    <p class="neni-tisk"><a href="/vozidla/{{ v.id }}/upravit" data-okno>Doplnit majitele</a></p>
+    {% endif %}
+    {% if v.poznamka %}<p class="tlumene zachovat-radky">{{ v.poznamka }}</p>{% endif %}
+  </section>
+</div>
+
+{# historie vozidla jako ve starém systému: zakázky, nebo práce / materiál ze všech zakázek #}
+<nav class="filtr-stavu">
+  <a href="?zalozka=zakazky" {% if zalozka == 'zakazky' %}aria-current="page"{% endif %}>Zakázky ({{ historie|length }})</a>
+  <a href="?zalozka=prace" {% if zalozka == 'prace' %}aria-current="page"{% endif %}>Práce ({{ pocty.prace }})</a>
+  <a href="?zalozka=material" {% if zalozka == 'material' %}aria-current="page"{% endif %}>Materiál ({{ pocty.material }})</a>
+</nav>
+
+{% if zalozka == 'zakazky' %}
+  {% if historie %}
+  <div class="overflow-auto">
+  <table class="striped">
+    <thead><tr><th>Číslo</th><th>Přijato</th><th>Zákazník</th><th>Požadavek</th><th class="cislo">Km</th>
+      <th class="cislo" title="Hodnota položek zakázky">Částka zakázky</th><th>Doklad</th><th>Stav</th></tr></thead>
+    <tbody>
+    {% for z in historie %}
+      <tr data-otevrit="/zakazky/{{ z.id }}" title="Dvojklik otevře zakázku">
+        <td><a href="/zakazky/{{ z.id }}"><strong>{{ z.cislo }}</strong></a></td>
+        <td>{{ z.datum_prijeti|datum }}</td>
+        <td>{{ z.zakaznik.nazev if z.zakaznik else '' }}</td>
+        <td class="zkratit">{{ z.pozadavek }}</td>
+        <td class="cislo">{{ z.tachometr|cislo }}</td>
+        <td class="cislo">{{ soucty[z.id].celkem|penize }}</td>
+        <td>{% if z.platna_faktura %}<a href="/faktury/{{ z.platna_faktura.id }}">{{ z.platna_faktura.cislo }}</a>{% endif %}</td>
+        <td>{{ stav(z) }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <div class="stavovy-radek"><span>Zakázek: {{ historie|length }} · vyfakturováno {{ vyfakturovano|penize }} {{ nast.mena }}</span>
+    <span>Klik = výběr řádku · dvojklik = otevřít zakázku</span></div>
+  {% else %}
+  <p class="prazdna-mrizka tlumene">Vozidlo zatím nemá žádnou zakázku.
+    <a href="/zakazky/nova?vozidlo_id={{ v.id }}" data-okno>Přijmout vozidlo</a></p>
+  {% endif %}
+{% else %}
+  {% if radky %}
+  <div class="overflow-auto">
+  <table class="striped polozky">
+    <thead><tr><th>Datum</th><th>Zakázka</th><th class="cislo">Km</th><th>Kód</th><th>Název</th>
+      <th class="cislo">Množství</th><th>MJ</th><th class="cislo">Cena/j. bez DPH</th><th class="cislo">Celkem bez DPH</th></tr></thead>
+    <tbody>
+    {% for r in radky %}
+      <tr data-otevrit="/zakazky/{{ r.zakazka_id }}" title="Dvojklik otevře zakázku">
+        <td>{{ r.zakazka.datum_prijeti|datum }}</td>
+        <td><a href="/zakazky/{{ r.zakazka_id }}">{{ r.zakazka.cislo }}</a></td>
+        <td class="cislo">{{ r.zakazka.tachometr|cislo }}</td>
+        <td class="tlumene">{{ r.kod or '' }}</td>
+        <td>{{ r.nazev }}</td>
+        <td class="cislo">{{ r.mnozstvi|mnozstvi }}</td>
+        <td>{{ r.jednotka }}</td>
+        <td class="cislo">{{ r.cena|penize }}</td>
+        <td class="cislo">{{ r.zaklad|penize }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  <div class="stavovy-radek"><span>Řádků: {{ radky|length }} · celkem bez DPH {{ radky|sum(attribute='zaklad')|penize }} {{ nast.mena }}</span>
+    <span>Dvojklik = otevřít zakázku</span></div>
+  {% else %}
+  <p class="prazdna-mrizka tlumene">{{ 'Žádná práce.' if zalozka == 'prace' else 'Žádný materiál.' }}</p>
+  {% endif %}
+{% endif %}
+{% endblock %}

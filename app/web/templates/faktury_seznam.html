@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+{% from "_makra.html" import spz, zahlavi, hledani_seznamu, stavovy_radek with context %}
+{% block title %}Faktury{% endblock %}
+{% block akce %}
+  <button type="button" data-radek="otevrit">Otevřít doklad</button>
+  <p class="tlumene poznamka">Vyberte řádek kliknutím. Nový doklad se vystavuje ze zakázky.</p>
+{% endblock %}
+{% block content %}
+<nav class="filtr-stavu">
+  {% for klic, nazev in filtry.items() %}
+  <a href="/faktury?filtr={{ klic }}&rok={{ rok }}&typ={{ typ }}&q={{ q|urlencode }}" {% if filtr == klic %}aria-current="page"{% endif %}>{{ nazev }}</a>
+  {% endfor %}
+</nav>
+
+<form method="get" class="filtr">
+  <input type="hidden" name="filtr" value="{{ filtr }}">
+  {{ hledani_seznamu('Číslo, odběratel, IČO, SPZ…', autofocus=False) }}
+  <select name="rok" onchange="this.form.submit()" aria-label="Rok">
+    <option value="">všechny roky</option>
+    {% for r in roky %}<option value="{{ r }}" {% if rok == r|string %}selected{% endif %}>{{ r }}</option>{% endfor %}
+  </select>
+  <select name="typ" onchange="this.form.submit()" aria-label="Typ dokladu">
+    <option value="">faktury i vyúčtování</option>
+    {% for t in TypDokladu.VSECHNY %}<option value="{{ t }}" {% if typ == t %}selected{% endif %}>{{ TypDokladu.NAZVY[t] }}</option>{% endfor %}
+  </select>
+</form>
+
+<div id="seznam">
+{% if faktury %}
+<div class="overflow-auto">
+<table class="striped">
+  <thead><tr>
+    {{ zahlavi('cislo', 'Číslo', stranka) }}{{ zahlavi('vystaveno', 'Vystaveno', stranka) }}{{ zahlavi('splatnost', 'Splatnost', stranka) }}
+    {{ zahlavi('odberatel', 'Odběratel', stranka) }}{{ zahlavi('vozidlo', 'Vozidlo', stranka) }}
+    {{ zahlavi('celkem', 'Celkem', stranka, 'cislo') }}{{ zahlavi('zbyva', 'Zbývá', stranka, 'cislo') }}{{ zahlavi('stav', 'Stav', stranka) }}
+  </tr></thead>
+  <tbody>
+  {% for f in faktury %}
+    <tr class="doklad-{{ f.stav }}" data-otevrit="/faktury/{{ f.id }}">
+      <td><a href="/faktury/{{ f.id }}"><strong>{{ f.cislo }}</strong></a>
+        {% if f.typ == 'vyuctovani' %}<span class="tlumene">vyúčt.</span>{% endif %}</td>
+      <td>{{ f.datum_vystaveni|datum }}</td>
+      <td>{{ f.datum_splatnosti|datum }}</td>
+      <td>{{ f.odb_nazev }}</td>
+      <td>{% if f.spz %}{{ spz(f.spz) }}{% endif %}</td>
+      <td class="cislo">{{ f.celkem|penize }}</td>
+      <td class="cislo">{% if f.zbyva and not f.stornovano %}<strong>{{ f.zbyva|penize }}</strong>{% endif %}</td>
+      <td><span class="stav-dokladu stav-dokladu-{{ f.stav }}">{{ f.nazev_stavu }}</span></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+  <tfoot><tr>
+    <td colspan="5">Součet za {{ souhrn.pocet }} dokladů{% if stranka.dalsi is not none %} (všechny, i nenačtené){% endif %}</td>
+    <td class="cislo">{{ souhrn.celkem|penize }}</td>
+    <td class="cislo"><strong>{{ souhrn.zbyva|penize }}</strong></td>
+    <td>{{ nast.mena }}</td>
+  </tr></tfoot>
+</table>
+</div>
+{{ stavovy_radek(stranka) }}
+{% else %}
+<div class="prazdna-mrizka">
+<p class="tlumene">{% if filtr == 'neuhrazene' and not q %}Žádné neuhrazené doklady. 👍{% else %}Nic nenalezeno.{% endif %}</p>
+<p class="tlumene">Doklad se vystavuje z hotové zakázky tlačítkem <strong>Vystavit fakturu</strong> nebo <strong>Vyúčtování</strong>.</p>
+</div>
+{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Nastavení{% endblock %}
+{% macro p(nazev, popisek, extra='', placeholder='') -%}
+<label>{{ popisek }}
+  <input type="text" name="{{ nazev }}" value="{{ nast[nazev] }}" placeholder="{{ placeholder }}" {{ extra|safe }}>
+</label>
+{%- endmacro %}
+{% block akce %}
+  <button type="submit" form="formular-nastaveni">Uložit nastavení</button>
+  <a href="/zakazky" role="button" class="secondary outline">Zpět</a>
+{% endblock %}
+{% block content %}
+{% if ulozeno %}<p class="uspech" role="status">Nastavení uloženo.</p>{% endif %}
+{% if not nast.udaje_vyplneny %}
+<p class="upozorneni-ram">Vyplňte údaje servisu (název, IČO, adresa) – tisknou se na fakturu a zakázkový list.
+  Bez nich nejde vystavit fakturu.</p>
+{% endif %}
+
+<form method="post" action="/nastaveni" class="formular" id="formular-nastaveni">
+  <fieldset>
+    <legend>Údaje servisu (dodavatel)</legend>
+    {{ p('nazev_servisu', 'Název / jméno podnikatele') }}
+    <div class="mrizka">
+      {{ p('ulice', 'Ulice a č. p.') }}
+      {{ p('mesto', 'Město') }}
+      {{ p('psc', 'PSČ') }}
+    </div>
+    <div class="mrizka">
+      {{ p('ico', 'IČO') }}
+      {{ p('dic', 'DIČ', placeholder='např. CZ12345678') }}
+      {{ p('vystavil', 'Vystavil (jméno na dokladu)') }}
+    </div>
+    <div class="mrizka">
+      {{ p('telefon', 'Telefon') }}
+      {{ p('email', 'E-mail') }}
+      {{ p('web', 'Web') }}
+    </div>
+  </fieldset>
+
+  <fieldset>
+    <legend>Bankovní účet</legend>
+    <div class="mrizka">
+      {{ p('cislo_uctu', 'Číslo účtu', placeholder='např. 123456789/0800') }}
+      {{ p('iban', 'IBAN (nepovinný – dopočítá se z čísla účtu)') }}
+    </div>
+    <p class="tlumene">Z účtu se na fakturu tiskne <strong>QR platba</strong>. Bez čísla účtu jde fakturu vystavit jen s platbou hotově.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Ceny a DPH</legend>
+    <div class="mrizka">
+      <label>Výchozí sazba DPH %
+        <input type="text" name="vychozi_dph" value="{{ nast.vychozi_dph|mnozstvi }}" inputmode="decimal" required>
+      </label>
+      {{ p('mena', 'Měna') }}
+    </div>
+    <label><input type="checkbox" name="platce_dph" value="1" {% if nast.platce_dph %}checked{% endif %}>
+      jsem <strong>plátce DPH</strong></label>
+    <p class="tlumene">Změna se projeví u nově přidaných položek. Řádky v zakázkách a vystavené doklady se nemění.</p>
+  </fieldset>
+
+  <fieldset>
+    <legend>Doklady</legend>
+    <div class="mrizka">
+      {{ p('rada_faktura', 'Řada faktur', extra='required') }}
+      {{ p('rada_vyuctovani', 'Řada vyúčtování', extra='required') }}
+      <label>Počet číslic <input type="number" name="cifry_cisla" value="{{ nast.cifry_cisla }}" min="1" max="8"></label>
+      <label>Splatnost (dní) <input type="number" name="splatnost_dni" value="{{ nast.splatnost_dni }}" min="0" max="365"></label>
+    </div>
+    <p class="tlumene">{RRRR} = rok, {RR} = rok dvojmístně. Např. <code>FV{RRRR}</code> a 4 číslice → FV{{ dnes_rok() }}0001.
+      Řada začíná každý rok od 1. Variabilní symbol = číslice z čísla dokladu, u vyúčtování s 9 na začátku
+      (FV{{ dnes_rok() }}0001 → {{ dnes_rok() }}0001, VY{{ dnes_rok() }}0001 → 9{{ dnes_rok() }}0001).
+      Doklady převzaté ze starého systému si ponechávají svá původní čísla.</p>
+    <label><input type="checkbox" name="zaokrouhlit_hotovost" value="1" {% if nast.zaokrouhlit_hotovost %}checked{% endif %}>
+      platby <strong>v hotovosti</strong> zaokrouhlovat na celé koruny</label>
+    <label>Text pod položkami dokladu
+      <textarea name="text_pod_fakturou" rows="2" placeholder="např. Děkujeme za důvěru. Zapsán v živnostenském rejstříku…">{{ nast.text_pod_fakturou }}</textarea>
+    </label>
+  </fieldset>
+
+  <fieldset>
+    <legend>Registr vozidel</legend>
+    {{ p('api_klic_registr', 'API klíč (dataovozidlech.cz)', extra='autocomplete="off" spellcheck="false"') }}
+    <p class="tlumene">Tlačítko <strong>Načti</strong> u VIN doplní údaje vozidla z Registru silničních vozidel
+      Ministerstva dopravy (značka, model, motor, objem, výkon, palivo, barva, 1. registrace, STK).
+      Klíč je zdarma – po registraci jménem a e-mailem na
+      <a href="https://dataovozidlech.cz/registraceapi" target="_blank" rel="noopener">dataovozidlech.cz/registraceapi</a>
+      přijde e-mailem. Limit 27 dotazů za minutu.</p>
+  </fieldset>
+</form>
+{% endblock %}

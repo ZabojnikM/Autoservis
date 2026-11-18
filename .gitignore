@@ -1,0 +1,23 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Data (databáze a zálohy se necommitují)
+data/*.db
+data/*.db-*
+data/backups/
+data/stary-system-export/
+
+# IDE / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
+
+# Prostředí
+.env
+.claude/settings.local.json

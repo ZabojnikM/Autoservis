@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% from "_makra.html" import zahlavi, hledani_seznamu, stavovy_radek with context %}
+{# Ceník prací – samostatný seznam (materiál má vlastní stránku /cenik) #}
+{% block title %}Ceník prací{% endblock %}
+{% block akce %}
+  <a href="/prace/nova" role="button" data-okno>Nová práce</a>
+  <button type="button" class="secondary outline" data-radek="upravit" data-okno>Upravit</button>
+  <p class="tlumene poznamka">Vyberte řádek kliknutím, dvojklik = upravit.</p>
+{% endblock %}
+{% block content %}
+<form method="get" class="filtr">
+  {{ hledani_seznamu('Kód práce (nebo název)…') }}
+  <label class="tlumene"><input type="checkbox" name="neaktivni" value="1" {% if neaktivni %}checked{% endif %}
+         onchange="this.form.submit()"> zobrazit i vyřazené</label>
+</form>
+
+<div id="seznam">
+{% if polozky %}
+<div class="overflow-auto">
+<table class="striped seznam-praci">
+  <thead><tr>
+    {{ zahlavi('kod', 'Kód', stranka) }}{{ zahlavi('nazev', 'Název práce', stranka) }}
+    {{ zahlavi('jednotka', 'MJ', stranka) }}
+    {{ zahlavi('cena', 'Cena bez DPH' if nast.platce_dph else 'Cena', stranka, 'cislo') }}
+    {% if nast.platce_dph %}{{ zahlavi('dph', 'DPH', stranka, 'cislo') }}<th class="cislo">Cena s DPH</th>{% endif %}
+  </tr></thead>
+  <tbody>
+  {% for p in polozky %}
+    {% set cena = p.cena %}
+    <tr data-otevrit="/prace/{{ p.id }}/upravit" data-upravit="/prace/{{ p.id }}/upravit" data-okno
+        class="{% if not p.aktivni %}vyrazeno{% endif %}{% if zvyraznit == p.id|string %} zvyrazneny{% endif %}">
+      <td class="tlumene">{{ p.kod or '' }}</td>
+      <td title="{{ p.nazev }}">{{ p.nazev }}{% if not p.aktivni %} <span class="tlumene">(vyřazeno)</span>{% endif %}</td>
+      <td class="tlumene">{{ p.jednotka }}</td>
+      <td class="cislo">{{ cena|penize }}</td>
+      {% if nast.platce_dph %}
+      <td class="cislo tlumene">{{ p.sazba_dph|mnozstvi }} %</td>
+      <td class="cislo"><strong>{{ (cena * (100 + p.sazba_dph) / 100)|penize }}</strong></td>
+      {% endif %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{{ stavovy_radek(stranka, 'dvojklik = upravit') }}
+{% else %}
+<p class="tlumene prazdna-mrizka">{% if q %}Nic nenalezeno.{% else %}Ceník prací je zatím prázdný.{% endif %}</p>
+{% endif %}
+</div>
+{% endblock %}

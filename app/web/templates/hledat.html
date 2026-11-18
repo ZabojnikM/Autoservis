@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% from "_makra.html" import tabulka_zakazek, spz %}
+{% block title %}Hledání{% endblock %}
+{% block content %}
+<h1>Hledání: „{{ q }}“</h1>
+
+{% if vysledek.prazdny %}
+  <p>Nic nenalezeno.</p>
+  {% if q %}<p><a href="/zakazky/nova?spz={{ q|urlencode }}" role="button">Přijmout vozidlo {{ q }}</a></p>{% endif %}
+{% endif %}
+
+{% if vysledek.vozidla %}
+<h2>Vozidla</h2>
+<ul class="vysledky-seznam">
+  {% for v in vysledek.vozidla %}
+  <li><a href="/vozidla/{{ v.id }}">{{ spz(v.spz) }} {{ v.popis }}</a>
+    <span class="tlumene">{{ v.zakaznik.nazev if v.zakaznik else '' }}{% if v.vin %} · {{ v.vin }}{% endif %}</span></li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if vysledek.zakaznici %}
+<h2>Zákazníci</h2>
+<ul class="vysledky-seznam">
+  {% for z in vysledek.zakaznici %}
+  <li><a href="/zakaznici/{{ z.id }}">{{ z.nazev }}</a>
+    <span class="tlumene">{{ z.telefon or '' }} {{ z.mesto or '' }}</span></li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+{% if vysledek.zakazky %}
+<h2>Zakázky</h2>
+{{ tabulka_zakazek(vysledek.zakazky) }}
+{% endif %}
+{% endblock %}

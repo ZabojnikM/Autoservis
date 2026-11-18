@@ -1,0 +1,93 @@
+{% extends "_okno.html" if okno else "base.html" %}
+{% from "_makra.html" import spz, zacatek_formulare, tlacitka_formulare %}
+{% set typ = hodnoty.get('typ') or 'faktura' %}
+{% set nazev = 'vyúčtování' if typ == 'vyuctovani' else 'fakturu' %}
+{% set url = '/zakazky/%d/vystavit' % zakazka.id %}
+{% block title %}Vystavit doklad{% endblock %}
+{% set chybi_udaje = typ == 'faktura' and not nast.udaje_vyplneny %}
+{% block akce %}
+  {{ tlacitka_formulare('formular-dokladu', okno, '/zakazky/%d' % zakazka.id, ok='Vystavit ' ~ nazev,
+                        zakazano='Nejdřív doplňte údaje servisu v Nastavení.' if chybi_udaje else '') }}
+{% endblock %}
+{% block content %}
+<div class="nadpis-radek">
+  <h1>Vystavit {{ nazev }}
+    <span class="oznaceni">zakázka <a href="/zakazky/{{ zakazka.id }}">{{ zakazka.cislo }}</a> · {{ spz(zakazka.vozidlo.spz) }}
+      <span class="tlumene">{% if zakazka.vozidlo.znacka or zakazka.vozidlo.model %}{{ zakazka.vozidlo.popis }} {% endif %}· {{ zakazka.polozky|length }} položek ·</span>
+      <strong>{{ rek.celkem|penize }} {{ nast.mena }}</strong></span></h1>
+</div>
+
+{% if chybi_udaje %}
+<p class="chyba">Fakturu nejde vystavit – v Nastavení chybí údaje servisu (název, IČO, adresa).
+  Bez dodavatele by nebyla platným daňovým dokladem.
+  <a href="/nastaveni" target="_blank">Doplnit v Nastavení</a> (otevře se v nové kartě), pak okno zavřete a otevřete znovu.</p>
+{% elif not nast.udaje_vyplneny %}
+<p class="upozorneni-ram">Nejsou vyplněné údaje servisu (název, IČO, adresa). Na vyúčtování bude chybět dodavatel –
+  <a href="/nastaveni" target="_blank">doplnit v Nastavení</a>.</p>
+{% endif %}
+{% if typ == 'faktura' and not (nast.cislo_uctu or nast.iban) %}
+<p class="upozorneni-ram">V Nastavení není číslo účtu – fakturu jde vystavit jen s platbou hotově.
+  <a href="/nastaveni" target="_blank">Doplnit účet</a>.</p>
+{% endif %}
+{% if typ == 'faktura' and not zakazka.zakaznik %}
+<p class="upozorneni-ram">Faktura vyžaduje zákazníka.
+  <a href="/zakazky/{{ zakazka.id }}/upravit" data-okno>Doplňte ho na zakázce</a>,
+  nebo vystavte <a href="{{ url }}?typ=vyuctovani" {% if okno %}data-okno{% endif %}>vyúčtování</a> (to jde i bez zákazníka).</p>
+{% endif %}
+
+{{ zacatek_formulare(url, 'formular-dokladu', okno, 'stredni') }}
+  <div class="uprava-panely">
+    <fieldset class="panel">
+      <legend>Doklad a úhrada</legend>
+      <div class="prepinac-typu">
+        {% for t in TypDokladu.VSECHNY %}
+        <label><input type="radio" name="typ" value="{{ t }}" {% if typ == t %}checked{% endif %}
+               {% if okno %}onchange="otevriOkno('{{ url }}?typ={{ t }}')"{% else %}onchange="location.href='?typ={{ t }}'"{% endif %}>
+          {{ TypDokladu.NAZVY[t] }}</label>
+        {% endfor %}
+      </div>
+      <div class="mrizka">
+        <label>Datum vystavení <input type="date" name="datum_vystaveni" value="{{ hodnoty.get('datum_vystaveni')|iso }}" required></label>
+        {% if nast.platce_dph and typ == 'faktura' %}
+        <label>DUZP <input type="date" name="duzp" value="{{ hodnoty.get('duzp')|iso }}"></label>
+        {% endif %}
+        <label>Splatnost <input type="date" name="datum_splatnosti" value="{{ hodnoty.get('datum_splatnosti')|iso }}" required></label>
+      </div>
+      <label>Forma úhrady
+        <select name="forma_uhrady">
+          {% for fu in FormaUhrady.VSECHNY %}
+          <option value="{{ fu }}" {% if hodnoty.get('forma_uhrady') == fu %}selected{% endif %}>{{ FormaUhrady.NAZVY[fu] }}</option>
+          {% endfor %}
+        </select>
+      </label>
+      <label class="volba"><input type="checkbox" name="uhrazeno_ihned" value="1" {% if hodnoty.get('uhrazeno_ihned') %}checked{% endif %}>
+        zákazník <strong>platí hned</strong> (zapíše se úhrada celé částky)</label>
+      {% if nast.zaokrouhlit_hotovost %}<p class="tlumene napoveda">Při platbě v hotovosti se částka zaokrouhlí na celé koruny.</p>{% endif %}
+      <label>Poznámka na dokladu
+        <textarea name="poznamka" rows="2">{{ hodnoty.get('poznamka') or '' }}</textarea></label>
+    </fieldset>
+
+    <fieldset class="panel">
+      <legend>Odběratel</legend>
+      {% if typ == 'faktura' %}
+      <label>Jméno / firma <span class="povinne">*</span>
+        <input type="text" name="odb_nazev" value="{{ hodnoty.get('odb_nazev', '') }}" required></label>
+      {% else %}
+      <label>Jméno / firma <span class="tlumene">(u vyúčtování nepovinné)</span>
+        <input type="text" name="odb_nazev" value="{{ hodnoty.get('odb_nazev', '') }}"></label>
+      {% endif %}
+      <label>Ulice <input type="text" name="odb_ulice" value="{{ hodnoty.get('odb_ulice') or '' }}"></label>
+      <div class="mrizka mrizka-psc">
+        <label>PSČ <input type="text" name="odb_psc" value="{{ hodnoty.get('odb_psc') or '' }}"></label>
+        <label>Město <input type="text" name="odb_mesto" value="{{ hodnoty.get('odb_mesto') or '' }}"></label>
+      </div>
+      <div class="mrizka">
+        <label>IČO <input type="text" name="odb_ico" value="{{ hodnoty.get('odb_ico') or '' }}"></label>
+        <label>DIČ <input type="text" name="odb_dic" value="{{ hodnoty.get('odb_dic') or '' }}"></label>
+      </div>
+      <p class="tlumene napoveda">Údaje se vezmou ze zákazníka; změna tady platí jen pro tento doklad.</p>
+    </fieldset>
+  </div>
+  <p class="tlumene napoveda">Po vystavení se zakázka uzavře (stav Uzavřeno). Doklad už nejde měnit – jen stornovat.</p>
+</form>
+{% endblock %}

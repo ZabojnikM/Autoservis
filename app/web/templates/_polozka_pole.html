@@ -1,0 +1,39 @@
+{# Pole položky zakázky – stejná pro ruční položku i úpravu položky. Potřebuje: hodnoty, nast. #}
+<fieldset class="panel">
+  <legend>Položka zakázky</legend>
+  <div class="mrizka mrizka-psc">
+    <label>Typ
+      <select name="typ">
+        {% for t in TypPolozky.VSECHNY %}
+        <option value="{{ t }}" {% if (hodnoty.get('typ') or 'prace') == t %}selected{% endif %}>{{ TypPolozky.NAZVY[t] }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Kód <input type="text" name="kod" value="{{ hodnoty.get('kod') or '' }}"></label>
+  </div>
+  <label>Název <span class="povinne">*</span>
+    <input type="text" name="nazev" value="{{ hodnoty.get('nazev') or '' }}" required {% if autofocus_nazev %}autofocus{% endif %}></label>
+  <div class="mrizka">
+    <label>Množství <span class="povinne">*</span>
+      <input type="text" name="mnozstvi" value="{{ hodnoty.get('mnozstvi') or '1' }}" inputmode="decimal" required
+             pattern="[+\-]?[0-9  ]*([.,][0-9]+)?" title="Číslo, např. 1,5" {% if not autofocus_nazev %}autofocus{% endif %}></label>
+    <label>Jednotka <input type="text" name="jednotka" value="{{ hodnoty.get('jednotka') or '' }}" list="jednotky"
+                           placeholder="např. ks"></label>
+  </div>
+  <div class="mrizka">
+    <label>Cena za jednotku {% if nast.platce_dph %}bez DPH{% endif %}
+      <input type="text" name="cena" value="{{ hodnoty.get('cena') or '' }}" inputmode="decimal"></label>
+    {% if nast.platce_dph %}
+    <label>DPH % <input type="text" name="sazba_dph" value="{{ hodnoty.get('sazba_dph') or nast.vychozi_dph|mnozstvi }}" inputmode="decimal" list="sazby"></label>
+    {% endif %}
+  </div>
+  {% if nast.platce_dph %}
+  <label class="volba"><input type="checkbox" name="cena_s_dph" value="1" {% if hodnoty.get('cena_s_dph') %}checked{% endif %}>
+    zadaná cena je <strong>s DPH</strong> (přepočítá se na cenu bez DPH)</label>
+  {% endif %}
+  {% if ukaz_ulozit_do_ceniku %}
+  <label class="volba"><input type="checkbox" name="ulozit_do_ceniku" value="1" {% if hodnoty.get('ulozit_do_ceniku') %}checked{% endif %}> uložit i do ceníku</label>
+  {% endif %}
+</fieldset>
+<datalist id="jednotky"><option value="hod"><option value="ks"><option value="l"><option value="úkon"><option value="sada"></datalist>
+<datalist id="sazby"><option value="21"><option value="12"><option value="0"></datalist>

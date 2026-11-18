@@ -1,0 +1,185 @@
+{% extends "base.html" %}
+{% from "_makra.html" import stav, spz, tlacitko_smazat, adresa %}
+{% block title %}Zakázka {{ zakazka.cislo }}{% endblock %}
+{% set doklad = zakazka.platna_faktura %}
+{% set lze_menit = zakazka.je_otevrena and not doklad %}
+{% block akce %}
+  {% if not doklad %}<a href="/zakazky/{{ zakazka.id }}/upravit" role="button" class="secondary" data-okno>Upravit zakázku</a>{% endif %}
+  <a href="/zakazky/{{ zakazka.id }}/tisk?tisk=1" role="button" class="secondary outline" target="_blank"
+     title="Zakázkový list A4 – tisk nebo uložení do PDF">Zakázkový list</a>
+  {% if lze_menit %}
+    <hr>
+    <a href="/zakazky/{{ zakazka.id }}/cenik" role="button" data-okno>Přidat z ceníku</a>
+    <a href="/zakazky/{{ zakazka.id }}/polozky/nova" role="button" class="secondary" data-okno>Ruční položka</a>
+    {% if zakazka.polozky %}
+    <button type="button" class="secondary outline" data-radek="upravit" data-okno>Upravit položku</button>
+    <button type="button" class="secondary outline" data-radek="odebrat">Odebrat položku</button>
+    {% endif %}
+  {% endif %}
+  {% if doklad %}
+    <hr>
+    <a href="/faktury/{{ doklad.id }}" role="button">{{ doklad.nazev_typu }} {{ doklad.cislo }}</a>
+  {% elif zakazka.polozky %}
+    <hr>
+    {% if zakazka.zakaznik %}
+    <a href="/zakazky/{{ zakazka.id }}/vystavit?typ=faktura" role="button" data-okno>Vystavit fakturu</a>
+    {% else %}
+    <a href="/zakazky/{{ zakazka.id }}/upravit" role="button" class="outline" data-okno
+       title="Faktura vyžaduje zákazníka">Faktura: doplnit zákazníka</a>
+    {% endif %}
+    <a href="/zakazky/{{ zakazka.id }}/vystavit?typ=vyuctovani" role="button" data-okno>Vyúčtování</a>
+  {% endif %}
+  {% if zakazka.je_otevrena or zakazka.faktury %}
+    <hr>
+    {{ tlacitko_smazat('/zakazky/%d/smazat' % zakazka.id, 'Smazat zakázku',
+                       'Opravdu smazat zakázku %s? Smazání nejde vrátit.' % zakazka.cislo, nelze_smazat) }}
+  {% endif %}
+  <hr>
+  <a href="/zakazky" role="button" class="secondary outline">Zpět</a>
+{% endblock %}
+{% block content %}
+
+{# nástrojová lišta: číslo, stav a přepínání stavu #}
+<div class="nadpis-radek">
+  <h1>Zakázka {{ zakazka.cislo }} {{ stav(zakazka) }}</h1>
+  {% if doklad %}
+  <span class="tlumene neni-tisk">Zakázka je vyúčtovaná – pro změny nejdřív stornujte doklad.</span>
+  {% else %}
+  <form method="post" action="/zakazky/{{ zakazka.id }}/stav" class="zmena-stavu neni-tisk">
+    <span class="tlumene">Stav:</span>
+    {% for s in StavZakazky.VSECHNY %}
+      <button type="submit" name="stav" value="{{ s }}"
+              class="stav-tlacitko {% if s == zakazka.stav %}aktivni{% else %}outline{% endif %}"
+              {% if s == zakazka.stav %}disabled{% endif %}>{{ StavZakazky.NAZVY[s] }}</button>
+    {% endfor %}
+  </form>
+  {% endif %}
+</div>
+
+{# hlavička zakázky v jednom pásu: vozidlo | zákazník | zakázka #}
+<div class="hlavicka-zakazky">
+  <section class="panel">
+    <h2 class="titulek-panelu">Vozidlo</h2>
+    {% set v = zakazka.vozidlo %}
+    <p class="hlavni-udaj"><a href="/vozidla/{{ v.id }}">{{ spz(v.spz) }}</a>
+      {% if v.znacka or v.model %}{{ v.popis }}{% endif %}</p>
+    <dl>
+      {% if v.vin %}<dt>VIN</dt><dd>{{ v.vin }}</dd>{% endif %}
+      {% if v.rok_vyroby %}<dt>Rok</dt><dd>{{ v.rok_vyroby }}</dd>{% endif %}
+      {% if v.kod_motoru or v.objem or v.vykon %}<dt>Motor</dt>
+        <dd>{{ [v.kod_motoru, v.objem, v.vykon]|select|join(' · ') }}</dd>{% endif %}
+      {% if v.olej %}<dt>Olej</dt><dd>{{ v.olej }}</dd>{% endif %}
+    </dl>
+  </section>
+  <section class="panel">
+    <h2 class="titulek-panelu">Zákazník</h2>
+    {% set k = zakazka.zakaznik %}
+    {% if k %}
+    <p class="hlavni-udaj"><a href="/zakaznici/{{ k.id }}">{{ k.nazev }}</a></p>
+    <dl>
+      {% if k.telefon %}<dt>Telefon</dt><dd><a href="tel:{{ k.telefon }}">{{ k.telefon }}</a></dd>{% endif %}
+      {% if k.email %}<dt>E-mail</dt><dd>{{ k.email }}</dd>{% endif %}
+      {% if k.ulice or k.mesto %}<dt>Adresa</dt><dd>{{ adresa(k.ulice, k.psc, k.mesto) }}</dd>{% endif %}
+      {% if k.ico %}<dt>IČO</dt><dd>{{ k.ico }}{% if k.dic %} · DIČ {{ k.dic }}{% endif %}</dd>{% endif %}
+    </dl>
+    {% else %}
+    <p class="hlavni-udaj bez-zakaznika">Bez zákazníka</p>
+    {% if not doklad %}<p class="neni-tisk"><a href="/zakazky/{{ zakazka.id }}/upravit" data-okno>Doplnit zákazníka</a></p>{% endif %}
+    {% endif %}
+  </section>
+  <section class="panel">
+    <h2 class="titulek-panelu">Zakázka</h2>
+    <dl>
+      <dt>Přijato</dt><dd>{{ zakazka.datum_prijeti|datumcas }}</dd>
+      {% if zakazka.uzavreno %}<dt>Uzavřeno</dt><dd>{{ zakazka.uzavreno|datumcas }}</dd>{% endif %}
+      <dt>Stav km</dt><dd>{% if zakazka.tachometr is not none %}{{ zakazka.tachometr|cislo }} km{% else %}—{% endif %}</dd>
+    </dl>
+  </section>
+  <section class="panel pozadavek">
+    <h2 class="titulek-panelu">Požadavek zákazníka / popis závady</h2>
+    <p class="zachovat-radky">{{ zakazka.pozadavek }}</p>
+    {% if zakazka.poznamka %}<p class="tlumene neni-tisk">Interní poznámka: {{ zakazka.poznamka }}</p>{% endif %}
+  </section>
+</div>
+
+{# položky jako datová mřížka: klik vybere řádek (Upravit / Odebrat vlevo), dvojklik otevře úpravu #}
+<div id="polozky" class="titulek-mrizky">
+  <strong>Materiál a práce</strong>
+  <span class="tlumene">{{ zakazka.polozky|length }} položek{% if lze_menit and zakazka.polozky %} · dvojklik = upravit{% endif %}</span>
+</div>
+{% if zakazka.polozky %}
+<div class="overflow-auto">
+<table class="polozky striped mrizka-polozek{% if not nast.platce_dph %} bez-dph{% endif %}">
+  <thead><tr>
+    <th>Typ</th><th>Kód</th><th>Název</th><th class="cislo">Množství</th><th>MJ</th><th class="cislo">Cena/j. bez DPH</th>
+    {% if nast.platce_dph %}<th class="cislo">DPH</th>{% endif %}
+    <th class="cislo">Celkem bez DPH</th>
+    {% if nast.platce_dph %}<th class="cislo">Celkem s DPH</th>{% endif %}
+    {% if lze_menit %}<th class="sl-smazat neni-tisk"></th>{% endif %}
+  </tr></thead>
+  <tbody>
+  {% for r in zakazka.polozky %}
+    <tr {% if lze_menit %}data-otevrit="/polozky/{{ r.id }}/upravit" data-upravit="/polozky/{{ r.id }}/upravit" data-okno
+        data-odebrat="/polozky/{{ r.id }}/smazat" data-odebrat-text="Odebrat {{ r.nazev }}?"{% endif %}>
+      <td><span class="typ typ-{{ r.typ }}">{{ r.nazev_typu }}</span></td>
+      <td class="tlumene">{{ r.kod or '' }}</td>
+      <td>{{ r.nazev }}</td>
+      <td class="cislo">{% if lze_menit %}
+        {# množství se mění přímo tady: Enter nebo opuštění pole uloží #}
+        <form method="post" action="/polozky/{{ r.id }}/mnozstvi" class="mnozstvi-radku">
+          <input type="text" name="mnozstvi" value="{{ r.mnozstvi|mnozstvi }}" inputmode="decimal"
+                 aria-label="Množství – {{ r.nazev }}" onfocus="this.select()" onchange="this.form.requestSubmit()">
+        </form>{% else %}{{ r.mnozstvi|mnozstvi }}{% endif %}</td>
+      <td>{{ r.jednotka }}</td>
+      <td class="cislo">{{ r.cena|penize }}</td>
+      {% if nast.platce_dph %}<td class="cislo tlumene">{{ r.sazba_dph|mnozstvi }} %</td>{% endif %}
+      <td class="cislo"><strong>{{ r.zaklad|penize }}</strong></td>
+      {% if nast.platce_dph %}<td class="cislo">{{ (r.zaklad * (100 + r.sazba_dph) / 100)|penize }}</td>{% endif %}
+      {% if lze_menit %}<td class="sl-smazat neni-tisk">
+        <button type="button" class="maly smazat-radek" data-smazat-radek="/polozky/{{ r.id }}/smazat"
+                title="Smazat položku ze zakázky">Smazat</button></td>{% endif %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{# součty ve spodní liště #}
+<div class="soucty">
+  <span>Práce <strong>{{ rek.prace|penize }}</strong></span>
+  <span>Materiál <strong>{{ rek.material|penize }}</strong></span>
+  {% if nast.platce_dph or rek.dph %}
+  <span>Bez DPH <strong>{{ rek.bez_dph|penize }}</strong></span>
+  {% for sazba, dan in rek.dane.items() %}
+    {% if sazba %}<span>DPH {{ sazba|mnozstvi }} % <strong>{{ dan|penize }}</strong></span>{% endif %}
+  {% endfor %}
+  {% endif %}
+  <span class="celkem">Celkem k úhradě <strong>{{ rek.celkem|penize }} {{ nast.mena }}</strong></span>
+</div>
+{% else %}
+<p class="prazdna-mrizka tlumene">Zatím žádné položky.
+  {% if lze_menit %}<a href="/zakazky/{{ zakazka.id }}/cenik" data-okno>Přidat z ceníku</a> nebo
+  <a href="/zakazky/{{ zakazka.id }}/polozky/nova" data-okno>zadat ručně</a>.{% endif %}</p>
+{% endif %}
+
+{# doklady k zakázce – i stornované, ať je vidět historie #}
+{% if doklady %}
+<div class="titulek-mrizky"><strong>Doklady</strong><span class="tlumene">{{ doklady|length }}</span></div>
+<div class="overflow-auto">
+<table class="striped">
+  <thead><tr><th>Číslo</th><th>Druh</th><th>Vystaveno</th><th class="cislo">Celkem</th><th class="cislo">Zbývá</th><th>Stav</th></tr></thead>
+  <tbody>
+  {% for f in doklady %}
+    <tr class="doklad-{{ f.stav }}" data-otevrit="/faktury/{{ f.id }}" title="Dvojklik otevře doklad">
+      <td><a href="/faktury/{{ f.id }}"><strong>{{ f.cislo }}</strong></a></td>
+      <td>{{ f.nazev_typu }}</td>
+      <td>{{ f.datum_vystaveni|datum }}</td>
+      <td class="cislo">{{ f.celkem|penize }}</td>
+      <td class="cislo">{% if f.zbyva %}{{ f.zbyva|penize }}{% endif %}</td>
+      <td><span class="stav-dokladu stav-dokladu-{{ f.stav }}">{{ f.nazev_stavu }}</span></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% endif %}
+{% endblock %}

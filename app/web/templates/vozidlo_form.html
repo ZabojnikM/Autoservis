@@ -1,0 +1,55 @@
+{% extends "_okno.html" if okno else "base.html" %}
+{% from "_makra.html" import pole, pole_vin, textove_pole, zacatek_formulare, tlacitka_formulare %}
+{# Vozidlo: pole ve stejném pořadí jako panel Vozidlo na příjmu a stejný panel Zákazník (Firma + Vybrat / Nový). #}
+{% set akce_url = '/vozidla/%d/upravit' % vozidlo.id if vozidlo else '/vozidla/nove' %}
+{% block title %}{{ 'Upravit vozidlo' if vozidlo else 'Nové vozidlo' }}{% endblock %}
+{% block akce %}
+  {{ tlacitka_formulare('formular-vozidla', okno, '/vozidla/%d' % vozidlo.id if vozidlo else '/vozidla') }}
+{% endblock %}
+{% block content %}
+<div class="nadpis-radek">
+  <h1>{% if vozidlo %}Upravit vozidlo <span class="spz">{{ vozidlo.spz }}</span>
+      {% if vozidlo.znacka or vozidlo.model %}<span class="oznaceni tlumene">{{ vozidlo.popis }}</span>{% endif %}{% else %}Nové vozidlo{% endif %}</h1>
+</div>
+
+{{ zacatek_formulare(akce_url, 'formular-vozidla', okno) }}
+  <div class="uprava-panely">
+    <fieldset class="panel">
+      <legend>Vozidlo</legend>
+      {{ pole('spz', 'SPZ', hodnoty, povinne=True, extra='class="vstup-spz" autofocus', placeholder='např. 1AB 2345') }}
+      <div class="mrizka">
+        {{ pole('znacka', 'Značka', hodnoty, placeholder='např. Škoda') }}
+        {{ pole('model', 'Model / typ', hodnoty, placeholder='např. Octavia 1.9 TDI') }}
+      </div>
+      {{ pole_vin(hodnoty) }}
+      <div class="mrizka">
+        {{ pole('rok_vyroby', 'Rok výroby', hodnoty, extra='inputmode="numeric" pattern="(19|20)[0-9]{2}" title="Rok čtyřmi číslicemi, např. 2015"') }}
+        {{ pole('datum_registrace', 'Datum 1. registrace', hodnoty, typ='date') }}
+      </div>
+      <div class="mrizka">
+        {{ pole('kod_motoru', 'Kód motoru', hodnoty) }}
+        {{ pole('objem', 'Objem', hodnoty) }}
+        {{ pole('vykon', 'Výkon', hodnoty) }}
+      </div>
+      <div class="mrizka">
+        {{ pole('palivo', 'Druh paliva', hodnoty, placeholder='např. nafta') }}
+        {{ pole('olej', 'Olej', hodnoty) }}
+        {{ pole('barva', 'Barva', hodnoty) }}
+      </div>
+      <div class="mrizka">
+        {{ pole('cislo_motoru', 'Typ vozidla (TP)', hodnoty) }}
+        {{ pole('termin_stk', 'Termín STK', hodnoty, typ='date') }}      </div>
+      {% if hodnoty.get('motor') %}{{ pole('motor', 'Motor (starší popis)', hodnoty) }}{% endif %}
+    </fieldset>
+
+    <div>
+      {% set nadpis_zakaznika = 'Zákazník (majitel)' %}
+      {% include "_prijem_zakaznik.html" %}
+      <fieldset class="panel">
+        <legend>Poznámka</legend>
+        {{ textove_pole('poznamka', 'Poznámka k vozidlu', hodnoty, radky=3) }}
+      </fieldset>
+    </div>
+  </div>
+</form>
+{% endblock %}

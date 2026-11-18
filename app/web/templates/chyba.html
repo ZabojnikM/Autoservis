@@ -1,0 +1,7 @@
+{% extends "base.html" %}
+{% block title %}{{ nadpis }}{% endblock %}
+{% block content %}
+<h1>{{ nadpis }}</h1>
+<p>{{ zprava }}</p>
+<p><a href="javascript:history.back()">← Zpět</a> · <a href="/zakazky">Zakázky</a></p>
+{% endblock %}

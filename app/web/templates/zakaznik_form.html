@@ -1,0 +1,40 @@
+{% extends "_okno.html" if okno else "base.html" %}
+{% from "_makra.html" import pole, textove_pole, zacatek_formulare, tlacitka_formulare %}
+{% set akce_url = '/zakaznici/%d/upravit' % zakaznik.id if zakaznik else '/zakaznici/novy' %}
+{% block title %}{{ 'Upravit zákazníka' if zakaznik else 'Nový zákazník' }}{% endblock %}
+{% block akce %}
+  {{ tlacitka_formulare('formular-zakaznika', okno, '/zakaznici/%d' % zakaznik.id if zakaznik else '/zakaznici') }}
+{% endblock %}
+{% block content %}
+<div class="nadpis-radek">
+  <h1>{% if zakaznik %}Upravit zákazníka <span class="oznaceni">{{ zakaznik.nazev }}</span>{% else %}Nový zákazník{% endif %}</h1>
+</div>
+
+{{ zacatek_formulare(akce_url, 'formular-zakaznika', okno, 'uzky') }}
+  <fieldset class="panel">
+    <legend>Zákazník</legend>
+    {{ pole('nazev', 'Jméno a příjmení / název firmy', hodnoty, povinne=True, extra='autofocus') }}
+    {{ pole('ulice', 'Ulice a č. p.', hodnoty) }}
+    <div class="mrizka mrizka-psc">
+      {{ pole('psc', 'PSČ', hodnoty) }}
+      {{ pole('mesto', 'Město', hodnoty) }}
+    </div>
+    <div class="mrizka">
+      {{ pole('telefon', 'Telefon', hodnoty, typ='tel') }}
+      {{ pole('email', 'E-mail', hodnoty, typ='email') }}
+    </div>
+    <div class="mrizka">
+      <div class="radek-s-tlacitky">
+        <label class="roztahnout">IČO
+          <input type="text" name="ico" value="{{ hodnoty.get('ico') or '' }}" inputmode="numeric" autocomplete="off">
+        </label>
+        {# TODO: napojit na ARES – zatím jen tlačítko (viz PLAN.md) #}
+        <button type="button" class="maly secondary outline" title="Načíst údaje firmy z rejstříku podle IČO"
+                onclick="upozorni('Načtení údajů z rejstříku (ARES) zatím není hotové – připravuje se.')">Načti</button>
+      </div>
+      {{ pole('dic', 'DIČ', hodnoty) }}
+    </div>
+    {{ textove_pole('poznamka', 'Poznámka', hodnoty, radky=2) }}
+  </fieldset>
+</form>
+{% endblock %}

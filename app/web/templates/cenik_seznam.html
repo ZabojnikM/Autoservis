@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_makra.html" import zahlavi, hledani_seznamu, stavovy_radek with context %}
+{# Ceník materiálu – samostatný seznam (práce mají vlastní stránku /prace) #}
+{% block title %}Ceník materiálu{% endblock %}
+{% block akce %}
+  <a href="/cenik/nova" role="button" data-okno>Nový materiál</a>
+  <button type="button" class="secondary outline" data-radek="upravit" data-okno>Upravit</button>
+  <p class="tlumene poznamka">Vyberte řádek kliknutím, dvojklik = upravit.</p>
+{% endblock %}
+{% block content %}
+<form method="get" class="filtr">
+  {{ hledani_seznamu('Kód / číslo dílu (nebo název, zaměnitelný díl)…') }}
+  <label class="tlumene"><input type="checkbox" name="neaktivni" value="1" {% if neaktivni %}checked{% endif %}
+         onchange="this.form.submit()"> zobrazit i vyřazené</label>
+</form>
+
+<div id="seznam">
+{% if polozky %}
+<div class="overflow-auto">
+<table class="striped seznam-materialu">
+  <thead><tr>
+    {{ zahlavi('kod', 'Kód / číslo dílu', stranka) }}{{ zahlavi('nazev', 'Název', stranka) }}
+    {{ zahlavi('zamenitelny', 'Zaměnitelný díl', stranka) }}{{ zahlavi('jednotka', 'MJ', stranka) }}
+    {{ zahlavi('nakup', 'Nákup bez DPH' if nast.platce_dph else 'Nákup', stranka, 'cislo') }}
+    {{ zahlavi('cena', 'Prodej bez DPH' if nast.platce_dph else 'Prodej', stranka, 'cislo') }}
+    {% if nast.platce_dph %}{{ zahlavi('dph', 'DPH', stranka, 'cislo') }}<th class="cislo">Prodej s DPH</th>{% endif %}
+  </tr></thead>
+  <tbody>
+  {% for p in polozky %}
+    <tr data-otevrit="/cenik/{{ p.id }}/upravit" data-upravit="/cenik/{{ p.id }}/upravit" data-okno
+        class="{% if not p.aktivni %}vyrazeno{% endif %}{% if zvyraznit == p.id|string %} zvyrazneny{% endif %}">
+      <td class="kod-dilu" title="{{ p.kod or '' }}">{{ p.kod or '' }}</td>
+      <td title="{{ p.nazev }}">{{ p.nazev }}{% if not p.aktivni %} <span class="tlumene">(vyřazeno)</span>{% endif %}</td>
+      <td class="tlumene" title="{{ p.zamenitelny_dil or '' }}">{{ p.zamenitelny_dil or '' }}</td>
+      <td class="tlumene">{{ p.jednotka }}</td>
+      <td class="cislo tlumene">{{ p.nakupni_cena|penize if p.nakupni_cena is not none else '' }}</td>
+      <td class="cislo">{{ p.cena|penize }}</td>
+      {% if nast.platce_dph %}
+      <td class="cislo tlumene">{{ p.sazba_dph|mnozstvi }} %</td>
+      <td class="cislo"><strong>{{ (p.cena * (100 + p.sazba_dph) / 100)|penize }}</strong></td>
+      {% endif %}
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{{ stavovy_radek(stranka, 'Ceny za měrnou jednotku · dvojklik = upravit') }}
+{% else %}
+<p class="tlumene prazdna-mrizka">{% if q %}Nic nenalezeno.{% else %}Ceník materiálu je zatím prázdný.{% endif %}</p>
+{% endif %}
+</div>
+{% endblock %}

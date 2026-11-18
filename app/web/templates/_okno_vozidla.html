@@ -1,0 +1,40 @@
+{% from "_makra.html" import spz %}
+{# Okno „Databáze vozidel“ – stejný seznam jako /vozidla, s filtrem a tlačítkem Vložit. #}
+<header class="okno-hlavicka">
+  <h3>Databáze vozidel</h3>
+  <button type="button" class="secondary outline maly" onclick="document.getElementById('okno-databaze').close()">✕ Zavřít</button>
+</header>
+<input type="search" name="q" value="{{ q }}" placeholder="Filtr: SPZ, VIN, značka, model, zákazník…" autofocus autocomplete="off"
+       hx-get="/vozidla/okno" hx-trigger="input changed delay:300ms, search" hx-include="this"
+       hx-select="#okno-tabulka" hx-target="#okno-tabulka" hx-swap="outerHTML"
+       onkeydown="if (event.key === 'Enter') event.preventDefault()">
+<div id="okno-tabulka" class="okno-tabulka">
+{% if zakaznik %}
+<p class="maly-text">Vozidla zákazníka <strong>{{ zakaznik.nazev }}</strong> –
+  <a href="#" hx-get="/vozidla/okno" hx-vals='{"vse": "1"}' hx-target="#okno-obsah">zobrazit všechna vozidla</a></p>
+{% endif %}
+{% if vozidla %}
+<table class="striped">
+  <thead><tr><th>SPZ</th><th>Vozidlo</th><th>Rok</th><th>VIN</th><th>Zákazník</th><th></th></tr></thead>
+  <tbody>
+  {% for v in vozidla %}
+    <tr>
+      <td>{{ spz(v.spz) }}</td>
+      <td>{{ v.popis }}</td>
+      <td>{{ v.rok_vyroby or '' }}</td>
+      <td class="tlumene">{{ v.vin or '' }}</td>
+      <td>{{ v.zakaznik.nazev if v.zakaznik else '' }}{% if v.zakaznik and v.zakaznik.telefon %}<br><span class="tlumene">{{ v.zakaznik.telefon }}</span>{% endif %}</td>
+      <td class="vpravo">
+        <button type="button" class="maly" hx-get="/zakazky/nova/vozidlo" hx-vals='{"vybrat_id": "{{ v.id }}"}'
+                hx-target="#vozidlo-udaje" hx-include="#panel-zakaznik"
+                hx-on::after-request="document.getElementById('okno-databaze').close()">Vložit</button>
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% if vozidla|length >= limit %}<p class="tlumene maly-text">Zobrazeno prvních {{ limit }} – upřesněte filtr.</p>{% endif %}
+{% else %}
+<p class="tlumene">{% if q %}Nic nenalezeno – zavřete okno, zadejte SPZ a vyplňte nové vozidlo.{% else %}Zatím žádná vozidla.{% endif %}</p>
+{% endif %}
+</div>

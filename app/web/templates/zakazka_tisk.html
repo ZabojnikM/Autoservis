@@ -1,0 +1,128 @@
+{% extends "_tisk_a4.html" %}
+{# Zakázkový list A4 – při příjmu vozidla (k podpisu zákazníkem) i po opravě (s pracemi a materiálem).
+   Bez položek má prázdné řádky pro ruční zápis provedených prací. Interní poznámka se netiskne. #}
+{% block title %}Zakázkový list {{ zakazka.cislo }}{% endblock %}
+{% block zpet %}/zakazky/{{ zakazka.id }}{% endblock %}
+{% block styl %}
+    .hlava .stav-zakazky { font-size: 9pt; font-weight: 400; color: #555; margin-top: 1mm; }
+    .strany .box { min-height: 26mm; }
+    .udaje { margin: 4mm 0; }
+    .pozadavek { border: 1px solid #999; padding: 2.5mm 4mm; min-height: 18mm; margin-top: 4mm; }
+    .pozadavek h3, .sekce h3 { margin: 0 0 2mm; font-size: 8pt; text-transform: uppercase; color: #555; letter-spacing: .05em; }
+    .pozadavek p { margin: 0; white-space: pre-line; }
+    .sekce { margin-top: 4mm; }
+    .sekce h3 { margin-bottom: 0; }
+    .sekce table { margin-top: 2mm; }
+    .sekce th:first-child { width: 48%; }
+    tr.prazdny td { height: 7.5mm; }
+    .rekapitulace { margin-top: 2mm; }
+    .rekapitulace dl { gap: .5mm 4mm; }
+    /* podpisy drží pohromadě (nerozdělí se mezi strany) */
+    .podpisy { display: grid; grid-template-columns: 1fr 1fr; gap: 3mm 14mm; margin-top: 6mm; break-inside: avoid; }
+    .podpisy .nadpis { grid-column: 1 / -1; font-size: 8pt; text-transform: uppercase; color: #555; letter-spacing: .05em;
+                       border-bottom: 1px solid #ccc; padding-bottom: 1mm; margin-top: 1mm; }
+    .podpisy .podpis { width: auto; margin-top: 9mm; }
+{% endblock %}
+{% block obsah %}
+  {% set v = zakazka.vozidlo %}
+  {% set k = zakazka.zakaznik %}
+  <div class="hlava">
+    <div>
+      <h1>Zakázkový list</h1>
+      <div class="stav-zakazky">Stav: {{ zakazka.nazev_stavu }}</div>
+    </div>
+    <div class="cislo-dokladu">č. {{ zakazka.cislo }}</div>
+  </div>
+
+  <div class="strany">
+    <div class="box">
+      <h3>Servis</h3>
+      <div class="jmeno">{{ nast.nazev_servisu or '— vyplňte v Nastavení —' }}</div>
+      <div>{{ nast.ulice }}</div>
+      <div>{{ nast.psc|psc }} {{ nast.mesto }}</div>
+      <div style="margin-top:2mm">{% if nast.ico %}IČO: {{ nast.ico }}{% endif %}{% if nast.dic %} &nbsp; DIČ: {{ nast.dic }}{% endif %}</div>
+      <div class="tlumene">{{ nast.telefon }} {{ nast.email }}</div>
+    </div>
+    <div class="box">
+      <h3>Zákazník</h3>
+      {% if k %}
+      <div class="jmeno">{{ k.nazev }}</div>
+      <div>{{ k.ulice or '' }}</div>
+      <div>{{ k.psc|psc }} {{ k.mesto or '' }}</div>
+      <div style="margin-top:2mm">{% if k.ico %}IČO: {{ k.ico }}{% endif %}{% if k.dic %} &nbsp; DIČ: {{ k.dic }}{% endif %}</div>
+      <div>{% if k.telefon %}Tel.: {{ k.telefon }}{% endif %} {% if k.email %}&nbsp; {{ k.email }}{% endif %}</div>
+      {% else %}
+      <div class="tlumene">Neuveden</div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div class="udaje">
+    <dl>
+      <dt>Vozidlo</dt><dd>{{ v.spz }}{% if v.znacka or v.model %} – {{ v.popis }}{% endif %}</dd>
+      {% if v.vin %}<dt>VIN</dt><dd>{{ v.vin }}</dd>{% endif %}
+      {% if v.rok_vyroby %}<dt>Rok výroby</dt><dd>{{ v.rok_vyroby }}</dd>{% endif %}
+      {% set motor = [v.kod_motoru, v.objem, v.vykon]|select|join(', ') or v.motor %}
+      {% if motor %}<dt>Motor</dt><dd>{{ motor }}{% if v.palivo %}, {{ v.palivo }}{% endif %}</dd>{% endif %}
+    </dl>
+    <dl>
+      <dt>Přijato</dt><dd>{{ zakazka.datum_prijeti|datumcas }}</dd>
+      <dt>Stav km</dt><dd>{% if zakazka.tachometr is not none %}{{ zakazka.tachometr|cislo }} km{% else %}—{% endif %}</dd>
+      {% if zakazka.uzavreno %}<dt>Uzavřeno</dt><dd>{{ zakazka.uzavreno|datumcas }}</dd>{% endif %}
+    </dl>
+  </div>
+
+  <div class="pozadavek">
+    <h3>Požadavek zákazníka / popis závady</h3>
+    <p>{{ zakazka.pozadavek }}</p>
+  </div>
+
+  <div class="sekce">
+    <h3>Provedené práce a materiál</h3>
+    <table>
+      <thead><tr>
+        <th>Položka</th><th class="cislo">Množství</th><th class="cislo">Cena/j.{% if nast.platce_dph %} bez DPH{% endif %}</th>
+        {% if nast.platce_dph %}<th class="cislo">DPH</th>{% endif %}
+        <th class="cislo">Celkem{% if nast.platce_dph %} bez DPH{% endif %}</th>
+      </tr></thead>
+      <tbody>
+      {% for r in zakazka.polozky %}
+        <tr>
+          <td>{{ r.nazev }}{% if r.kod %} <span class="tlumene">{{ r.kod }}</span>{% endif %}</td>
+          <td class="cislo">{{ r.mnozstvi|mnozstvi }} {{ r.jednotka }}</td>
+          <td class="cislo">{{ r.cena|penize }}</td>
+          {% if nast.platce_dph %}<td class="cislo">{{ r.sazba_dph|mnozstvi }} %</td>{% endif %}
+          <td class="cislo">{{ r.zaklad|penize }}</td>
+        </tr>
+      {% else %}
+        {# při příjmu: prázdné řádky pro ruční zápis #}
+        {% for _ in range(8) %}<tr class="prazdny"><td></td><td></td><td></td>{% if nast.platce_dph %}<td></td>{% endif %}<td></td></tr>{% endfor %}
+      {% endfor %}
+      </tbody>
+    </table>
+    {% if zakazka.polozky %}
+    <div class="rekapitulace">
+      <dl>
+        <dt>Práce</dt><dd>{{ rek.prace|penize }}</dd>
+        <dt>Materiál</dt><dd>{{ rek.material|penize }}</dd>
+        {% if nast.platce_dph %}
+          {% for sazba, zaklad in rek.zaklady.items() %}
+            <dt>Základ {{ sazba|mnozstvi }} %</dt><dd>{{ zaklad|penize }}</dd>
+            <dt>DPH {{ sazba|mnozstvi }} %</dt><dd>{{ rek.dane[sazba]|penize }}</dd>
+          {% endfor %}
+        {% endif %}
+        <dt class="celkem">Celkem</dt><dd class="celkem">{{ rek.celkem|penize }} {{ nast.mena }}</dd>
+      </dl>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="podpisy">
+    <div class="nadpis">Příjem vozidla do opravy</div>
+    <div class="podpis">Převzal(a) za servis</div>
+    <div class="podpis">Podpis zákazníka</div>
+    <div class="nadpis">Předání opraveného vozidla</div>
+    <div class="podpis">Datum a podpis za servis</div>
+    <div class="podpis">Převzal(a) – podpis zákazníka</div>
+  </div>
+{% endblock %}

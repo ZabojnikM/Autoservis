@@ -1,0 +1,60 @@
+<!doctype html>
+{# Společný rám tiskových dokladů A4 (faktura, vyúčtování, zakázkový list).
+   Bloky: title, zpet (adresa tlačítka zpět), styl (doplňkové CSS), obsah. ?tisk=1 otevře rovnou tisk. #}
+<html lang="cs">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}{% endblock %}</title>
+  <style>
+    @page { size: A4; margin: 14mm 14mm 16mm; }
+    * { box-sizing: border-box; }
+    body { font-family: "Segoe UI", Arial, sans-serif; font-size: 10pt; color: #111; background: #e5e7eb; margin: 0; }
+    .list { background: #fff; width: 210mm; min-height: 297mm; margin: 12px auto; padding: 14mm; box-shadow: 0 2px 10px rgba(0,0,0,.15); }
+    .lista { text-align: center; padding: 10px; font-family: sans-serif; }
+    .lista button { font-size: 1rem; padding: .5rem 1.2rem; cursor: pointer; }
+    h1 { font-size: 18pt; margin: 0; }
+    .hlava { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 2px solid #111; padding-bottom: 6px; }
+    .hlava .cislo-dokladu { font-size: 14pt; font-weight: 700; text-align: right; }
+    .storno { color: #b91c1c; font-size: 22pt; font-weight: 800; border: 3px solid #b91c1c; padding: 2px 10px; display: inline-block; transform: rotate(-4deg); }
+    .strany { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; margin-top: 6mm; }
+    .box { border: 1px solid #999; padding: 3mm 4mm; min-height: 32mm; }
+    .box h3 { margin: 0 0 2mm; font-size: 8pt; text-transform: uppercase; color: #555; letter-spacing: .05em; }
+    .box .jmeno { font-weight: 700; font-size: 11pt; }
+    .udaje { display: grid; grid-template-columns: 1fr 1fr; gap: 8mm; margin: 5mm 0; }
+    dl { display: grid; grid-template-columns: max-content 1fr; gap: 1mm 4mm; margin: 0; }
+    dt { color: #555; } dd { margin: 0; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; margin-top: 4mm; }
+    th { text-align: left; border-bottom: 1.5px solid #111; padding: 1.5mm 1mm; font-size: 8.5pt; }
+    td { border-bottom: 1px solid #ddd; padding: 1.5mm 1mm; vertical-align: top; }
+    .cislo { text-align: right; white-space: nowrap; }
+    .tlumene { color: #666; }
+    .rekapitulace { display: flex; justify-content: flex-end; margin-top: 3mm; }
+    .rekapitulace dl { grid-template-columns: max-content minmax(42mm, max-content); }
+    .rekapitulace dd { white-space: nowrap; text-align: right; }
+    .rekapitulace .celkem { font-size: 13pt; font-weight: 800; border-top: 2px solid #111; padding-top: 1.5mm; color: #111; }
+    .paticka { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 8mm; gap: 8mm; }
+    .qr { text-align: center; font-size: 8pt; color: #555; }
+    .qr svg { width: 32mm; height: 32mm; display: block; }
+    .podpis { border-top: 1px solid #111; width: 60mm; text-align: center; padding-top: 1mm; font-size: 8.5pt; }
+    .poznamka { white-space: pre-line; margin-top: 4mm; }
+    .uhrazeno { margin-top: 3mm; font-weight: 700; }
+    {% block styl %}{% endblock %}
+    @media print {
+      body { background: #fff; }
+      .lista { display: none; }
+      .list { box-shadow: none; margin: 0; padding: 0; width: auto; min-height: 0; }
+    }
+  </style>
+</head>
+<body>
+<div class="lista">
+  <button onclick="window.print()">🖨 Tisk / Uložit jako PDF</button>
+  <a href="{% block zpet %}/{% endblock %}">← zpět</a>
+</div>
+<div class="list">
+{% block obsah %}{% endblock %}
+</div>
+{% if request.query_params.get('tisk') %}<script>window.addEventListener("load", () => window.print());</script>{% endif %}
+</body>
+</html>

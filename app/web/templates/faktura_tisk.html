@@ -1,0 +1,65 @@
+{% extends "_tisk_a4.html" %}
+{% block title %}{{ f.nadpis }} {{ f.cislo }}{% endblock %}
+{% block zpet %}/faktury/{{ f.id }}{% endblock %}
+{% block obsah %}
+  <div class="hlava">
+    <div>
+      <h1>{{ f.nadpis }}</h1>
+      {% if f.stornovano %}<div class="storno">STORNO</div>{% endif %}
+    </div>
+    <div class="cislo-dokladu">č. {{ f.cislo }}</div>
+  </div>
+
+  <div class="strany">
+    <div class="box">
+      <h3>Dodavatel</h3>
+      <div class="jmeno">{{ nast.nazev_servisu or '— vyplňte v Nastavení —' }}</div>
+      <div>{{ nast.ulice }}</div>
+      <div>{{ nast.psc|psc }} {{ nast.mesto }}</div>
+      <div style="margin-top:2mm">{% if nast.ico %}IČO: {{ nast.ico }}{% endif %}{% if nast.dic %} &nbsp; DIČ: {{ nast.dic }}{% endif %}</div>
+      {% if not f.platce_dph %}<div class="tlumene">Není plátce DPH.</div>{% endif %}
+      <div class="tlumene">{{ nast.telefon }} {{ nast.email }}</div>
+    </div>
+    <div class="box">
+      <h3>Odběratel</h3>
+      <div class="jmeno">{{ f.odb_nazev or 'Neuveden' }}</div>
+      <div>{{ f.odb_ulice or '' }}</div>
+      <div>{{ f.odb_psc|psc }} {{ f.odb_mesto or '' }}</div>
+      <div style="margin-top:2mm">{% if f.odb_ico %}IČO: {{ f.odb_ico }}{% endif %}{% if f.odb_dic %} &nbsp; DIČ: {{ f.odb_dic }}{% endif %}</div>
+    </div>
+  </div>
+
+  <div class="udaje">
+    <dl>
+      <dt>Datum vystavení</dt><dd>{{ f.datum_vystaveni|datum }}</dd>
+      {% if f.platce_dph and f.typ == 'faktura' %}<dt>Datum zdan. plnění</dt><dd>{{ f.duzp|datum }}</dd>{% endif %}
+      <dt>Datum splatnosti</dt><dd>{{ f.datum_splatnosti|datum }}</dd>
+      <dt>Forma úhrady</dt><dd>{{ f.nazev_formy_uhrady }}</dd>
+    </dl>
+    <dl>
+      {% if f.forma_uhrady == 'prevod' and (nast.cislo_uctu or iban) %}
+        {% if nast.cislo_uctu %}<dt>Číslo účtu</dt><dd>{{ nast.cislo_uctu }}</dd>{% endif %}
+        {% if iban %}<dt>IBAN</dt><dd>{{ iban }}</dd>{% endif %}
+      {% endif %}
+      <dt>Variabilní symbol</dt><dd>{{ f.variabilni_symbol or '' }}</dd>
+      {% if f.cislo_zakazky %}<dt>Zakázka</dt><dd>{{ f.cislo_zakazky }}</dd>{% endif %}
+      {% if f.spz %}<dt>Vozidlo</dt><dd>{{ f.spz }} {{ f.vozidlo_popis or '' }}{% if f.tachometr %}, {{ f.tachometr|cislo }} km{% endif %}</dd>{% endif %}
+    </dl>
+  </div>
+
+  {% include "_polozky_dokladu.html" %}
+
+  {% if f.poznamka %}<div class="poznamka">{{ f.poznamka }}</div>{% endif %}
+  {% if nast.text_pod_fakturou %}<div class="poznamka tlumene">{{ nast.text_pod_fakturou }}</div>{% endif %}
+  {% if f.je_uhrazena and not f.stornovano %}<div class="uhrazeno">Uhrazeno – neplaťte.</div>{% endif %}
+
+  <div class="paticka">
+    <div>
+      {% if qr and f.forma_uhrady == 'prevod' %}<div class="qr">{{ qr|safe }}QR platba</div>{% endif %}
+    </div>
+    <div>
+      {% if nast.vystavil %}<div class="tlumene" style="margin-bottom:10mm">Vystavil: {{ nast.vystavil }}</div>{% endif %}
+      <div class="podpis">Razítko a podpis</div>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% from "_makra.html" import volby_zakaznika %}
+{# q prázdné = procházení databáze (nic se samo nevybere); q vyplněné = první nalezený se vybere. #}
+{% set ids = nalezeni|map(attribute='id')|map('string')|list %}
+{% set prvni_vybran = q and nalezeni %}
+{% if not q and nalezeni %}<p class="tlumene maly-text">Naposledy přidaní zákazníci – pro další pište do pole hledání.</p>{% endif %}
+{% for z in nalezeni %}
+  <label><input type="radio" name="{{ pole }}" value="{{ z.id }}"
+    {% if (q and loop.first) or (not q and z.id|string == vybrany) %}checked{% endif %}> {{ z.nazev }}
+    <span class="tlumene">{{ z.telefon or '' }} {{ z.mesto or '' }}{% if z.ico %} · IČO {{ z.ico }}{% endif %}</span></label>
+{% endfor %}
+{% if q and not nalezeni %}<p class="tlumene">Nikdo nenalezen.</p>{% endif %}
+{% if vybrany and vybrany not in ids and not prvni_vybran %}
+  <label><input type="radio" name="{{ pole }}" value="{{ vybrany }}" checked> <span class="tlumene">ponechat původního zákazníka</span></label>
+{% endif %}
+{{ volby_zakaznika(pole, '1' if (prvni_vybran or vybrany) else '', novy, bez, vychozi) }}

@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% from "_makra.html" import spz, zahlavi, hledani_seznamu, stavovy_radek with context %}
+{% block title %}Vozidla{% endblock %}
+{% block akce %}
+  <a href="/vozidla/nove" role="button" data-okno>Nové vozidlo</a>
+  <button type="button" class="secondary" data-radek="otevrit">Otevřít</button>
+  <button type="button" class="secondary outline" data-radek="upravit" data-okno>Upravit</button>
+  <p class="tlumene poznamka">Vyberte řádek kliknutím.</p>
+{% endblock %}
+{% block content %}
+<form method="get" class="filtr">
+  {{ hledani_seznamu('SPZ, VIN, značka, model, typ vozidla, kód motoru, majitel…') }}
+</form>
+
+<div id="seznam">
+{% if vozidla %}
+<div class="overflow-auto">
+<table class="striped seznam-vozidel">
+  <thead><tr>{{ zahlavi('spz', 'SPZ', stranka) }}{{ zahlavi('znacka', 'Značka', stranka) }}{{ zahlavi('model', 'Model', stranka) }}{{ zahlavi('typ_vozidla', 'Typ vozidla', stranka) }}{{ zahlavi('kod_motoru', 'Kód motoru', stranka) }}{{ zahlavi('rok', 'Rok výroby', stranka) }}{{ zahlavi('vin', 'VIN', stranka) }}{{ zahlavi('zakaznik', 'Majitel', stranka) }}</tr></thead>
+  <tbody>
+  {% for v in vozidla %}
+    <tr data-otevrit="/vozidla/{{ v.id }}" data-upravit="/vozidla/{{ v.id }}/upravit">
+      <td><a href="/vozidla/{{ v.id }}">{{ spz(v.spz) }}</a></td>
+      <td>{{ v.znacka or '' }}</td>
+      <td title="{{ v.model or '' }}">{{ v.model or '' }}</td>
+      <td title="{{ v.cislo_motoru or '' }}">{{ v.cislo_motoru or '' }}</td>
+      <td>{{ v.kod_motoru or '' }}</td>
+      <td>{{ v.rok_vyroby or '' }}</td>
+      <td class="vin">{{ v.vin or '' }}</td>
+      <td{% if v.zakaznik %} title="{{ v.zakaznik.nazev }}"{% endif %}>{% if v.zakaznik %}<a href="/zakaznici/{{ v.zakaznik.id }}">{{ v.zakaznik.nazev }}</a>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{{ stavovy_radek(stranka) }}
+{% else %}
+<p class="tlumene prazdna-mrizka">{% if q %}Nic nenalezeno.{% else %}Zatím žádná vozidla – přibudou při příjmu zakázky.{% endif %}</p>
+{% endif %}
+</div>
+{% endblock %}

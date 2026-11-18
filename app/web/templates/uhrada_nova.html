@@ -1,0 +1,34 @@
+{% extends "_okno.html" if okno else "base.html" %}
+{% from "_makra.html" import zacatek_formulare, tlacitka_formulare %}
+{# Zápis úhrady k dokladu (i částečné; záporná částka = vrácení peněz). #}
+{% block title %}Úhrada – {{ f.cislo }}{% endblock %}
+{% block akce %}
+  {{ tlacitka_formulare('formular-uhrady', okno, '/faktury/%d' % f.id, ok='Zapsat úhradu') }}
+{% endblock %}
+{% block content %}
+<div class="nadpis-radek">
+  <h1>Zapsat úhradu <span class="oznaceni">{{ f.nazev_typu }} {{ f.cislo }} · {{ f.odb_nazev or 'bez odběratele' }}</span></h1>
+</div>
+{{ zacatek_formulare('/faktury/%d/uhrady' % f.id, 'formular-uhrady', okno, 'uzky') }}
+  <fieldset class="panel">
+    <legend>Úhrada</legend>
+    <p class="stav-panelu">Celkem {{ f.celkem|penize }} {{ f.mena }} · uhrazeno {{ f.uhrazeno|penize }} ·
+      <strong>zbývá {{ f.zbyva|penize }} {{ f.mena }}</strong></p>
+    <div class="mrizka">
+      <label>Částka <span class="povinne">*</span>
+        <input type="text" name="castka" value="{{ hodnoty.get('castka') or f.zbyva|penize }}" inputmode="decimal" required autofocus
+               pattern="[+\-]?[0-9  ]*([.,][0-9]+)?\s*(Kč|kč)?" title="Částka, např. 1 500,50"></label>
+      <label>Datum <input type="date" name="datum" value="{{ hodnoty.get('datum') or dnes()|iso }}"></label>
+    </div>
+    <label>Způsob
+      <select name="zpusob">
+        {% for fu in FormaUhrady.VSECHNY %}
+        <option value="{{ fu }}" {% if (hodnoty.get('zpusob') or f.forma_uhrady) == fu %}selected{% endif %}>{{ FormaUhrady.NAZVY[fu] }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>Poznámka <input type="text" name="poznamka" value="{{ hodnoty.get('poznamka', '') }}"></label>
+    <p class="tlumene napoveda">Záporná částka = vrácení peněz zákazníkovi.</p>
+  </fieldset>
+</form>
+{% endblock %}

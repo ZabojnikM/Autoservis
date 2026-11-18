@@ -1,0 +1,68 @@
+{% extends "_okno.html" if okno else "base.html" %}
+{% from "_makra.html" import spz %}
+{# Okno „Přidat z ceníku“ (jako F9 ve starém systému): hledání při psaní, u řádku množství a Přidat.
+   V okně se položky jen vybírají do seznamu vpravo (začíná vždy prázdný, drží ho prohlížeč);
+   Vložit je zapíše do zakázky najednou, Storno okno zavře bez vlivu na zakázku.
+   Celá stránka (bez okna) přidává rovnou do zakázky a vpravo ukazuje položky zakázky. #}
+{% block title %}Přidat z ceníku – {{ zakazka.cislo }}{% endblock %}
+{% block akce %}
+  {% if okno %}
+  <button type="button" data-vlozit-kosik="{{ zakazka.id }}" title="Vložit vybrané položky do zakázky a zavřít okno">Vložit</button>
+  {% else %}
+  <a href="/zakazky/{{ zakazka.id }}#polozky" role="button" class="secondary outline">Zpět</a>
+  {% endif %}
+  <a href="/zakazky/{{ zakazka.id }}/polozky/nova" role="button" class="secondary outline" {% if okno %}data-okno{% endif %}>Ruční položka</a>
+  <a href="/cenik/nova" role="button" class="secondary outline" target="_blank">Nová položka ceníku</a>
+  {# TODO: import položek do zakázky – zatím jen tlačítko (viz PLAN.md) #}
+  <button type="button" class="secondary outline"
+          onclick="upozorni('Import položek zatím není hotový – připravuje se.')">Import</button>
+  {% if okno %}
+  <button type="button" class="nebezpecne" onclick="stornoOknaCeniku()"
+          title="Zavřít okno – vybrané položky se do zakázky nevloží">Storno</button>
+  {% endif %}
+  <p class="tlumene poznamka">Dvojklik na řádek nebo Enter přidá 1 kus (jiné množství přepište v řádku).
+    Šipky ↓ ↑ vybírají řádek. Upravit = karta položky ceníku.
+    {% if okno %}Vložit = vybrané položky se zapíšou do zakázky, Storno = zakázka zůstane beze změny.{% endif %}</p>
+{% endblock %}
+{% block content %}
+<div class="okno-cenik formular prijem siroky" data-bez-potvrzeni>
+  {% if pridano %}<span data-obnovit-po-zavreni hidden></span>{% endif %}
+  <div class="nadpis-radek">
+    <h1>Přidat z ceníku <span class="oznaceni">zakázka {{ zakazka.cislo }} · {{ spz(zakazka.vozidlo.spz) }}</span></h1>
+  </div>
+  {# pevný řádek pro hlášku – okno se po přidání neposune #}
+  <p class="hlaseni-okna {% if hlaseni_chyba %}chyba{% elif hlaseni %}uspech{% endif %}" role="status">
+    {{- hlaseni_chyba or hlaseni or '' -}}</p>
+  <div class="cenik-a-zakazka">
+    <div>
+      <input type="search" name="q" value="{{ q }}" placeholder="Hledat v ceníku – název nebo kód…" autocomplete="off" autofocus
+             hx-get="/cenik/vyber" hx-trigger="input changed delay:250ms, search" hx-target="#cenik-vysledky"
+             hx-vals='{"zakazka_id": "{{ zakazka.id }}", "okno": "{{ '1' if okno else '' }}"}'>
+      <div id="cenik-vysledky" class="vysledky-ceniku">
+        {% include "_cenik_vyber_vysledky.html" %}
+      </div>
+    </div>
+    {% if okno %}
+    <aside class="na-zakazce" aria-label="Vybrané položky k vložení" data-kosik-panel>
+      <div class="titulek-mrizky"><strong>K vložení</strong><span class="tlumene" data-kosik-pocet>0 položek</span></div>
+      <div class="na-zakazce-seznam" data-kosik-seznam>
+        <p class="tlumene">Zatím nic – vyberte položky vlevo.</p>
+      </div>
+    </aside>
+    {% else %}
+    <aside class="na-zakazce" aria-label="Položky zakázky">
+      <div class="titulek-mrizky"><strong>Na zakázce</strong><span class="tlumene">{{ zakazka.polozky|length }} položek</span></div>
+      <div class="na-zakazce-seznam">
+      {% for r in zakazka.polozky|reverse %}
+        <div class="na-zakazce-radek">
+          <span>{{ r.nazev }} <span class="tlumene">{{ r.mnozstvi|mnozstvi }} {{ r.jednotka }}</span></span>
+        </div>
+      {% else %}
+        <p class="tlumene">Zatím nic.</p>
+      {% endfor %}
+      </div>
+    </aside>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

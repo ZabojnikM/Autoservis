@@ -1,0 +1,853 @@
+﻿import re
+
+from fastapi.testclient import TestClient
+
+from app.main import app
+
+client = TestClient(app)
+
+
+def _prijem(spz="1AB2345", **navic):
+    data = {
+        "spz": spz, "v_znacka": "Škoda", "v_model": "Fabia",
+        "zakaznik_vyber": "", "k_nazev": "Jana Dvořáková", "k_telefon": "603 000 000",
+        "pozadavek": "Nejde startovat", "tachometr": "98000", "stav_paliva": "1/4",
+    }
+    data.update(navic)
+    return client.post("/zakazky/nova", data=data, follow_redirects=False)
+
+
+def test_vsechny_stranky_bez_dat():
+    for url in ["/", "/zakazky", "/zakazky?vse=1", "/zakazky/nova", "/vozidla", "/zakaznici",
+                "/vozidla/nove", "/zakaznici/novy", "/hledat?q=nic"]:
+        r = client.get(url)
+        assert r.status_code == 200, url
+
+
+def test_prijem_a_detail():
+    r = _prijem()
+    assert r.status_code == 303
+    detail = client.get(r.headers["location"])
+    assert "Nejde startovat" in detail.text
+    assert "Jana Dvořáková" in detail.text
+    assert "1AB2345" in client.get("/").text
+
+
+def test_prijem_a_uprava_v_okne():
+    # okno=1: jen obsah okna (bez celé stránky), HTMX odeslání
+    r = client.get("/zakazky/nova", params={"okno": "1"})
+    assert r.status_code == 200 and "<html" not in r.text and 'hx-post="/zakazky/nova"' in r.text
+    assert "data-zavrit-okno" in r.text
+    # chyba v okně: 200 (HTMX zobrazí) a hodnoty zůstanou
+    r = _prijem(tachometr="-5", okno="1")
+    assert r.status_code == 200 and "nemůže být záporný" in r.text and "<html" not in r.text
+    # uložení z okna: přesměrování přes HTMX hlavičku
+    r = _prijem(okno="1")
+    assert r.status_code == 204 and r.headers["HX-Redirect"].startswith("/zakazky/")
+    loc = r.headers["HX-Redirect"].split("?")[0]
+    r = client.get(f"{loc}/upravit", params={"okno": "1"})
+    assert "<html" not in r.text and f'hx-post="{loc}/upravit"' in r.text
+    r = client.post(f"{loc}/upravit", data={"pozadavek": "Z okna", "okno": "1", "zakaznik_id": "bez"})
+    assert r.status_code == 204 and r.headers["HX-Refresh"] == "true"
+    assert "Z okna" in client.get(loc).text
+
+
+def test_prijem_chyba_zachova_hodnoty():
+    r = _prijem(tachometr="-5")
+    assert r.status_code == 422
+    assert "nemůže být záporný" in r.text
+    assert "Jana Dvořáková" in r.text
+
+
+def test_prijem_bez_popisu_zakazky():
+    """Popis zakázky (požadavek) je nepovinný."""
+    r = _prijem(pozadavek="")
+    assert r.status_code == 303
+    assert client.get(r.headers["location"]).status_code == 200
+
+
+def test_htmx_nalezeni_vozidla():
+    _prijem()
+    r = client.get("/zakazky/nova/vozidlo", params={"spz": "1ab 2345"})
+    assert "Vozidlo z databáze" in r.text and 'value="Fabia"' in r.text
+    assert "otevřenou zakázku" in r.text
+    # prázdný panel zákazníka → doplní se majitel vozidla (out-of-band)
+    assert 'id="panel-zakaznik"' in r.text and 'value="Jana Dvořáková"' in r.text
+    # vyplněný panel zákazníka se nepřepisuje
+    r = client.get("/zakazky/nova/vozidlo", params={"spz": "1AB2345", "k_nazev": "Někdo jiný"})
+    assert 'id="panel-zakaznik"' not in r.text
+    r = client.get("/zakazky/nova/vozidlo", params={"spz": "9XX9999", "v_znacka": "Opel"})
+    assert "Nové vozidlo" in r.text and 'value="Opel"' in r.text
+
+
+def test_druha_zakazka_na_zname_vozidlo():
+    loc = _prijem().headers["location"]
+    vozidlo_id = re.search(r'href="/vozidla/(\d+)"', client.get("/vozidla").text).group(1)
+    r = client.post("/zakazky/nova", data={"spz": "1AB2345", "vozidlo_id": vozidlo_id,
+                                           "pozadavek": "Přezutí"}, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] != loc
+    historie = client.get(f"/vozidla/{vozidlo_id}").text
+    assert "Zakázky (2)" in historie
+
+
+def test_zmena_stavu():
+    loc = _prijem().headers["location"].split("?")[0]
+    r = client.post(f"{loc}/stav", data={"stav": "predano"}, follow_redirects=True)
+    assert "Uzavřeno" in r.text
+    assert "1AB2345" not in client.get("/").text  # uzavřená není mezi otevřenými zakázkami
+
+
+def test_hledani_presne_spz_presmeruje():
+    _prijem()
+    r = client.get("/hledat", params={"q": "1ab2345"}, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"].startswith("/vozidla/")
+
+
+def test_vyber_zakaznika():
+    _prijem()
+    r = client.get("/zakaznici/vyber", params={"q": "dvoř", "pole": "zakaznik_vyber", "novy": "1"})
+    assert "Jana Dvořáková" in r.text and "Nový zákazník" in r.text
+
+
+def test_neexistujici_zaznam_404():
+    assert client.get("/zakazky/999").status_code == 404
+    assert client.get("/vozidla/999").status_code == 404
+
+
+def test_novy_zakaznik_a_vozidlo():
+    r = client.post("/zakaznici/novy", data={"nazev": "Auto Plus s.r.o.", "ico": "12345678"},
+                    follow_redirects=False)
+    zid = r.headers["location"].rsplit("/", 1)[1]
+    r = client.post("/vozidla/nove", data={"spz": "2ab0001", "zakaznik_id": zid}, follow_redirects=True)
+    assert "2AB0001" in r.text and "Auto Plus" in r.text
+    r = client.post("/vozidla/nove", data={"spz": "2AB 0001"})
+    assert r.status_code == 422 and "už v evidenci" in r.text
+
+
+def test_cenik_stranky_a_pridani_do_zakazky():
+    for url in ["/cenik", "/prace", "/prace/nova", "/cenik/nova", "/nastaveni", "/cenik?neaktivni=1",
+                "/prace?razeni=cena", "/cenik?razeni=nakup"]:
+        assert client.get(url).status_code == 200, url
+    # starý odkaz na záložku Práce vede na samostatný ceník prací
+    assert client.get("/cenik?typ=prace", follow_redirects=False).headers["location"].startswith("/prace")
+    r = client.post("/cenik/nova", data={"typ": "material", "nazev": "Olejový filtr", "cena": "250"},
+                    follow_redirects=True)
+    assert "Olejový filtr" in r.text and "302,50" in r.text  # s DPH 21 %
+    r = client.post("/prace/nova", data={"nazev": "Výměna oleje", "cena": ""})
+    assert r.status_code == 422 and "Vyplňte cenu" in r.text  # bez ceny (normohodiny zrušeny) nejde
+    assert "Časová norma" not in r.text and "normohodin" not in r.text
+    r = client.post("/prace/nova", data={"nazev": "Výměna oleje", "cena": "400", "jednotka": "úkon"},
+                    follow_redirects=True)
+    assert "400,00" in r.text and "Ceník prací" in r.text and "Norma" not in r.text
+    # ceníky jsou oddělené: materiál není v pracích a naopak
+    assert "Výměna oleje" not in client.get("/cenik").text
+    assert "Olejový filtr" not in client.get("/prace").text
+
+    loc = _prijem().headers["location"].split("?")[0]
+    zid = loc.rsplit("/", 1)[1]
+    vyber = client.get("/cenik/vyber", params={"q": "olej", "zakazka_id": zid}).text
+    cid = re.search(r'name="polozka_ceniku_id" value="(\d+)"', vyber).group(1)
+    r = client.post(f"{loc}/polozky", data={"polozka_ceniku_id": cid, "mnozstvi": "2"}, follow_redirects=True)
+    assert "Celkem k úhradě" in r.text
+    r = client.post(f"{loc}/polozky", data={"typ": "prace", "nazev": "Diagnostika", "mnozstvi": "1", "cena": "600"},
+                    follow_redirects=True)
+    assert "Diagnostika" in r.text
+
+    pid = re.search(r'/polozky/(\d+)/upravit', r.text).group(1)
+    assert client.get(f"/polozky/{pid}/upravit").status_code == 200
+    r = client.post(f"/polozky/{pid}/upravit", data={"mnozstvi": "abc"})
+    assert r.status_code == 422 and "není číslo" in r.text
+    r = client.post(f"/polozky/{pid}/smazat", follow_redirects=True)
+    assert r.status_code == 200
+
+
+def test_rucni_polozka_chyba_zachova_formular():
+    loc = _prijem().headers["location"].split("?")[0]
+    r = client.post(f"{loc}/polozky", data={"typ": "material", "nazev": "Kus bez ceny"})
+    assert r.status_code == 422 and "Vyplňte cenu" in r.text and "Kus bez ceny" in r.text
+
+
+def test_nastaveni_ulozeni():
+    r = client.post("/nastaveni", data={"vychozi_dph": "12", "mena": "Kč"}, follow_redirects=True)
+    assert "Nastavení uloženo" in r.text
+    assert not re.search(r'name="platce_dph" value="1"\s+checked', r.text)  # nezaškrtnuto → neplátce
+    assert 'name="vychozi_dph" value="12"' in r.text
+    assert "normohodin" not in r.text
+
+
+def _zakazka_s_polozkou():
+    loc = _prijem().headers["location"].split("?")[0]
+    client.post(f"{loc}/polozky", data={"typ": "prace", "nazev": "Diagnostika", "mnozstvi": "1", "cena": "1000"})
+    return loc
+
+
+def test_faktura_cely_tok():
+    client.post("/nastaveni", data={"nazev_servisu": "Autoservis Test", "ico": "12345678", "mesto": "Brno",
+                                    "cislo_uctu": "19-2000145399/0800", "platce_dph": "1",
+                                    "vychozi_dph": "21",
+                                    "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    loc = _zakazka_s_polozkou()
+    assert "Vystavit fakturu" in client.get(loc).text
+    formular = client.get(f"{loc}/vystavit?typ=faktura")
+    assert formular.status_code == 200 and "Jana Dvořáková" in formular.text
+
+    r = client.post(f"{loc}/vystavit", data={"typ": "faktura", "odb_nazev": "Jana Dvořáková",
+                                             "forma_uhrady": "prevod"}, follow_redirects=False)
+    assert r.status_code == 303
+    detail = client.get(r.headers["location"])
+    assert "1\u00a0210,00" in detail.text and "Neuhrazeno" in detail.text and "<svg" in detail.text  # QR
+    fid = r.headers["location"].split("?")[0].rsplit("/", 1)[1]
+
+    tisk = client.get(f"/faktury/{fid}/tisk").text
+    assert "Faktura – daňový doklad" in tisk and "Autoservis Test" in tisk and "CZ6508000000192000145399" in tisk
+
+    assert "FV" in client.get("/faktury").text
+    zakazka = client.get(loc).text
+    assert "Vystavit fakturu" not in zakazka and "vyúčtovaná" in zakazka
+
+    r = client.post(f"/faktury/{fid}/uhrady", data={"castka": "5000"})
+    assert r.status_code == 422 and "vyšší" in r.text
+    r = client.post(f"/faktury/{fid}/uhrady", data={"castka": "1210", "zpusob": "prevod"}, follow_redirects=True)
+    assert "Uhrazeno" in r.text
+    assert f"/faktury/{fid}" not in client.get("/faktury").text  # uhrazená už není v neuhrazených
+
+    # zrušená úhrada zůstane v historii přeškrtnutá
+    uid = re.search(r"/uhrady/(\d+)/smazat", client.get(f"/faktury/{fid}").text).group(1)
+    r = client.post(f"/uhrady/{uid}/smazat", follow_redirects=True)
+    assert "zrusena-uhrada" in r.text and "Neuhrazeno" in r.text
+    client.post(f"/faktury/{fid}/uhrady", data={"castka": "1210", "zpusob": "prevod"})
+    # storno s úhradou: potvrzení na úhradu upozorní, storno ji zruší
+    assert "Storno úhrady zruší" in client.get(f"/faktury/{fid}").text
+    r = client.post(f"/faktury/{fid}/storno", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == f"/faktury/{fid}"
+    r = client.get(f"/faktury/{fid}")
+    assert "Stornováno" in r.text and "zrušeno stornem dokladu" in r.text
+    assert "Vystavit fakturu" in client.get(loc).text
+    # znovu storno → chyba jako červená hláška a zpět na detail (ne stránka na adrese POST)
+    r = client.post(f"/faktury/{fid}/storno", follow_redirects=False)
+    assert r.status_code == 303 and r.cookies.get("zprava").startswith("%21")
+    # zakázka s dokladem nejde smazat a doklad je vidět v detailu zakázky
+    detail = client.get(loc).text
+    assert "Doklady" in detail and f"/faktury/{fid}" in detail and "nejde smazat" in detail
+    r = client.post(f"{loc}/smazat", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == loc
+    # zákazník s doklady nejde smazat – hláška, ne chyba 500
+    zid = re.search(r'href="/zakaznici/(\d+)"', detail).group(1)
+    r = client.post(f"/zakaznici/{zid}/smazat", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == f"/zakaznici/{zid}"
+
+
+def test_vystaveni_chyba_a_prazdna_zakazka():
+    loc = _prijem().headers["location"].split("?")[0]
+    r = client.post(f"{loc}/vystavit", data={"typ": "faktura", "odb_nazev": "X"})
+    assert r.status_code == 422 and "není co fakturovat" in r.text
+    loc = _zakazka_s_polozkou()
+    r = client.post(f"{loc}/vystavit", data={"typ": "faktura", "odb_nazev": ""})
+    assert r.status_code == 422 and "Vyplňte odběratele" in r.text
+
+
+
+def test_filtry_a_odebrane_doklady():
+    loc = _zakazka_s_polozkou()
+    vystaveni = client.get(f"{loc}/vystavit?typ=faktura").text
+    assert "Kartou" not in vystaveni and "Převodem" in vystaveni and "Hotově" in vystaveni
+    assert "Další doklad" not in client.get(loc).text
+    client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "odb_nazev": "Jana", "forma_uhrady": "hotove",
+                                         "uhrazeno_ihned": "1"})
+    for filtr in ["neuhrazene", "po_splatnosti", "uhrazene", "vse"]:
+        assert client.get("/faktury", params={"filtr": filtr, "rok": "2026"}).status_code == 200
+    assert "Export CSV" not in client.get("/faktury").text
+    assert client.get("/faktury/export.csv").status_code in (404, 422)
+    assert client.get("/dodaci-listy/fakturovat").status_code == 404
+
+
+def test_prijem_bez_zakaznika_a_doplneni_web():
+    r = client.post("/zakazky/nova", data={"spz": "4DD4444", "v_znacka": "VW", "k_nazev": "",
+                                           "pozadavek": "Bez majitele"}, follow_redirects=False)
+    assert r.status_code == 303
+    loc = r.headers["location"].split("?")[0]
+    detail = client.get(loc).text
+    assert "Bez zákazníka" in detail and "Doplnit zákazníka" in detail
+    form = client.get("/zakazky/nova", params={"spz": "4DD4444"}).text  # známé vozidlo bez zákazníka
+    assert "Vozidlo z databáze" in form and "nebo nechte prázdné" in form
+
+    # vyplněný zákazník bez firmy → chyba
+    r = client.post("/zakazky/nova", data={"spz": "5DD5555", "k_nazev": "", "k_telefon": "777", "pozadavek": "x"})
+    assert r.status_code == 422 and "Vyplňte firmu" in r.text and 'value="777"' in r.text
+
+    # vyúčtování jde i bez zákazníka, faktura ne
+    client.post(f"{loc}/polozky", data={"typ": "material", "nazev": "Díl", "mnozstvi": "1", "cena": "100"})
+    assert "Faktura: doplnit zákazníka" in client.get(loc).text
+    r = client.post(f"{loc}/vystavit", data={"typ": "faktura", "odb_nazev": "Někdo"})
+    assert r.status_code == 422 and "vyžaduje zákazníka" in r.text
+    assert "u vyúčtování nepovinné" in client.get(f"{loc}/vystavit?typ=vyuctovani").text
+
+    # zákazníka lze doplnit na zakázce i u vozidla
+    zid = client.post("/zakaznici/novy", data={"nazev": "Pozdější Majitel"},
+                      follow_redirects=False).headers["location"].rsplit("/", 1)[1]
+    r = client.post(f"{loc}/upravit", data={"pozadavek": "Bez majitele", "zakaznik_id": zid}, follow_redirects=True)
+    assert "Pozdější Majitel" in r.text and "Vystavit fakturu" in r.text
+    vid = re.search(r'href="/vozidla/(\d+)"', r.text).group(1)
+    assert "Pozdější Majitel" in client.get(f"/vozidla/{vid}").text  # vozidlu se přiřadil taky
+    r = client.post(f"/vozidla/{vid}/upravit", data={"spz": "4DD4444", "zakaznik_id": "bez"}, follow_redirects=True)
+    assert "Bez majitele" in r.text
+    r = client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "odb_nazev": "", "forma_uhrady": "hotove"},
+                    follow_redirects=True)
+    assert r.status_code == 200 and "VY" in r.text
+
+
+def test_vozidlo_a_zakazka_novy_nebo_stavajici_zakaznik_web():
+    # nové vozidlo bez zákazníka
+    r = client.post("/vozidla/nove", data={"spz": "6FF6666", "zakaznik_id": "bez"}, follow_redirects=False)
+    vid = r.headers["location"].rsplit("/", 1)[1]
+    # formulář vozidla má stejný panel Zákazník jako příjem (Firma + Vybrat / Nový)
+    form = client.get(f"/vozidla/{vid}/upravit").text
+    assert 'id="panel-zakaznik"' in form and 'name="panel_zakaznika"' in form and "k_nazev" in form
+
+    # úprava vozidla: nový zákazník přímo z formuláře
+    r = client.post(f"/vozidla/{vid}/upravit", data={"spz": "6FF6666", "zakaznik_id": "novy"})
+    assert r.status_code == 422 and "Vyplňte jméno nového zákazníka" in r.text
+    r = client.post(f"/vozidla/{vid}/upravit", data={"spz": "6FF6666", "zakaznik_id": "novy",
+                                                     "k_nazev": "Nový Majitel", "k_telefon": "700 000 001"},
+                    follow_redirects=True)
+    assert "Nový Majitel" in r.text
+    assert "Nový Majitel" in client.get("/zakaznici").text
+
+    # chyba ve vozidle (duplicitní SPZ) nezaloží zákazníka
+    client.post("/vozidla/nove", data={"spz": "7GG7777", "zakaznik_id": "bez"})
+    r = client.post(f"/vozidla/{vid}/upravit", data={"spz": "7GG7777", "zakaznik_id": "novy", "k_nazev": "Duch"})
+    assert r.status_code == 422 and "Duch" not in client.get("/zakaznici").text
+
+    # stávající zákazník a zpět bez
+    zid = client.post("/zakaznici/novy", data={"nazev": "Stávající"},
+                      follow_redirects=False).headers["location"].rsplit("/", 1)[1]
+    r = client.post(f"/vozidla/{vid}/upravit", data={"spz": "6FF6666", "zakaznik_id": zid}, follow_redirects=True)
+    assert "Stávající" in r.text
+    r = client.post(f"/vozidla/{vid}/upravit", data={"spz": "6FF6666", "zakaznik_id": "bez"}, follow_redirects=True)
+    assert "Bez majitele" in r.text
+
+    # panel zákazníka u vozidla: vyplněný = nový zákazník, prázdný = bez zákazníka
+    r = client.post(f"/vozidla/{vid}/upravit", data={"spz": "6FF6666", "panel_zakaznika": "1", "zakaznik_id": "",
+                                                     "k_nazev": "Z panelu", "k_telefon": "700 1"},
+                    follow_redirects=True)
+    assert "Z panelu" in r.text
+    r = client.post(f"/vozidla/{vid}/upravit", data={"spz": "6FF6666", "panel_zakaznika": "1", "zakaznik_id": "",
+                                                     "k_nazev": ""}, follow_redirects=True)
+    assert "Bez majitele" in r.text
+
+    # úprava zakázky: nový zákazník přímo z formuláře
+    loc = client.post("/zakazky/nova", data={"spz": "6FF6666", "vozidlo_id": vid, "zakaznik_id": "",
+                                             "pozadavek": "x"}, follow_redirects=False).headers["location"].split("?")[0]
+    form = client.get(f"{loc}/upravit").text
+    assert 'id="panel-zakaznik"' in form and 'id="panel-vozidlo"' in form and 'name="datum_prijeti"' in form
+    r = client.post(f"{loc}/upravit", data={"pozadavek": "x", "zakaznik_id": "novy", "k_nazev": "Ze zakázky"},
+                    follow_redirects=True)
+    assert "Ze zakázky" in r.text
+    assert "Ze zakázky" in client.get(f"/vozidla/{vid}").text  # vozidlo bez zákazníka ho dostalo taky
+
+
+# ---------------------------------------------------------------- příjem jako okno Zakázka ve starém systému
+
+def test_prijem_tri_panely_a_vychozi_hodnoty():
+    r = client.get("/zakazky/nova")
+    for text in ['id="panel-zakaznik"', 'id="panel-vozidlo"', "Označení", 'name="datum_prijeti"',
+                 'name="v_kod_motoru"', 'name="v_termin_stk"', 'name="v_datum_registrace"', 'hx-get="/vozidla/okno"',
+                 'hx-get="/zakaznici/okno"', "Uložit zakázku", "Načti"]:
+        assert text in r.text, text
+    # plánované ukončení a stav paliva se už nezadávají
+    assert 'name="termin_dokonceni"' not in r.text and 'name="stav_paliva"' not in r.text
+    assert "Uložit vozidlo do databáze" not in r.text and "Uložit zákazníka do databáze" not in r.text
+
+
+def test_prijem_ulozi_zmeny_vybraneho_zakaznika_a_vozidla():
+    _prijem()
+    zid = re.search(r'href="/zakaznici/(\d+)"', client.get("/zakaznici").text).group(1)
+    vid = re.search(r'href="/vozidla/(\d+)"', client.get("/vozidla").text).group(1)
+    r = client.post("/zakazky/nova", data={
+        "zakaznik_id": zid, "k_nazev": "Jana Dvořáková", "k_telefon": "777 999 000", "k_mesto": "Zlín",
+        "vozidlo_id": vid, "spz": "1AB2345", "v_znacka": "Škoda", "v_model": "Fabia", "v_olej": "5W-30",
+        "v_termin_stk": "2027-05-01", "v_datum_registrace": "2017-03-15", "datum_prijeti": "2026-11-10T08:15",
+        "pozadavek": "Servis"},
+        follow_redirects=True)
+    assert r.status_code == 200 and "10.11.2026 08:15" in r.text
+    zakaznik = client.get(f"/zakaznici/{zid}").text
+    assert "777 999 000" in zakaznik and "Zlín" in zakaznik
+    vozidlo = client.get(f"/vozidla/{vid}").text
+    assert "5W-30" in vozidlo and "01.05.2027" in vozidlo and "15.03.2017" in vozidlo
+    assert len(re.findall(r'href="/zakaznici/\d+"', client.get("/zakaznici").text)) == 1  # žádný nový zákazník
+
+
+def test_prijem_jako_novy_zakaznik_a_nove_vozidlo():
+    _prijem()
+    zid = re.search(r'href="/zakaznici/(\d+)"', client.get("/zakaznici").text).group(1)
+    r = client.post("/zakazky/nova", data={
+        "zakaznik_id": zid, "jako_novy": "1", "k_nazev": "Jana Dvořáková ml.", "spz": "2ZZ0001",
+        "v_znacka": "Kia", "v_kod_motoru": "G4FA", "pozadavek": "Brzdy"}, follow_redirects=True)
+    assert "Jana Dvořáková ml." in r.text
+    seznam = client.get("/zakaznici").text
+    assert "Jana Dvořáková ml." in seznam and len(re.findall(r'href="/zakaznici/\d+"', seznam)) == 2
+    assert "Jana Dvořáková</a>" in seznam  # původní zůstal beze změny
+    vozidla_text = client.get("/vozidla", params={"q": "2ZZ0001"}).text
+    vid = re.search(r'href="/vozidla/(\d+)"', vozidla_text).group(1)
+    assert "G4FA" in client.get(f"/vozidla/{vid}").text
+
+
+def test_prijem_prepsana_spz_neprejmenuje_vybrane_vozidlo():
+    _prijem()
+    vid = re.search(r'href="/vozidla/(\d+)"', client.get("/vozidla").text).group(1)
+    client.post("/zakazky/nova", data={"vozidlo_id": vid, "spz": "9NN9999", "v_znacka": "Jiné",
+                                       "pozadavek": "x"}, follow_redirects=False)
+    assert "1AB2345" in client.get(f"/vozidla/{vid}").text  # původní SPZ zůstala
+    assert "9NN9999" in client.get("/vozidla").text  # vzniklo nové vozidlo
+
+
+def test_okno_vozidel_vlozi_vozidlo_i_zakaznika():
+    _prijem()
+    _prijem(spz="7Z12345", k_nazev="Petr Novák")
+    r = client.get("/vozidla/okno")
+    assert "Databáze vozidel" in r.text and "7Z12345" in r.text and "1AB2345" in r.text and "Vložit" in r.text
+    assert 'hx-target="#vozidlo-udaje"' in r.text
+    r = client.get("/vozidla/okno", params={"q": "novák"})
+    assert "7Z12345" in r.text and "1AB2345" not in r.text
+    assert "Nic nenalezeno" in client.get("/vozidla/okno", params={"q": "xyz"}).text
+    vid = re.search(r'vybrat_id&#34;: &#34;(\d+)|vybrat_id": "(\d+)', r.text)
+    vid = vid.group(1) or vid.group(2)
+    r = client.get("/zakazky/nova/vozidlo", params={"vybrat_id": vid})
+    assert 'id="spz"' in r.text and 'hx-swap-oob="true"' in r.text and 'value="7Z12345"' in r.text
+    assert "Vozidlo z databáze" in r.text and 'value="Petr Novák"' in r.text
+    # Nový = prázdný panel i SPZ
+    r = client.get("/zakazky/nova/vozidlo", params={"novy": "1"})
+    assert 'id="spz"' in r.text and 'name="vozidlo_id" value=""' in r.text
+
+
+def test_okno_vozidel_ukaze_nejdriv_vozidla_vybraneho_zakaznika():
+    _prijem()
+    _prijem(spz="7Z12345", k_nazev="Petr Novák")
+    zid = re.search(r'href="/zakaznici/(\d+)">Petr Novák', client.get("/zakaznici").text).group(1)
+    r = client.get("/vozidla/okno", params={"zakaznik_id": zid})
+    assert "Vozidla zákazníka" in r.text and "7Z12345" in r.text and "1AB2345" not in r.text
+    r = client.get("/vozidla/okno", params={"zakaznik_id": zid, "vse": "1"})
+    assert "7Z12345" in r.text and "1AB2345" in r.text
+
+
+def test_okno_zakazniku_na_prijmu_a_jinde():
+    _prijem()
+    client.post("/zakaznici/novy", data={"nazev": "Firma Okno", "telefon": "777 888 999"})
+    r = client.get("/zakaznici/okno", params={"cil": "prijem"})
+    assert "Databáze zákazníků" in r.text and "Jana Dvořáková" in r.text and "Firma Okno" in r.text
+    assert "1AB2345" in r.text and 'hx-target="#panel-zakaznik"' in r.text
+    r = client.get("/zakaznici/okno", params={"cil": "prijem", "q": "okno"})
+    assert "Firma Okno" in r.text and "Jana Dvořáková" not in r.text
+    zid = re.search(r'vybrat_id&#34;: &#34;(\d+)|vybrat_id": "(\d+)', r.text)
+    zid = zid.group(1) or zid.group(2)
+    r = client.get("/zakazky/nova/zakaznik", params={"vybrat_id": zid})
+    assert 'name="zakaznik_id" value="' + zid + '"' in r.text and 'value="777 888 999"' in r.text
+    assert "Uložit jako nového zákazníka" in r.text
+    r = client.get("/zakazky/nova/zakaznik")  # Nový = prázdný panel
+    assert 'name="zakaznik_id" value=""' in r.text
+    # úprava vozidla / zakázky: okno vkládá do výběru zákazníka
+    r = client.get("/zakaznici/okno", params={"pole": "zakaznik_id"})
+    assert 'hx-target="#blok-zakaznik_id"' in r.text
+    r = client.get("/zakaznici/vyber/blok", params={"pole": "zakaznik_id", "vybrat_id": zid})
+    assert re.search(rf'name="zakaznik_id" value="{zid}" checked', r.text)
+    assert client.get("/zakaznici/vyber/blok", params={"vybrat_id": 999}).status_code == 404
+
+
+def test_vyber_zakaznika_prochazeni():
+    _prijem()
+    r = client.get("/zakaznici/vyber", params={"pole": "zakaznik_id", "novy": "1", "bez": "1", "vychozi": "bez"})
+    assert "Jana Dvořáková" in r.text
+    assert re.search(r'value="\d+"\s+checked', r.text) is None
+    assert re.search(r'value="bez"\s+checked', r.text)
+
+
+# ---------------------------------------------------------------- ostatní formuláře jako okna
+
+def _je_okno(r, akce):
+    """Odpověď je jen obsah okna (bez celé stránky) s HTMX odesláním a tlačítkem Zrušit."""
+    assert r.status_code == 200, r.text[:300]
+    assert "<html" not in r.text and f'hx-post="{akce}"' in r.text and "data-zavrit-okno" in r.text
+
+
+def test_vozidlo_v_okne():
+    _je_okno(client.get("/vozidla/nove", params={"okno": "1"}), "/vozidla/nove")
+    r = client.post("/vozidla/nove", data={"spz": "", "okno": "1", "zakaznik_id": "bez"})
+    assert r.status_code == 200 and "<html" not in r.text and 'class="chyba"' in r.text
+    r = client.post("/vozidla/nove", data={"spz": "2B33333", "znacka": "Opel", "okno": "1", "zakaznik_id": "bez"})
+    assert r.status_code == 204 and r.headers["HX-Redirect"].startswith("/vozidla/")
+    loc = r.headers["HX-Redirect"]
+    _je_okno(client.get(f"{loc}/upravit", params={"okno": "1"}), f"{loc}/upravit")
+    r = client.post(f"{loc}/upravit", data={"spz": "2B33333", "model": "Astra", "okno": "1", "zakaznik_id": "bez"})
+    assert r.status_code == 204 and r.headers["HX-Refresh"] == "true"
+    assert "Astra" in client.get(loc).text
+    # celá stránka dál funguje postaru
+    r = client.post(f"{loc}/upravit", data={"spz": "2B33333", "zakaznik_id": "bez"}, follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == loc
+    assert "<html" in client.get(f"{loc}/upravit").text
+
+
+def test_zakaznik_v_okne():
+    _je_okno(client.get("/zakaznici/novy", params={"okno": "1"}), "/zakaznici/novy")
+    r = client.post("/zakaznici/novy", data={"nazev": "", "okno": "1"})
+    assert r.status_code == 200 and 'class="chyba"' in r.text
+    r = client.post("/zakaznici/novy", data={"nazev": "Okenní s.r.o.", "okno": "1"})
+    assert r.status_code == 204
+    loc = r.headers["HX-Redirect"]
+    _je_okno(client.get(f"{loc}/upravit", params={"okno": "1"}), f"{loc}/upravit")
+    r = client.post(f"{loc}/upravit", data={"nazev": "Okenní a syn", "okno": "1"})
+    assert r.status_code == 204 and r.headers["HX-Refresh"] == "true"
+    assert "Okenní a syn" in client.get(loc).text
+
+
+def test_cenik_v_okne_a_ulozit_dalsi():
+    _je_okno(client.get("/prace/nova", params={"okno": "1"}), "/prace/nova")
+    _je_okno(client.get("/cenik/nova", params={"okno": "1"}), "/cenik/nova")
+    r = client.post("/cenik/nova", data={"typ": "material", "nazev": "Olej 5W30", "cena": "200",
+                                         "jednotka": "l", "okno": "1", "dalsi": "1"})
+    # Uložit a další: okno zůstane s prázdným formulářem a hláškou
+    assert r.status_code == 200 and "Uloženo: Olej 5W30" in r.text and 'value="Olej 5W30"' not in r.text
+    r = client.post("/cenik/nova", data={"typ": "material", "nazev": "Filtr", "cena": "150 Kč", "cena_s_dph": "1",
+                                         "okno": "1"})
+    # po uložení seznam vyfiltrovaný na novou položku a zvýrazněný řádek
+    assert r.status_code == 204 and r.headers["HX-Redirect"].startswith("/cenik?q=Filtr&zvyraznit=")
+    seznam = client.get(r.headers["HX-Redirect"]).text
+    assert "zvyrazneny" in seznam
+    pid = re.search(r"/cenik/(\d+)/upravit", seznam).group(1)
+    _je_okno(client.get(f"/cenik/{pid}/upravit", params={"okno": "1"}), f"/cenik/{pid}/upravit")
+    # cena zadaná s DPH se v úpravě ukáže zase s DPH (ne 123.9669)
+    form = client.get(f"/cenik/{pid}/upravit").text
+    assert 'name="cena_s" value="150"' in form and 'name="cena" value="123,97"' in form
+    assert 'name="cena_zdroj" value="s"' in form
+    r = client.post(f"/cenik/{pid}/upravit", data={"typ": "material", "nazev": "", "okno": "1"})
+    assert r.status_code == 200 and 'class="chyba"' in r.text and 'data-pole="nazev"' in r.text
+    # smazání vrátí na seznam, odkud se okno otevřelo
+    r = client.post(f"/cenik/{pid}/smazat", data={"zpet": "/cenik?q=Fil"}, follow_redirects=False)
+    assert r.headers["location"] == "/cenik?q=Fil"
+
+
+def test_cenik_nakupni_cena_dvojice_a_zamenitelny_dil():
+    r = client.post("/cenik/nova", data={
+        "typ": "material", "kod": "GAT 6PK1018-T", "zamenitelny_dil": "CONTI 6PK1015-T", "nazev": "Klínový řemen T",
+        "jednotka": "ks", "sazba_dph": "21", "cena": "318,18", "cena_s": "385", "cena_zdroj": "s",
+        "nakupni_cena": "219", "nakupni_cena_s": "264,99", "nakupni_cena_zdroj": ""}, follow_redirects=False)
+    assert r.status_code == 303
+    # hledání i podle zaměnitelného dílu
+    seznam = client.get("/cenik", params={"q": "CONTI 6PK1015-T"}).text
+    pid = re.search(r"/cenik/(\d+)/upravit", seznam).group(1)
+    form = client.get(f"/cenik/{pid}/upravit").text
+    assert 'name="cena_s" value="385"' in form and 'name="cena_zdroj" value="s"' in form
+    assert 'name="nakupni_cena" value="219"' in form and 'name="nakupni_cena_s" value="264,99"' in form
+    assert 'value="CONTI 6PK1015-T"' in form and "<select name=\"jednotka\">" in form
+    # uložení beze změny ceny nezmění; nákupní cena zadaná s DPH se přepočítá
+    client.post(f"/cenik/{pid}/upravit", data={
+        "typ": "material", "nazev": "Klínový řemen T", "jednotka": "ks", "sazba_dph": "21",
+        "cena": "318,18", "cena_s": "385", "cena_zdroj": "s", "nakupni_cena": "", "nakupni_cena_s": "121",
+        "nakupni_cena_zdroj": "s", "aktivni": "1"})
+    form = client.get(f"/cenik/{pid}/upravit").text
+    assert 'name="cena_s" value="385"' in form and 'name="nakupni_cena" value="100"' in form
+    client.post(f"/cenik/{pid}/smazat")
+
+
+def test_cenik_radi_a_hleda_podle_kodu():
+    for kod, nazev in [("ZZ 300", "Ařemen"), ("AA 100", "Žárovka"), ("", "Bez kódu")]:
+        client.post("/cenik/nova", data={"kod": kod, "nazev": nazev, "cena": "10"})
+    text = client.get("/cenik").text
+    # výchozí řazení podle kódu, položky bez kódu na konci
+    assert text.index("AA 100") < text.index("ZZ 300") < text.index("Bez kódu")
+    # kód se najde i bez mezer a oddělovačů
+    nalezeno = client.get("/cenik", params={"q": "aa-100"}).text
+    assert "Žárovka" in nalezeno and "Ařemen" not in nalezeno
+
+
+def test_polozka_a_vystaveni_v_okne():
+    loc = _zakazka_s_polozkou()
+    pid = re.search(r"/polozky/(\d+)/upravit", client.get(loc).text).group(1)
+    _je_okno(client.get(f"/polozky/{pid}/upravit", params={"okno": "1"}), f"/polozky/{pid}/upravit")
+    r = client.post(f"/polozky/{pid}/upravit", data={"typ": "prace", "nazev": "Diagnostika", "mnozstvi": "2",
+                                                     "cena": "1000", "okno": "1"})
+    assert r.status_code == 204 and r.headers["HX-Refresh"] == "true"
+
+    _je_okno(client.get(f"{loc}/vystavit", params={"typ": "vyuctovani", "okno": "1"}), f"{loc}/vystavit")
+    r = client.post(f"{loc}/vystavit", data={"typ": "faktura", "odb_nazev": "", "okno": "1"})
+    assert r.status_code == 200 and 'class="chyba"' in r.text and "<html" not in r.text
+    r = client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "forma_uhrady": "hotove", "okno": "1"})
+    assert r.status_code == 204 and r.headers["HX-Redirect"].startswith("/faktury/")
+    # vyúčtovaná zakázka: položky už nejdou měnit (žádné akce řádků ani přidávání)
+    detail = client.get(loc).text
+    assert "data-odebrat=" not in detail and f"{loc}/cenik" not in detail
+    # zakázka už má doklad → okno vystavení rovnou přejde na doklad
+    r = client.get(f"{loc}/vystavit", params={"okno": "1"}, follow_redirects=False)
+    assert r.status_code == 204 and r.headers["HX-Redirect"].startswith("/faktury/")
+
+# ---------------------------------------------------------------- detail zakázky jako pracovní okno
+
+def test_detail_zakazky_mrizka_polozek():
+    loc = _zakazka_s_polozkou()
+    detail = client.get(loc).text
+    assert 'class="hlavicka-zakazky"' in detail and 'class="soucty"' in detail
+    pid = re.search(r'data-odebrat="/polozky/(\d+)/smazat"', detail).group(1)
+    assert f'data-upravit="/polozky/{pid}/upravit"' in detail
+    for akce in ['data-radek="upravit" data-okno>', 'data-radek="odebrat">', f'href="{loc}/cenik"', f'href="{loc}/polozky/nova"']:
+        assert akce in detail, akce
+    # prázdná zakázka: odkazy na přidání v mřížce, bez tlačítek pro řádky
+    prazdna = _prijem(spz="9Z99999").headers["location"].split("?")[0]
+    detail = client.get(prazdna).text
+    assert "Zatím žádné položky" in detail and 'data-radek="odebrat">' not in detail
+
+
+def test_okno_cenik_pridava_a_zustava_otevrene():
+    client.post("/cenik/nova", data={"typ": "material", "nazev": "Brzdová kapalina", "cena": "180", "jednotka": "l"})
+    client.post("/cenik/nova", data={"typ": "material", "nazev": "Stěrač", "cena": "250"})
+    loc = _prijem().headers["location"].split("?")[0]
+    zid = loc.rsplit("/", 1)[1]
+    r = client.get(f"{loc}/cenik", params={"okno": "1"})
+    assert r.status_code == 200 and "<html" not in r.text
+    assert "Brzdová kapalina" in r.text and "Stěrač" in r.text  # bez hledání ukáže začátek ceníku
+    assert 'data-obnovit-po-zavreni' not in r.text
+    r = client.get("/cenik/vyber", params={"q": "brzd", "zakazka_id": zid, "okno": "1"})
+    # v okně Přidat jen vybírá do seznamu vpravo (prohlížeč) – na server nic nejde
+    assert "Brzdová kapalina" in r.text and "Stěrač" not in r.text and "data-kosik" in r.text
+    assert "hx-post" not in r.text
+    cid = re.search(r'name="polozka_ceniku_id" value="(\d+)"', r.text).group(1)
+    okno = client.get(f"{loc}/cenik", params={"okno": "1"}).text
+    assert "K vložení" in okno and "Na zakázce" not in okno  # vpravo vždy prázdný výběr
+    # Vložit zapíše výběr najednou
+    r = client.post(f"{loc}/polozky/vlozit", data={"polozka_ceniku_id": [cid], "mnozstvi": ["2"]})
+    assert r.status_code == 204 and r.headers["HX-Refresh"] == "true"
+    assert "Brzdová kapalina" in client.get(loc).text
+    r = client.post(f"{loc}/polozky/vlozit", data={"polozka_ceniku_id": [cid], "mnozstvi": ["0"]})
+    assert r.status_code == 422 and "nesmí být 0" in r.text
+    # bez okna (celá stránka) se přidání přesměruje na detail
+    r = client.post(f"{loc}/polozky", data={"polozka_ceniku_id": cid, "mnozstvi": "1"}, follow_redirects=False)
+    assert r.status_code == 303
+
+
+def test_okno_cenik_radek_upravit_kartu():
+    client.post("/cenik/nova", data={"typ": "material", "nazev": "Brzdová kapalina", "cena": "180", "jednotka": "l"})
+    client.post("/prace/nova", data={"nazev": "Výměna kapaliny", "cena": "500"})
+    loc = _prijem().headers["location"].split("?")[0]
+    zid = loc.rsplit("/", 1)[1]
+    r = client.get("/cenik/vyber", params={"q": "kapal", "zakazka_id": zid, "okno": "1"}).text
+    # řádek: dvojklik / Enter přidá, množství předvyplněné 1, vlevo Upravit (karta materiálu i práce)
+    assert r.count("data-pridat") == 2 and 'name="mnozstvi" value="1"' in r
+    okno = client.get(f"{loc}/cenik", params={"okno": "1"}).text
+    assert re.search(r'<input type="search"[^<]*>\s*<div id="cenik-vysledky"', okno)  # pole hledání uzavřené
+    cid = re.search(r'hx-get="/cenik/(\d+)/upravit"', r).group(1)
+    assert re.search(r'hx-get="/prace/\d+/upravit"', r) and "z_ceniku" in r
+    # karta otevřená z okna ceníku: Zpět (do okna ceníku) místo Zrušit, bez mazání
+    karta = client.get(f"/cenik/{cid}/upravit", params={"okno": "1", "z_ceniku": zid, "q": "kapal"}).text
+    assert re.search(rf'hx-get="/zakazky/{zid}/cenik"[^>]*>Zpět</button>', karta)
+    assert "Smazat z ceníku" not in karta and f'name="z_ceniku" value="{zid}"' in karta
+    # chyba nechá kartu otevřenou, uložení vrátí okno ceníku s hledáním
+    r = client.post(f"/cenik/{cid}/upravit", data={"okno": "1", "z_ceniku": zid, "q": "kapal", "typ": "material",
+                                                    "nazev": "Brzdová kapalina DOT4", "cena": "", "aktivni": "1"})
+    assert "Vyplňte cenu" in r.text and f'hx-get="/zakazky/{zid}/cenik"' in r.text
+    r = client.post(f"/cenik/{cid}/upravit", data={"okno": "1", "z_ceniku": zid, "q": "kapal", "typ": "material",
+                                                    "nazev": "Brzdová kapalina DOT4", "cena": "190", "aktivni": "1"})
+    assert r.status_code == 200 and "Karta uložena: Brzdová kapalina DOT4" in r.text
+    assert "Přidat z ceníku" in r.text and 'value="kapal"' in r.text
+    # bez okna se karta chová jako dřív
+    assert "Smazat z ceníku" in client.get(f"/cenik/{cid}/upravit").text
+
+
+def test_rucni_polozka_v_okne():
+    loc = _prijem().headers["location"].split("?")[0]
+    _je_okno(client.get(f"{loc}/polozky/nova", params={"okno": "1"}), f"{loc}/polozky")
+    r = client.post(f"{loc}/polozky", data={"typ": "material", "nazev": "Bez ceny", "okno": "1"})
+    assert r.status_code == 200 and "Vyplňte cenu" in r.text and 'value="Bez ceny"' in r.text
+    r = client.post(f"{loc}/polozky", data={"typ": "prace", "nazev": "Seřízení", "mnozstvi": "1", "cena": "500",
+                                            "okno": "1"})
+    assert r.status_code == 204 and r.headers["HX-Refresh"] == "true"
+    assert "Seřízení" in client.get(loc).text
+
+
+# ---------------------------------------------------------------- detail vozidla a zákazníka (historie)
+
+def test_detail_vozidla_zalozky_historie():
+    loc = _zakazka_s_polozkou()  # práce Diagnostika 1000 Kč
+    client.post(f"{loc}/polozky", data={"typ": "material", "nazev": "Žárovka H7", "mnozstvi": "2", "cena": "100"})
+    vid = re.search(r'href="/vozidla/(\d+)"', client.get(loc).text).group(1)
+    r = client.get(f"/vozidla/{vid}")
+    assert r.status_code == 200 and 'class="hlavicka-zakazky hlavicka-detailu"' in r.text
+    assert "Zakázky (1)" in r.text and "Práce (1)" in r.text and "Materiál (1)" in r.text
+    assert "Jana Dvořáková" in r.text and "Nejde startovat" in r.text and f'data-otevrit="{loc}"' in r.text
+    prace = client.get(f"/vozidla/{vid}", params={"zalozka": "prace"}).text
+    assert "Diagnostika" in prace and "Žárovka H7" not in prace
+    material = client.get(f"/vozidla/{vid}", params={"zalozka": "material"}).text
+    assert "Žárovka H7" in material and "Diagnostika" not in material and "200,00" in material
+    assert client.get(f"/vozidla/{vid}", params={"zalozka": "nesmysl"}).status_code == 200
+
+
+def test_detail_zakaznika_zalozky_historie():
+    loc = _zakazka_s_polozkou()
+    zid = re.search(r'href="/zakaznici/(\d+)"', client.get(loc).text).group(1)
+    r = client.get(f"/zakaznici/{zid}")
+    assert "Vozidla (1)" in r.text and "Zakázky (1)" in r.text and "Doklady (0)" in r.text
+    assert "1AB2345" in r.text and 'data-zakazka="/zakazky/nova?vozidlo_id=' in r.text
+    assert 'data-radek="zakazka" data-okno' in r.text
+    zakazky_text = client.get(f"/zakaznici/{zid}", params={"zalozka": "zakazky"}).text
+    assert "Nejde startovat" in zakazky_text and re.search(r"1\s(000|210),00", zakazky_text)  # podle plátcovství DPH
+    client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "odb_nazev": "Jana Dvořáková", "forma_uhrady": "prevod"})
+    doklady = client.get(f"/zakaznici/{zid}", params={"zalozka": "doklady"}).text
+    assert "Doklady (1)" in doklady and "/faktury/" in doklady and "Neuhrazeno" in doklady
+
+
+# ---------------------------------------------------------------- zakázkový list A4
+
+def test_zakazkovy_list_a4():
+    client.post("/nastaveni", data={"nazev_servisu": "Autoservis Test", "ico": "12345678", "mesto": "Brno",
+                                    "platce_dph": "1", "vychozi_dph": "21",
+                                    "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    loc = _prijem(poznamka="Tajná interní poznámka").headers["location"].split("?")[0]
+    detail = client.get(loc).text
+    assert f'href="{loc}/tisk?tisk=1"' in detail and 'target="_blank"' in detail
+    # při příjmu: bez položek – prázdné řádky pro ruční zápis, podpisy, údaje servisu i zákazníka
+    r = client.get(f"{loc}/tisk")
+    assert r.status_code == 200 and "Zakázkový list" in r.text and "Autoservis Test" in r.text
+    assert "Jana Dvořáková" in r.text and "1AB2345" in r.text and "Nejde startovat" in r.text
+    assert re.search(r"98\s000 km", r.text) and r.text.count('class="prazdny"') == 8
+    assert "Podpis zákazníka" in r.text and "Předání opraveného vozidla" in r.text
+    assert "Tajná interní poznámka" not in r.text  # interní poznámka se netiskne
+    assert "window.print()" in r.text and 'addEventListener("load"' not in r.text
+    assert 'addEventListener("load"' in client.get(f"{loc}/tisk", params={"tisk": "1"}).text
+    # s položkami: řádky a součty s DPH
+    client.post(f"{loc}/polozky", data={"typ": "prace", "nazev": "Diagnostika", "mnozstvi": "1", "cena": "1000"})
+    r = client.get(f"{loc}/tisk")
+    assert "Diagnostika" in r.text and 'class="prazdny"' not in r.text and re.search(r"1\s210,00", r.text)
+    # bez zákazníka
+    bez = _prijem(spz="8X88888", zakaznik_id="", k_nazev="", k_telefon="").headers["location"].split("?")[0]
+    assert "Neuveden" in client.get(f"{bez}/tisk").text
+    assert client.get("/zakazky/99999/tisk").status_code == 404
+
+
+# ---------------------------------------------------------------- jednotné drobnosti: hlášky, potvrzení, úhrada v okně
+
+def test_hlaska_po_ulozeni_v_cookie():
+    from urllib.parse import unquote
+    r = client.post("/vozidla/nove", data={"spz": "3C33333", "zakaznik_id": "bez"}, follow_redirects=False)
+    assert r.status_code == 303 and unquote(r.cookies.get("zprava")) == "Vozidlo 3C33333 založeno."
+    loc = r.headers["location"]
+    r = client.post(f"{loc}/upravit", data={"spz": "3C33333", "okno": "1", "zakaznik_id": "bez"})
+    assert r.status_code == 204 and unquote(r.cookies.get("zprava")) == "Vozidlo uloženo."
+    r = client.post(f"{loc}/smazat", follow_redirects=False)
+    assert unquote(r.cookies.get("zprava")) == "Vozidlo smazáno."
+    # chyba hlášku nenastaví
+    r = client.post("/vozidla/nove", data={"spz": "", "zakaznik_id": "bez"}, follow_redirects=False)
+    assert r.status_code == 422 and "zprava" not in r.cookies
+    # stránka má místo pro hlášku a okno potvrzení
+    stranka = client.get("/zakazky").text
+    assert 'id="zprava"' in stranka and 'id="okno-potvrzeni"' in stranka
+
+
+def test_mazani_s_potvrzenim_v_okne_aplikace():
+    r = client.post("/vozidla/nove", data={"spz": "4C44444", "zakaznik_id": "bez"}, follow_redirects=False)
+    detail = client.get(r.headers["location"]).text
+    assert 'data-potvrdit="Opravdu smazat vozidlo 4C44444?' in detail and "confirm(" not in detail
+    for url in ["/zakazky", "/vozidla", "/zakaznici", "/cenik", "/faktury", "/nastaveni"]:
+        assert 'onsubmit="return confirm' not in client.get(url).text, url
+
+
+def test_uhrada_v_okne():
+    loc = _zakazka_s_polozkou()
+    r = client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "forma_uhrady": "prevod"}, follow_redirects=False)
+    fid = r.headers["location"].split("?")[0].rsplit("/", 1)[1]
+    detail = client.get(f"/faktury/{fid}").text
+    assert f'href="/faktury/{fid}/uhrady/nova" role="button" data-okno' in detail
+    _je_okno(client.get(f"/faktury/{fid}/uhrady/nova", params={"okno": "1"}), f"/faktury/{fid}/uhrady")
+    r = client.post(f"/faktury/{fid}/uhrady", data={"castka": "999999", "okno": "1"})
+    assert r.status_code == 200 and "vyšší" in r.text and "<html" not in r.text
+    r = client.post(f"/faktury/{fid}/uhrady", data={"castka": "100", "zpusob": "hotove", "okno": "1"})
+    assert r.status_code == 204 and r.headers["HX-Refresh"] == "true"
+    assert "100,00" in client.get(f"/faktury/{fid}").text
+
+
+def test_uprava_zakazky_zmeni_vozidlo_i_datum_prijeti():
+    loc = _prijem().headers["location"]
+    r = client.post(f"{loc}/upravit", data={
+        "spz": "3XY3333", "vozidlo_id": "", "v_znacka": "Opel", "zakaznik_id": "", "k_nazev": "Jana Dvořáková",
+        "datum_prijeti": "2026-11-01T07:30", "pozadavek": "Opraveno", "okno": "1"})
+    assert r.status_code == 204
+    detail = client.get(loc).text
+    assert "3XY3333" in detail and "01.11.2026 07:30" in detail and "Opraveno" in detail
+    # chyba: kurzor na pole (data-pole), okno zůstane
+    r = client.post(f"{loc}/upravit", data={"spz": "3XY3333", "tachometr": "-1", "okno": "1"})
+    assert r.status_code == 200 and 'data-pole="tachometr"' in r.text
+
+
+def test_cislo_zakazky_z_dokladu_se_znovu_neprideli():
+    from app.db import get_session
+    from app.models import Faktura
+    from app.services import zakazky as zakazky_sluzba
+    session = next(client.app.dependency_overrides[get_session]())
+    rok = __import__("datetime").date.today().year
+    session.add(Faktura(cislo="X1", cislo_zakazky=f"{rok}-0007", odb_nazev="Někdo"))
+    session.commit()
+    assert zakazky_sluzba.dalsi_cislo(session) == f"{rok}-0008"
+
+
+def test_nastaveni_ma_tlacitko_v_akcich():
+    r = client.get("/nastaveni").text
+    assert 'form="formular-nastaveni"' in r and 'id="formular-nastaveni"' in r
+
+
+def test_termin_ek_zrusen():
+    # EK se nepoužívá – není ve formuláři vozidla, na příjmu ani na kartě vozidla
+    for url in ["/vozidla/nove", "/zakazky/nova"]:
+        assert "Termín EK" not in client.get(url).text, url
+    loc = _prijem().headers["location"].split("?")[0]
+    vid = re.search(r'href="/vozidla/(\d+)"', client.get(loc).text).group(1)
+    assert "<dt>EK</dt>" not in client.get(f"/vozidla/{vid}").text
+
+def test_tlacitko_zpet_je_vsude_stejne():
+    # jednotné „Zpět“ – žádné „Zpět na seznam“, „Zpět do ceníku“…
+    from pathlib import Path
+    sablony = Path(__file__).resolve().parent.parent / "app" / "web" / "templates"
+    for soubor in sablony.glob("*.html"):
+        assert not re.search(r">\s*Zpět \w", soubor.read_text(encoding="utf-8")), soubor.name
+
+def test_okno_cenik_storno_a_import():
+    client.post("/cenik/nova", data={"typ": "material", "nazev": "Brzdová kapalina", "cena": "180", "jednotka": "l"})
+    loc = _prijem().headers["location"].split("?")[0]
+    # položka přidaná dřív (mimo okno) – Storno se jí nesmí dotknout
+    client.post(f"{loc}/polozky", data={"typ": "material", "nazev": "Starší díl", "cena": "50"})
+    okno = client.get(f"{loc}/cenik", params={"okno": "1"}).text
+    assert "stornoOknaCeniku(" in okno and ">Import</button>" in okno and ">Vložit</button>" in okno
+    assert okno.index(">Vložit</button>") < okno.index(">Import</button>") < okno.index(">Storno</button>")
+    assert ">Storno</button>" not in client.get(f"{loc}/cenik").text  # celá stránka (ne okno) Storno nemá
+    cid = re.search(r'name="polozka_ceniku_id" value="(\d+)"', okno).group(1)
+    # Vložit je atomické: jedna chybná položka = nevloží se nic
+    r = client.post(f"{loc}/polozky/vlozit", data={"polozka_ceniku_id": [cid, "999999"], "mnozstvi": ["1", "1"]})
+    assert r.status_code == 422
+    detail = client.get(loc).text
+    assert "Starší díl" in detail and "Brzdová kapalina" not in detail
+    # u položek zakázky je v řádku tlačítko Smazat
+    assert 'data-smazat-radek="/polozky/' in detail
+
+def test_uprava_radku_na_karte_ceniku_a_mnozstvi_v_radku():
+    client.post("/cenik/nova", data={"typ": "material", "nazev": "Olejový filtr", "cena": "300", "kod": "OF1"})
+    loc = _prijem().headers["location"].split("?")[0]
+    okno = client.get(f"{loc}/cenik", params={"okno": "1"}).text
+    cid = re.search(r'name="polozka_ceniku_id" value="(\d+)"', okno).group(1)
+    client.post(f"{loc}/polozky/vlozit", data={"polozka_ceniku_id": [cid], "mnozstvi": ["2"]})
+    detail = client.get(loc).text
+    pid = re.search(r'action="/polozky/(\d+)/mnozstvi"', detail).group(1)
+    # úprava řádku z ceníku = karta materiálu (stejný formulář jako v ceníku) s vazbou na řádek
+    karta = client.get(f"/polozky/{pid}/upravit", params={"okno": "1"}).text
+    assert "Upravit materiál" in karta and "Zaměnitelný díl" in karta and f'name="radek" value="{pid}"' in karta
+    assert "Smazat z ceníku" not in karta
+    r = client.post(f"/cenik/{cid}/upravit", data={"okno": "1", "radek": pid, "typ": "material", "nazev": "Filtr oleje",
+                                                  "kod": "OF2", "jednotka": "ks", "cena": "350", "aktivni": "1"})
+    assert r.status_code == 204
+    detail = client.get(loc).text
+    assert "Filtr oleje" in detail and "OF2" in detail and "Olejový filtr" not in detail
+    assert "Filtr oleje" in client.get("/cenik").text  # i v ceníku
+    # množství přímo v řádku
+    r = client.post(f"/polozky/{pid}/mnozstvi", data={"mnozstvi": "3"}, follow_redirects=False)
+    assert r.status_code == 303
+    assert 'name="mnozstvi" value="3"' in client.get(loc).text
+    r = client.post(f"/polozky/{pid}/mnozstvi", data={"mnozstvi": "0"}, follow_redirects=False)
+    assert r.status_code == 303 and 'name="mnozstvi" value="3"' in client.get(loc).text
+    # ruční položka (bez ceníku) má dál vlastní formulář
+    client.post(f"{loc}/polozky", data={"typ": "material", "nazev": "Drobný materiál", "cena": "20"})
+    rucni = re.findall(r'action="/polozky/(\d+)/mnozstvi"', client.get(loc).text)[-1]
+    assert "Upravit položku" in client.get(f"/polozky/{rucni}/upravit").text

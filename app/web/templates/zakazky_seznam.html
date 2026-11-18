@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% from "_makra.html" import tabulka_zakazek, stavovy_radek with context %}
+{% block title %}Zakázky{% endblock %}
+{% block akce %}
+  <a href="/zakazky/nova" role="button" data-okno>Nová zakázka</a>
+  <button type="button" class="secondary" data-radek="otevrit">Otevřít</button>
+  <button type="button" class="secondary outline" data-radek="upravit" data-okno>Upravit</button>
+  <p class="tlumene poznamka">Vyberte řádek kliknutím.</p>
+{% endblock %}
+{% block content %}
+{# bez vyhledávacího pole – zakázek není tolik, stačí záložky stavů a řazení (hledat jde horní lištou) #}
+<nav class="filtr-stavu">
+  <a href="/zakazky" {% if not stav and not vse %}aria-current="page"{% endif %} title="Přijato a V opravě">Otevřené ({{ pocet_otevrenych }})</a>
+  {% for s, nazev in StavZakazky.ZALOZKY %}
+  <a href="/zakazky?stav={{ s }}" {% if stav == s %}aria-current="page"{% endif %} title="Stav {{ StavZakazky.NAZVY[s] }}">{{ nazev }} ({{ pocty[s] }})</a>
+  {% endfor %}
+  <a href="/zakazky?vse=1" {% if vse and not stav %}aria-current="page"{% endif %}>Všechny ({{ pocet_vsech }})</a>
+</nav>
+
+<div id="seznam">
+{{ tabulka_zakazek(zakazky, stranka=stranka) }}
+{% if zakazky %}{{ stavovy_radek(stranka) }}{% endif %}
+</div>
+{% endblock %}

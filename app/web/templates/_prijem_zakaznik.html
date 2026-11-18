@@ -1,0 +1,42 @@
+{% from "_makra.html" import pole %}
+{# Panel Zákazník na příjmu. hz = hodnoty polí (k_*), zakaznik = vybraný zákazník z databáze. #}
+<fieldset id="panel-zakaznik" class="panel" {% if zakaznik_oob is defined and zakaznik_oob %}hx-swap-oob="true"{% endif %}>
+  <legend>{{ nadpis_zakaznika if nadpis_zakaznika is defined else 'Zákazník' }}</legend>
+  <input type="hidden" name="zakaznik_id" value="{{ zakaznik.id if zakaznik else '' }}">
+  <input type="hidden" name="panel_zakaznika" value="1">
+  <div class="radek-s-tlacitky">
+    <label class="roztahnout">Firma (příjmení a jméno)
+      <input type="text" name="k_nazev" value="{{ hz.get('k_nazev') or '' }}" autocomplete="off">
+    </label>
+    <button type="button" class="maly"
+            hx-get="/zakaznici/okno" hx-vals='{"cil": "prijem"}' hx-target="#okno-obsah"
+            hx-on::after-request="document.getElementById('okno-databaze').showModal()">Vybrat</button>
+    <button type="button" class="maly secondary outline" title="Vyprázdnit panel – nový zákazník"
+            hx-get="/zakazky/nova/zakaznik" hx-target="#panel-zakaznik" hx-swap="outerHTML">Nový</button>
+  </div>
+  {% if zakaznik %}
+    <p class="stav-panelu">✅ Zákazník z databáze – změny údajů se uloží k němu.
+      <label class="inline"><input type="checkbox" name="jako_novy" value="1" {% if hz.get('jako_novy') %}checked{% endif %}>
+        Uložit jako nového zákazníka</label></p>
+  {% else %}
+    <p class="tlumene stav-panelu">Nový zákazník – nebo nechte prázdné (bez zákazníka).</p>
+  {% endif %}
+  {{ pole('k_ulice', 'Ulice', hz) }}
+  <div class="mrizka mrizka-psc">
+    {{ pole('k_psc', 'PSČ', hz) }}
+    {{ pole('k_mesto', 'Město', hz) }}
+  </div>
+  {{ pole('k_telefon', 'Telefon', hz, typ='tel') }}
+  {{ pole('k_email', 'E-mail', hz, typ='email') }}
+  <div class="mrizka">
+    <div class="radek-s-tlacitky">
+      <label class="roztahnout">IČO
+        <input type="text" name="k_ico" value="{{ hz.get('k_ico') or '' }}" inputmode="numeric" autocomplete="off">
+      </label>
+      {# TODO: napojit na ARES – zatím jen tlačítko (viz PLAN.md) #}
+      <button type="button" class="maly secondary outline" title="Načíst údaje firmy z rejstříku podle IČO"
+              onclick="upozorni('Načtení údajů z rejstříku (ARES) zatím není hotové – připravuje se.')">Načti</button>
+    </div>
+    {{ pole('k_dic', 'DIČ', hz) }}
+  </div>
+</fieldset>

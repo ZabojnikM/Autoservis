@@ -1,0 +1,850 @@
+:root {
+  --menu-sirka: 210px;
+  --c-prijato: #2f6fb3;
+  --c-v_oprave: #c47a00;
+  --c-hotovo: #2e8b3e;
+  --c-predano: #6b7280;
+  --c-chyba: #c0392b;
+  --pico-font-size: 100%;
+}
+
+body { margin: 0; }
+
+/* ---------- horní lišta a menu ---------- */
+.horni-lista {
+  display: flex; align-items: center; gap: 1rem;
+  padding: .6rem 1.25rem;
+  border-bottom: 1px solid var(--pico-muted-border-color);
+  position: sticky; top: 0; z-index: 10; background: var(--pico-background-color);
+}
+.horni-lista .logo { font-weight: 700; font-size: 1.2rem; text-decoration: none; white-space: nowrap; }
+.horni-lista .hledani { flex: 1; max-width: 560px; margin: 0; }
+.horni-lista .hledani input { margin: 0; }
+.horni-lista .prijem { white-space: nowrap; margin-left: auto; }
+
+/* hlavní menu = vodorovná lišta pod titulkem (jako menu ve starém systému) */
+.menu {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0 .5rem; border-bottom: 1px solid var(--pico-muted-border-color);
+}
+.menu ul { display: flex; flex-wrap: wrap; gap: 0; margin: 0; padding: 0; }
+.menu li { padding: 0; list-style: none; }
+.menu a { display: block; padding: .35rem .8rem; text-decoration: none; margin: 0; }
+.filtr-stavu a { margin: 0; }
+.menu a[aria-current="page"] { background: var(--pico-primary-background); color: var(--pico-primary-inverse); }
+.menu a.brzy { opacity: .4; pointer-events: none; }
+.menu .verze { font-size: .75rem; white-space: nowrap; }
+
+/* obsah + volitelný sloupec tlačítek akcí vlevo */
+.rozvrzeni { display: flex; align-items: flex-start; gap: .75rem; }
+.obsah { flex: 1; padding: 1.25rem 2rem; min-width: 0; }
+.akce {
+  order: -1; width: 150px; flex-shrink: 0; position: sticky; top: 3rem;
+  display: flex; flex-direction: column; gap: .35rem; margin: .75rem 0 0 .75rem;
+}
+.s-akcemi .obsah { padding-left: 0; }
+.akce form { margin: 0; }
+.akce a[role=button], .akce button { display: block; width: 100%; margin: 0; text-align: center; }
+.akce hr { margin: .25rem 0; }
+.akce .poznamka { font-size: .75rem; margin: 0; }
+
+/* ---------- obecné ---------- */
+.tlumene { color: var(--pico-muted-color); }
+.povinne { color: var(--c-chyba); }
+.maly { font-size: .85rem; padding: .25rem .6rem; }
+.chyba { background: #fdecea; color: var(--c-chyba); padding: .75rem 1rem; border-radius: 6px; border-left: 4px solid var(--c-chyba); }
+.chyba-text { color: var(--c-chyba); }
+.uspech { background: #e8f5e9; color: #1b5e20; padding: .6rem 1rem; border-radius: 6px; border-left: 4px solid var(--c-hotovo); }
+.upozorneni { color: #8a5300; margin: 0; }
+.zachovat-radky { white-space: pre-line; }
+.zkratit { max-width: 320px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.po-terminu { color: var(--c-chyba); font-weight: 600; }
+
+.nadpis-radek { display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.nadpis-radek h1 { margin-bottom: .5rem; }
+.tlacitka { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+.tlacitka > * { margin-bottom: 0; }
+
+.spz {
+  display: inline-block; font-family: ui-monospace, Consolas, monospace; font-weight: 700;
+  border: 2px solid #1f2937; border-left: 8px solid #1e40af; border-radius: 4px;
+  padding: 0 .4rem; background: #fff; color: #111; letter-spacing: .05em; font-size: .9em;
+}
+.vstup-spz { text-transform: uppercase; font-family: ui-monospace, Consolas, monospace; letter-spacing: .05em; }
+
+/* ---------- stavy ---------- */
+td:first-child, td:nth-child(2) { white-space: nowrap; }
+.stav { white-space: nowrap; display: inline-block; padding: .1rem .55rem; border-radius: 999px; font-size: .8rem; font-weight: 600; color: #fff; vertical-align: middle; }
+.stav-prijato { background: var(--c-prijato); }
+.stav-v_oprave { background: var(--c-v_oprave); }
+.stav-hotovo { background: var(--c-hotovo); }
+.stav-predano { background: var(--c-predano); }
+h1 .stav { font-size: 1rem; }
+
+.zmena-stavu { display: flex; gap: .4rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+.zmena-stavu button { margin: 0; padding: .3rem .8rem; font-size: .9rem; width: auto; }
+.stav-tlacitko.aktivni { opacity: 1; }
+
+/* ---------- seznamy a filtry ---------- */
+.filtr-stavu { display: flex; gap: .25rem; flex-wrap: wrap; margin-bottom: .75rem; justify-content: flex-start; }
+.filtr-stavu a { padding: .3rem .7rem; border-radius: 6px; text-decoration: none; font-size: .9rem; }
+.filtr-stavu a[aria-current="page"] { background: var(--pico-primary-background); color: var(--pico-primary-inverse); }
+.filtr input { max-width: 420px; }
+table { font-size: .93rem; }
+.vysledky-seznam { padding-left: 0; }
+.vysledky-seznam li { list-style: none; padding: .35rem 0; border-bottom: 1px solid var(--pico-muted-border-color); }
+
+/* ---------- formuláře ---------- */
+.formular { max-width: 900px; }
+.mrizka { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0 1rem; }
+fieldset { border: 1px solid var(--pico-muted-border-color); border-radius: 8px; padding: .75rem 1rem 0; margin-bottom: 1.25rem; }
+legend { font-weight: 600; padding: 0 .4rem; }
+.vyber-zakaznika .vysledky { margin: .25rem 0 1rem; }
+.vyber-zakaznika .vysledky label { display: block; padding: .2rem 0; }
+.nalezene-vozidlo { margin-top: 0; padding: .75rem 1rem; background: var(--pico-card-sectioning-background-color); }
+.nalezene-vozidlo p { margin-bottom: .4rem; }
+.otevrit-okno { width: auto; margin-bottom: .75rem; }
+/* příjem: vlevo zákazník, uprostřed zakázka, vpravo vozidlo (jako okno Zakázka ve starém systému) */
+.prijem-panely { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, .8fr) minmax(0, 1.2fr); gap: 1rem; align-items: start; }
+.prijem .panel { margin: 0; padding: .75rem 1rem; border: 1px solid var(--pico-muted-border-color); border-radius: var(--pico-border-radius); }
+.prijem .panel legend { font-weight: 600; padding: 0 .4rem; }
+.prijem .panel label { margin-bottom: .5rem; }
+.prijem .panel input:not([type=checkbox],[type=radio]), .prijem .panel select { margin-bottom: 0; padding-top: .35rem; padding-bottom: .35rem; height: auto; }
+.prijem .mrizka { gap: .6rem; }
+.radek-s-tlacitky { display: flex; gap: .4rem; align-items: flex-end; margin-bottom: .5rem; }
+.radek-s-tlacitky .roztahnout { flex: 1; margin-bottom: 0; }
+.radek-s-tlacitky button { width: auto; margin: 0; padding: .4rem .7rem; }
+.stav-panelu { font-size: .85rem; margin: 0 0 .6rem; }
+.stav-panelu label.inline { display: inline-flex; gap: .3rem; align-items: center; margin: .2rem 0 0; font-size: .85rem; }
+.jen-cteni { font-weight: 600; }
+.mrizka-psc { grid-template-columns: 1fr 2fr; }
+.mrizka-vin { grid-template-columns: 3fr 1fr; }
+.prijem > fieldset:not(.panel) { margin-top: 1rem; }
+@media (max-width: 900px) { .prijem-panely { grid-template-columns: 1fr; } }
+.novy-zakaznik > button { margin-bottom: 0; }
+/* okno databáze vozidel / zákazníků */
+#okno-databaze article { width: min(1100px, 96vw); max-width: none; max-height: 88vh; display: flex; flex-direction: column; padding-bottom: .5rem; }
+#okno-obsah { display: flex; flex-direction: column; min-height: 0; }
+.okno-hlavicka { display: flex; justify-content: space-between; align-items: center; gap: 1rem; margin-bottom: .75rem; }
+.okno-hlavicka h3 { margin: 0; }
+.okno-hlavicka button { width: auto; margin: 0; }
+.okno-tabulka { overflow: auto; max-height: 62vh; }
+.okno-tabulka td { vertical-align: middle; }
+.okno-tabulka .vpravo { text-align: right; white-space: nowrap; }
+.okno-tabulka button { margin: 0; }
+.maly-text { font-size: .85rem; margin-bottom: .3rem; }
+
+/* ---------- detail ---------- */
+.dva-sloupce { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.dva-sloupce article { margin: 0 0 1rem; }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: .2rem 1rem; margin: 0; }
+dt { color: var(--pico-muted-color); font-weight: normal; }
+dd { margin: 0; }
+dl.radek { grid-template-columns: repeat(3, max-content 1fr); }
+
+/* ---------- tisk (zakázkový list) ---------- */
+.jen-tisk { display: none; }
+@media print {
+  .horni-lista, .menu, .neni-tisk { display: none !important; }
+  .jen-tisk { display: flex; }
+  .obsah { padding: 0; max-width: none; }
+  article { box-shadow: none; border: 1px solid #999; }
+  .podpisy { justify-content: space-between; margin-top: 4rem; }
+  .podpisy div { border-top: 1px solid #000; width: 40%; padding-top: .3rem; text-align: center; }
+  a { text-decoration: none; color: #000; }
+}
+
+@media (max-width: 760px) {
+  .rozvrzeni { flex-direction: column; align-items: stretch; gap: 0; }
+  .akce { order: -1; position: static; width: auto; flex-direction: row; flex-wrap: wrap; margin: .5rem 1rem 0; }
+  .akce > * { flex: 1 1 auto; }
+  .akce hr, .akce .poznamka { display: none; }
+  .menu a { padding: .3rem .55rem; }
+  .menu .verze { display: none; }
+  .obsah { padding: 1rem; }
+  .horni-lista { flex-wrap: wrap; position: static; }
+  .horni-lista .hledani { order: 3; flex-basis: 100%; max-width: none; }
+  .pridani-polozky label.sirsi { grid-column: auto; }
+  .dva-sloupce { grid-template-columns: 1fr; }
+  dl.radek { grid-template-columns: max-content 1fr; }
+}
+
+/* ---------- ceník a položky zakázky ---------- */
+.cislo { text-align: right; white-space: nowrap; }
+.typ { display: inline-block; font-size: .75rem; font-weight: 600; padding: .05rem .45rem; border-radius: 4px; white-space: nowrap; }
+.typ-prace { background: #e0ecff; color: #1e40af; }
+.typ-material { background: #fdf0d5; color: #8a5300; }
+tr.vyrazeno td { opacity: .5; }
+.filtr { display: flex; gap: 1rem; align-items: center; flex-wrap: wrap; }
+.filtr label { margin: 0; white-space: nowrap; }
+#cenik-panel .jen-prace { display: none; }
+#cenik-panel[data-typ="prace"] .jen-prace { display: block; }
+.prepinac-typu label { display: inline-block; margin-right: 1.5rem; }
+
+table.polozky td, table.polozky th { padding: .4rem .5rem; }
+.akce-radku { white-space: nowrap; }
+.akce-radku form { display: inline; margin: 0; }
+button.odkaz { background: none; border: 0; padding: 0 .3rem; color: var(--c-chyba); width: auto; margin: 0; cursor: pointer; }
+.rekapitulace { display: flex; justify-content: flex-end; margin-top: .5rem; }
+.rekapitulace dl { grid-template-columns: max-content minmax(9rem, max-content); }
+.rekapitulace dd { text-align: right; }
+.rekapitulace .celkem { font-weight: 700; font-size: 1.15rem; color: var(--pico-color); border-top: 1px solid var(--pico-muted-border-color); padding-top: .3rem; }
+
+.pridani-polozky { border-top: 1px dashed var(--pico-muted-border-color); margin-top: 1rem; padding-top: .5rem; }
+.pridani-polozky details { margin-top: 1rem; }
+.pridani-polozky label.sirsi { grid-column: span 2; }
+table.vyber-cenik td { padding: .3rem .5rem; vertical-align: middle; }
+.radek-pridat { display: flex; gap: .4rem; margin: 0; justify-content: flex-end; }
+.radek-pridat input.vstup-mnozstvi { width: 4.5rem; margin: 0; padding: .25rem .4rem; height: auto; }
+.radek-pridat button { margin: 0; width: auto; }
+@media print {
+  .typ { background: none !important; color: #000 !important; padding: 0; }
+}
+
+/* ---------- faktury ---------- */
+.stav-dokladu { display: inline-block; padding: .1rem .55rem; border-radius: 999px; font-size: .8rem; font-weight: 600; white-space: nowrap; vertical-align: middle; }
+/* zaplaceno = zelená, čeká na platbu = oranžová, po splatnosti = červená, storno = šedá přeškrtnutá */
+.stav-dokladu-uhrazena { background: #dcfce7; color: #166534; }
+.stav-dokladu-neuhrazena { background: #fef3c7; color: #92400e; }
+.stav-dokladu-castecne { background: repeating-linear-gradient(135deg, #fef3c7 0 6px, #dcfce7 6px 12px); color: #78350f; }
+.stav-dokladu-po_splatnosti { background: #fee2e2; color: #991b1b; }
+.stav-dokladu-stornovano { background: #f3f4f6; color: #6b7280; text-decoration: line-through; }
+h1 .stav-dokladu { font-size: 1rem; }
+tr.doklad-po_splatnosti td { color: var(--c-chyba); }
+tr.zrusena-uhrada td { color: var(--pico-muted-color); }
+tr.zrusena-uhrada td:nth-child(-n+3) { text-decoration: line-through; }
+.zruseno { color: var(--c-chyba); font-size: .8rem; }
+.kod-polozky { color: var(--pico-muted-color); font-size: .85em; white-space: nowrap; }
+tr.doklad-stornovano td { opacity: .5; text-decoration: line-through; }
+tfoot td { font-weight: 600; }
+.upozorneni-ram { background: #fff7e6; color: #7a4a00; padding: .6rem 1rem; border-radius: 6px; border-left: 4px solid var(--c-v_oprave); }
+.qr { display: inline-flex; flex-direction: column; align-items: center; margin-top: .75rem; background: #fff; padding: .4rem; border-radius: 6px; }
+.qr svg { width: 120px; height: 120px; }
+
+/* =====================================================================
+   DESKTOPOVÝ VZHLED (inspirace: starý systém): hustší obrazovka, šedé pozadí,
+   panely s titulkem, tabulky jako mřížka s výběrem řádku.
+   Přepisuje výchozí vzdušný vzhled Pico.css – musí zůstat na konci souboru.
+   ===================================================================== */
+:root[data-theme="light"] {
+  --pico-font-size: 87.5%;              /* 14 px */
+  --pico-line-height: 1.35;
+  --pico-spacing: .75rem;
+  --pico-typography-spacing-vertical: .6rem;
+  --pico-form-element-spacing-vertical: .3rem;
+  --pico-form-element-spacing-horizontal: .5rem;
+  --pico-border-radius: 3px;
+  --pico-block-spacing-vertical: .6rem;
+  --pico-block-spacing-horizontal: .75rem;
+  --pico-background-color: #fff;
+  --pico-primary: #1d4f91;
+  --pico-primary-background: #1d4f91;
+  --pico-primary-hover: #163d70;
+  --pico-primary-hover-background: #163d70;
+  --pico-card-box-shadow: 0 1px 2px rgba(0,0,0,.08);
+  --plocha: #e4e7eb;                    /* pozadí za okny */
+  --ram: #b9c0c8;                       /* rámečky oken a mřížky */
+  --titulek: #eef1f4;                   /* titulky panelů, hlavičky tabulek */
+  --vybrany-radek: #cfe0f7;
+  --menu-sirka: 170px;
+}
+html[data-theme="light"] body { background: var(--plocha); }
+h1 { font-size: 1.25rem; margin-bottom: .4rem; }
+h2 { font-size: 1.1rem; } h3 { font-size: 1rem; } h4 { font-size: .95rem; }
+input:not([type=checkbox],[type=radio]), select, textarea { height: auto; }
+input[type=search] { --pico-border-radius: 3px; border-radius: 3px; }
+button, [role=button], input[type=submit] { padding: .3rem .8rem; }
+label { margin-bottom: .45rem; }
+
+/* horní lišta = titulek aplikace */
+.horni-lista { background: #1d4f91; border-bottom: 0; padding: .5rem 1.25rem; gap: 1.5rem; height: 58px; }
+.horni-lista .logo { color: #fff; font-size: 1.55rem; }
+.horni-lista .hledani { max-width: 640px; }
+.horni-lista .hledani input { background: #fff; padding: .45rem .9rem; font-size: 1.12rem; }
+/* menu jako lišta programu (top = výška horní lišty) */
+.menu { background: #f5f6f8; border-bottom: 1px solid var(--ram); position: sticky; top: 58px; z-index: 9; }
+.menu a { padding: .4rem .95rem; border-radius: 0; color: #1f2937; font-size: 1.07rem; }
+.menu a:hover { background: #dde5ef; }
+.obsah { padding: .75rem 1rem; max-width: none; }
+
+/* sloupec akcí = panel s tlačítky pod sebou */
+.akce { background: #f5f6f8; border: 1px solid var(--ram); border-radius: 3px; padding: .5rem; top: 7rem; width: 170px; }
+.akce a[role=button], .akce button { padding: .45rem .6rem; font-size: 1.02rem; }
+.akce button:disabled { opacity: .45; }
+
+/* panely (article) = okna s titulkem */
+article { border: 1px solid var(--ram); border-radius: 3px; padding: .5rem .75rem; margin-bottom: .75rem; }
+article > header {
+  margin: -.5rem -.75rem .5rem; padding: .3rem .75rem;
+  background: var(--titulek); border-bottom: 1px solid var(--ram);
+}
+fieldset { background: #fff; border-color: var(--ram); border-radius: 3px; padding: .5rem .75rem 0; margin-bottom: .75rem; }
+
+/* nadpis + tlačítka = nástrojová lišta */
+.obsah > .nadpis-radek {
+  background: #fff; border: 1px solid var(--ram);
+  padding: .35rem .6rem; margin: 0 0 .75rem;
+}
+.obsah > .nadpis-radek:has(+ .filtr-stavu, + .filtr) { border-bottom: 0; margin-bottom: 0; }
+.obsah > .nadpis-radek h1 { margin: 0; font-size: 1.1rem; }
+.filtr { margin: 0; }
+
+/* filtry stavů = záložky */
+.filtr-stavu { gap: 0; margin: 0; padding: .3rem .6rem 0; background: #fff; border: 1px solid var(--ram); border-bottom: 0; border-top-color: #e3e6ea; }
+.filtr-stavu a { border: 1px solid transparent; border-bottom: 0; border-radius: 3px 3px 0 0; padding: .25rem .7rem; font-size: .9rem; color: #1f2937; }
+.filtr-stavu a[aria-current="page"] { background: var(--titulek); color: #111; border-color: var(--ram); font-weight: 600; }
+.filtr { background: var(--titulek); border: 1px solid var(--ram); border-bottom: 0; padding: .35rem .6rem; gap: .75rem; }
+.filtr input, .filtr select { margin: 0; padding-top: .2rem; padding-bottom: .2rem; }
+.filtr select { width: auto; min-width: 11rem; }
+.filtr label { font-size: .9rem; }
+
+/* tabulky = datová mřížka */
+.overflow-auto:has(> table) { background: #fff; border: 1px solid var(--ram); margin-bottom: .75rem; }
+.overflow-auto > table { margin: 0; }
+table { font-size: .9rem; border-collapse: collapse; background: #fff; }
+.obsah > table { border: 1px solid var(--ram); }
+th, td { padding: .2rem .5rem; border: 1px solid #dde1e6; }
+thead th {
+  background: var(--titulek); font-weight: 600; font-size: .85rem; color: #374151;
+  border-bottom: 1px solid var(--ram); white-space: nowrap; position: sticky; top: 0; z-index: 1;
+}
+table.striped tbody tr:nth-child(odd) td { background: #f7f9fb; }
+tbody tr:hover td { background: #eaf1fb !important; }
+tbody tr.vybrany td { background: var(--vybrany-radek) !important; }
+tbody tr[data-otevrit] { cursor: default; user-select: none; }
+tfoot td { background: var(--titulek); }
+table.polozky td, table.polozky th { padding: .2rem .5rem; }
+.stav, .stav-dokladu { padding: 0 .45rem; font-size: .75rem; border-radius: 3px; }
+.spz { border-width: 1px; border-left-width: 5px; font-size: .85em; }
+
+/* stavový řádek pod seznamem */
+.stavovy-radek {
+  display: flex; justify-content: space-between; gap: 1rem;
+  background: var(--titulek); border: 1px solid var(--ram); border-top: 0;
+  padding: .2rem .6rem; font-size: .8rem; color: #4b5563; margin-top: -.75rem; margin-bottom: .75rem;
+}
+
+/* příjem zakázky: celé okno na jednu obrazovku – drobné popisky, nízká pole */
+.formular.prijem { max-width: 1400px; }
+.prijem-panely { gap: .6rem; }
+.prijem .panel { padding: .35rem .6rem .1rem; }
+.prijem .panel label { font-size: .8rem; color: #4b5563; margin-bottom: .3rem; }
+.prijem .panel input:not([type=checkbox],[type=radio]), .prijem .panel select, .prijem .panel textarea {
+  font-size: .9rem; color: #111; padding: .15rem .4rem; margin-top: .1rem;
+}
+.prijem .panel select { padding-right: 1.8rem; }
+.prijem .mrizka { grid-template-columns: repeat(auto-fit, minmax(90px, 1fr)); gap: 0 .5rem; }
+.prijem .mrizka-psc { grid-template-columns: 1fr 2fr; }
+.prijem .mrizka-vin { grid-template-columns: 3fr 1fr; }
+.prijem .radek-s-tlacitky { margin-bottom: .3rem; }
+.prijem .radek-s-tlacitky button { padding: .2rem .55rem; font-size: .8rem; }
+.prijem .stav-panelu { font-size: .78rem; margin-bottom: .35rem; }
+.prijem textarea { resize: vertical; }
+.oznaceni { font-size: .9rem; font-weight: 400; margin-left: .4rem; }
+/* okno formuláře (nová zakázka, úprava) nad stránkou */
+#okno-formular-obsah {
+  width: min(1500px, 97vw); max-height: 94vh; overflow: auto;
+  background: var(--plocha, #e4e7eb); border: 1px solid var(--ram, #b9c0c8); border-radius: 4px;
+  box-shadow: 0 10px 40px rgba(0,0,0,.35);
+}
+#okno-formular-obsah:empty { display: none; }
+.okno-formular .rozvrzeni { min-height: 0; }
+.okno-formular .akce { position: static; }
+.okno-formular .obsah { padding: .75rem .75rem .75rem 0; }
+.okno-formular > .chyba, .okno-formular > .uspech { margin: .75rem .75rem 0; }
+/* menší formuláře (zákazník, ceník, položka, doklad) – užší okno i stránka */
+#okno-formular-obsah:has(.uzky) { width: min(720px, 97vw); }
+#okno-formular-obsah:has(.stredni) { width: min(1050px, 97vw); }
+.formular.prijem.uzky { max-width: 720px; }
+.formular.prijem.stredni { max-width: 1050px; }
+.prijem .panel + .panel { margin-top: .6rem; }
+.uprava-panely > .panel + .panel { margin-top: 0; }
+.prijem .panel .prepinac-typu, .prijem .panel .volba { font-size: .85rem; margin: .2rem 0 .4rem; }
+.prijem .panel .prepinac-typu label { display: inline-flex; gap: .3rem; align-items: center; font-size: .85rem; color: #111; }
+.prijem .panel .napoveda { font-size: .78rem; margin: 0 0 .4rem; }
+.akce .smazat { margin-top: .5rem; }
+.prijem input[type=radio], .prijem input[type=checkbox] { width: 1.25em; height: 1.25em; flex-shrink: 0; }
+
+/* detail zakázky jako pracovní okno: hlavička v pásu, položky jako mřížka, součty dole */
+.nadpis-radek .zmena-stavu { margin: 0; gap: .25rem; }
+.nadpis-radek .zmena-stavu button { padding: .15rem .6rem; font-size: .8rem; }
+.hlavicka-zakazky {
+  display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, .8fr) minmax(0, 1.4fr);
+  gap: .5rem; margin-bottom: .75rem; align-items: stretch;
+}
+.hlavicka-zakazky .panel { background: #fff; border: 1px solid var(--ram); border-radius: 3px; padding: 0 .6rem .4rem; font-size: .88rem; }
+.titulek-panelu {
+  font-size: .8rem; font-weight: 600; color: #374151; margin: 0 -.6rem .35rem; padding: .15rem .6rem;
+  background: var(--titulek); border-bottom: 1px solid var(--ram);
+}
+.hlavicka-zakazky dl { gap: .05rem .6rem; }
+.hlavicka-zakazky p { margin-bottom: .3rem; }
+.hlavni-udaj { font-weight: 600; }
+.pozadavek .zachovat-radky { max-height: 7.5rem; overflow: auto; }
+.titulek-mrizky {
+  display: flex; justify-content: space-between; gap: 1rem; align-items: baseline;
+  background: var(--titulek); border: 1px solid var(--ram); border-bottom: 0; padding: .2rem .6rem; font-size: .88rem;
+}
+.titulek-mrizky + .overflow-auto, .titulek-mrizky + .prazdna-mrizka { margin-top: 0; }
+.prazdna-mrizka { background: #fff; border: 1px solid var(--ram); padding: .75rem .6rem; }
+.soucty {
+  display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .3rem 1.5rem;
+  background: var(--titulek); border: 1px solid var(--ram); border-top: 0; margin-top: -.75rem; margin-bottom: .75rem;
+  padding: .3rem .6rem; font-size: .88rem; color: #4b5563;
+}
+.soucty strong { color: #111; margin-left: .25rem; }
+.soucty .celkem { font-size: 1rem; color: #111; }
+@media (max-width: 1100px) { .hlavicka-zakazky { grid-template-columns: 1fr 1fr; } }
+/* detail vozidla / zákazníka: panely stejně široké, zalomí se samy */
+.hlavicka-zakazky.hlavicka-detailu { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }
+.hlavicka-detailu + .filtr-stavu { border-top-color: var(--ram); }
+@media (max-width: 600px) { .hlavicka-zakazky { grid-template-columns: 1fr; } }
+@media print {
+  .hlavicka-zakazky { grid-template-columns: 1fr 1fr 1fr; }
+  .hlavicka-zakazky .pozadavek { grid-column: 1 / -1; }
+  .pozadavek .zachovat-radky { max-height: none; }
+  .titulek-mrizky, .soucty, .titulek-panelu { background: none; }
+}
+/* okno potvrzení (místo systémového confirm) */
+dialog.potvrzeni { background: rgba(0,0,0,.25); }
+dialog.potvrzeni article {
+  width: min(440px, 92vw); max-width: none; padding: 1rem 1.1rem .8rem; margin: 0;
+  border: 1px solid var(--ram); border-radius: 4px; box-shadow: 0 10px 40px rgba(0,0,0,.35);
+}
+.potvrzeni-text { margin: 0 0 1rem; font-size: .95rem; white-space: pre-line; }
+dialog.potvrzeni .tlacitka { justify-content: flex-end; }
+dialog.potvrzeni button { width: auto; min-width: 6rem; margin: 0; }
+button.nebezpecne { background: var(--c-chyba); border-color: var(--c-chyba); color: #fff; }
+/* Smazat v řádku položek zakázky – červený obrys, ať se neplete s výběrem řádku */
+table.mrizka-polozek th.sl-smazat { width: 6rem; }
+/* množství v řádku zakázky – pole přímo v mřížce */
+form.mnozstvi-radku { margin: 0; }
+form.mnozstvi-radku input { margin: 0 !important; padding: 2px 6px !important; height: auto; text-align: right;
+  font-size: inherit; width: 100%; }
+@media print { form.mnozstvi-radku input { border: 0; padding: 0 !important; background: none; } }
+table.mrizka-polozek td.sl-smazat { text-align: right; overflow: visible; white-space: nowrap; padding-left: 4px; padding-right: 8px; }
+button.smazat-radek { background: transparent !important; color: var(--c-chyba) !important; border: 1px solid var(--c-chyba) !important;
+  padding: 2px 10px; font-size: .8rem; box-shadow: none !important; }
+button.smazat-radek:hover { background: var(--c-chyba) !important; color: #fff !important; }
+
+/* krátká hláška po uložení – vpravo nahoře, sama zmizí */
+.zprava {
+  position: fixed; bottom: 1rem; right: 1rem; z-index: 100; max-width: min(420px, 90vw);
+  background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; border-left: 4px solid var(--c-hotovo);
+  border-radius: 3px; padding: .45rem .9rem; font-size: .9rem; box-shadow: 0 3px 12px rgba(0,0,0,.15);
+  transition: opacity .4s;
+}
+.zprava.mizi { opacity: 0; }
+.zprava.zprava-chyba { background: #fdecea; color: var(--c-chyba); border-color: #f5b7b1; border-left-color: var(--c-chyba); }
+
+/* zápisky v prázdných polích (placeholder) nesmí vypadat jako vyplněná hodnota */
+input::placeholder, textarea::placeholder { color: #a3aab5; font-style: italic; opacity: 1; }
+/* pole, kterého se týká chyba ve formuláři */
+input[aria-invalid="true"], select[aria-invalid="true"], textarea[aria-invalid="true"] {
+  border-color: var(--c-chyba) !important; box-shadow: 0 0 0 2px #f5b7b1 !important;
+}
+.akce .chyba-text { font-size: .75rem; margin: 0; }
+/* pole doplněné tlačítkem Načti z registru vozidel (do uložení) */
+/* aplikace má vynucený světlý vzhled – bez varianty pro tmavý režim */
+input.doplneno-z-registru { background-color: #eaf6ec !important; color: inherit; }
+/* pole hledání v panelech: místo pro ikonu lupy (jinak překrývá první písmeno) */
+.prijem .panel input[type=search] { padding-left: 2rem !important; background-position: .5rem 50%; }
+/* právě uložený řádek seznamu */
+tbody tr.zvyrazneny td { box-shadow: inset 0 0 0 9999px rgba(250, 204, 21, .18); }
+
+/* povinná pole: hvězdička u popisku, červený rámeček až po opuštění prázdného pole */
+input:user-invalid, select:user-invalid, textarea:user-invalid { border-color: var(--c-chyba) !important; }
+.povinne { font-weight: 700; }
+
+/* řaditelné hlavičky mřížky a načítání dalších řádků */
+th.razeni { padding: 0; }
+th.razeni a { display: block; padding: .2rem .5rem; color: inherit; text-decoration: none; }
+th.razeni a:hover { background: #dde5ef; }
+th.razeni.serazeno { background: #e2e9f3; }
+th.razeni .sipka { font-size: .65rem; margin-left: .3rem; color: var(--pico-primary); }
+th.razeni.cislo a { text-align: right; }
+.stavovy-radek .nacist-dalsi { padding: 0 .5rem; margin: 0 0 0 .6rem; font-size: .78rem; width: auto; }
+#seznam.htmx-request { opacity: .6; transition: opacity .1s; }
+.prazdna-mrizka p:last-child { margin-bottom: 0; }
+
+/* okno Přidat z ceníku – pevná výška, aby okno při hledání a přidávání neposkakovalo */
+.okno-cenik .vysledky-ceniku { height: 58vh; overflow: auto; background: #fff; border: 1px solid var(--ram); }
+.okno-cenik .vysledky-ceniku table { margin: 0; }
+.okno-cenik input[type=search] { margin-bottom: .4rem; }
+.okno-cenik .vyber-cenik td { padding: .1rem .5rem; vertical-align: middle; }
+.okno-cenik .vyber-cenik { table-layout: fixed; width: 100%; }
+.okno-cenik .vyber-cenik .sl-typ { width: 6.5rem; }
+.okno-cenik .vyber-cenik .sl-kod { width: 8.5rem; }
+.okno-cenik .vyber-cenik .sl-cena { width: 6.5rem; }
+.okno-cenik .vyber-cenik .sl-cena-mj { width: 9.5rem; }  /* „1 600,00 / úkon“ */
+/* poslední sloupec: Upravit | množství | Přidat – musí se vejít celý, jinak se pole množství ořízne */
+.okno-cenik .vyber-cenik .sl-mnozstvi { width: 17rem; }
+.okno-cenik .vyber-cenik td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.okno-cenik .vyber-cenik td.bunka-pridat { overflow: visible; }
+.bunka-pridat > div { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
+.bunka-pridat .radek-pridat { flex: none; }
+.bunka-pridat .upravit-kartu { margin: 0 auto 0 0; width: auto; padding: 4px 10px !important; font-size: .8rem !important; }
+.okno-cenik .radek-pridat input.vstup-mnozstvi { text-align: right; flex: none; }
+.okno-cenik .vyber-cenik tbody tr[data-pridat] { cursor: pointer; }
+#okno-formular-obsah:has(.siroky) { width: min(1350px, 97vw); }
+.formular.prijem.siroky { max-width: 1350px; }
+.okno-cenik .omezeni { padding: .3rem .6rem; margin: 0; }
+.hlaseni-okna { min-height: 2.1rem; margin: 0 0 .4rem; padding: .35rem .8rem; font-size: .88rem; }
+.hlaseni-okna:empty { visibility: hidden; }
+.cenik-a-zakazka { display: grid; grid-template-columns: minmax(0, 1fr) 15rem; gap: .6rem; align-items: start; }
+.na-zakazce { background: #fff; border: 1px solid var(--ram); }
+.na-zakazce .titulek-mrizky { border: 0; border-bottom: 1px solid var(--ram); }
+.na-zakazce-seznam { height: calc(58vh + 2.2rem - 1.6rem); overflow: auto; padding: .2rem .5rem; font-size: .85rem; }
+.na-zakazce-radek { display: flex; justify-content: space-between; gap: .4rem; align-items: center; padding: .15rem 0; border-bottom: 1px solid #eef0f3; }
+.na-zakazce-radek form { margin: 0; }
+@media (max-width: 900px) { .cenik-a-zakazka { grid-template-columns: 1fr; } .na-zakazce-seznam { height: auto; max-height: 30vh; } }
+
+/* mřížka položek zakázky – pevné šířky sloupců, tabulka po změně neposkočí */
+table.mrizka-polozek { table-layout: fixed; width: 100%; }
+table.mrizka-polozek th:nth-child(1) { width: 6rem; }
+table.mrizka-polozek th:nth-child(2) { width: 9rem; }
+table.mrizka-polozek th:nth-child(4) { width: 6rem; }
+table.mrizka-polozek th:nth-child(5) { width: 3.5rem; }
+table.mrizka-polozek th:nth-child(6) { width: 8.5rem; }
+table.mrizka-polozek th:nth-child(7) { width: 4.5rem; }
+table.mrizka-polozek th:nth-child(8), table.mrizka-polozek th:nth-child(9) { width: 8.5rem; }
+table.mrizka-polozek.bez-dph th:nth-child(7) { width: 8.5rem; }
+table.mrizka-polozek td { overflow: hidden; text-overflow: ellipsis; }
+table.mrizka-ceniku { table-layout: fixed; width: 100%; }
+table.mrizka-ceniku th:nth-child(1) { width: 12rem; }
+table.mrizka-ceniku th:nth-child(3) { width: 6.5rem; }
+table.mrizka-ceniku th:nth-child(4) { width: 11rem; }
+table.mrizka-ceniku th:nth-child(5) { width: 4.5rem; }
+table.mrizka-ceniku th:nth-child(6) { width: 8rem; }
+table.mrizka-ceniku td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.okno-cenik .radek-pridat input.vstup-mnozstvi { padding: .05rem .35rem; font-size: .85rem; width: 4rem; }
+.okno-cenik .radek-pridat button { padding: .1rem .55rem; font-size: .8rem; }
+
+/* úprava zakázky: vlevo zakázka, vpravo zákazník */
+.uprava-panely { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: .6rem; align-items: start; }
+@media (max-width: 900px) { .uprava-panely { grid-template-columns: 1fr; } }
+.prijem .vyber-zakaznika input[type=search] { margin-bottom: .3rem; }
+.prijem .vyber-zakaznika .vysledky { margin: 0 0 .4rem; font-size: .85rem; }
+.prijem .otevrit-okno { padding: .2rem .55rem; font-size: .8rem; margin-bottom: .4rem; }
+.prijem .blok-zakaznika .mrizka { grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); }
+
+@media (max-width: 760px) {
+  .menu { position: static; }
+  .akce { padding: .35rem; }
+  .s-akcemi .obsah { padding-left: 1rem; }
+  .akce a[role=button], .akce button { width: auto; padding: .3rem .6rem; }
+}
+
+/* tablet / dotyk: řádky a tlačítka o něco větší */
+@media (pointer: coarse) {
+  th, td { padding: .4rem .5rem; }
+  .menu a { padding: .45rem .6rem; }
+}
+@media print {
+  html[data-theme="light"] body { background: #fff; }
+  .nadpis-radek, .filtr, .filtr-stavu, .stavovy-radek { border: 0; background: none; }
+  thead th { position: static; }
+}
+
+/* ---------- výběr zákazníka ---------- */
+/* pole nového zákazníka jen když je zvolena volba "Nový zákazník" */
+.blok-zakaznika:not(:has(input[value="novy"]:checked)) .novy-zakaznik { display: none; }
+.bez-zakaznika { color: var(--pico-muted-color); font-style: italic; }
+
+/* =====================================================================
+   VZHLED „MODERNÍ“ (styl 3 ze vzorníku UI/index.html) – popis viz VZHLED.md
+   Bílé plochy na světle šedém pozadí, měkké stíny, fialovo-modrý akcent,
+   stavy jako jemné štítky s tečkou. Hustota a rozložení obrazovek zůstávají
+   z desktopového vzhledu výše. Musí zůstat úplně na konci souboru.
+   ===================================================================== */
+:root[data-theme="light"] {
+  --akcent: #5b5bd6;
+  --akcent-tmavy: #4646b8;
+  --akcent-svetly: #eeeefd;
+  --text: #111827;
+  --text-tlumeny: #5b6472;
+  --stin: 0 1px 2px rgba(16,24,40,.05), 0 4px 14px rgba(16,24,40,.06);
+  --pico-font-family: "Inter", system-ui, "Segoe UI", sans-serif;
+  --pico-color: var(--text);
+  --pico-h1-color: var(--text); --pico-h2-color: var(--text); --pico-h3-color: var(--text); --pico-h4-color: var(--text);
+  --pico-muted-color: var(--text-tlumeny);
+  --pico-muted-border-color: #e5e7eb;
+  --pico-border-radius: 8px;
+  --pico-primary: var(--akcent);
+  --pico-primary-hover: var(--akcent-tmavy);
+  --pico-primary-underline: rgba(91,91,214,.35);
+  --pico-primary-background: var(--akcent);
+  --pico-primary-border: var(--akcent);
+  --pico-primary-hover-background: var(--akcent-tmavy);
+  --pico-primary-hover-border: var(--akcent-tmavy);
+  --pico-primary-inverse: #fff;
+  --pico-primary-focus: rgba(91,91,214,.3);
+  --pico-secondary: var(--text);
+  --pico-secondary-hover: var(--text);
+  --pico-secondary-background: #fff;
+  --pico-secondary-border: #d1d5db;
+  --pico-secondary-hover-background: #f3f4f6;
+  --pico-secondary-hover-border: #9ca3af;
+  --pico-secondary-inverse: var(--text);
+  --pico-secondary-focus: rgba(17,24,39,.15);
+  --pico-form-element-background-color: #fff;
+  --pico-form-element-border-color: #d1d5db;
+  --pico-form-element-active-background-color: #fff;
+  --pico-form-element-active-border-color: var(--akcent);
+  --pico-form-element-focus-color: rgba(91,91,214,.25);
+  --pico-card-box-shadow: var(--stin);
+  --plocha: #f4f4f8;
+  --ram: #e5e7eb;
+  --titulek: #fafafa;
+  --vybrany-radek: var(--akcent-svetly);
+  --c-prijato: #475569;
+  --c-v_oprave: #b45309;
+  --c-hotovo: #15803d;
+  --c-predano: #1d4ed8;
+  --c-chyba: #b91c1c;
+}
+
+html[data-theme="light"] { background: var(--plocha); }
+
+/* horní lišta: bílá, menu jako „pilulky“ */
+.horni-lista { background: #fff; border-bottom: 1px solid var(--ram); }
+.horni-lista .logo { color: var(--text); }
+.horni-lista .hledani input { background-color: #f3f4f6; color: var(--text); border: 1px solid #d1d5db; border-radius: 10px; }
+.horni-lista .hledani input::placeholder { color: #6b7280; }
+.horni-lista .hledani input:focus { background-color: #fff; border-color: var(--akcent); box-shadow: 0 0 0 3px rgba(91,91,214,.2); }
+.horni-lista .prijem { background: var(--akcent); color: #fff; border-color: var(--akcent); border-radius: 10px; box-shadow: 0 2px 6px rgba(91,91,214,.3); }
+.menu { background: #fff; border-bottom: 1px solid var(--ram); padding: .3rem 1rem; }
+.menu ul { gap: .2rem; }
+.menu a { color: #4b5563; font-weight: 500; border-radius: 8px; padding: .3rem .75rem; }
+.menu a:hover { background: #f3f4f6; color: var(--text); }
+.menu a[aria-current="page"] { background: var(--akcent-svetly); color: var(--akcent-tmavy); font-weight: 600; }
+.menu .verze { color: #6b7280; }
+
+/* tlačítka: zaoblená, polotučná */
+button, [role=button], input[type=submit] { border-radius: 8px; font-weight: 600; }
+button:not(.secondary):not(.outline):not(.nebezpecne):not(.odkaz):not(:disabled),
+[role=button]:not(.secondary):not(.outline), input[type=submit] { box-shadow: 0 1px 2px rgba(16,24,40,.12); }
+.outline, [role=button].outline { --pico-color: var(--akcent-tmavy); border-color: var(--akcent); background: #fff; }
+button:disabled, [role=button][disabled] { background: #f3f4f6 !important; color: #6b7280 !important; border-color: #e5e7eb !important; box-shadow: none; }
+button.odkaz { border-radius: 0; box-shadow: none; }
+
+/* sloupec akcí a panely = bílé karty s měkkým stínem */
+.akce { background: #fff; border: 1px solid var(--ram); border-radius: 12px; box-shadow: var(--stin); }
+article { border: 1px solid var(--ram); border-radius: 12px; box-shadow: var(--stin); }
+article > header { background: #fff; border-bottom: 1px solid var(--ram); font-weight: 600; border-radius: 12px 12px 0 0; }
+fieldset { border-color: var(--ram); border-radius: 12px; background: #fff; }
+.prijem .panel { border-radius: 12px; box-shadow: var(--stin); }
+legend, .prijem .panel legend { font-weight: 600; color: var(--text); }
+.titulek-panelu, .titulek-mrizky { background: #fafafa; border-bottom: 1px solid var(--ram); color: #4b5563; font-weight: 600; }
+.titulek-panelu { text-transform: uppercase; letter-spacing: .05em; font-size: .72rem; }
+.hlavicka-zakazky .panel { border-radius: 12px; box-shadow: var(--stin); overflow: hidden; }
+
+/* pole formuláře: bílá s jemným rámečkem, aktivní pole má fialový prstenec */
+input:not([type=checkbox],[type=radio],[type=range],[type=file]), select, textarea { border-radius: 8px; }
+input:not([type=checkbox],[type=radio],[type=range],[type=file]):focus, select:focus, textarea:focus {
+  border-color: var(--akcent); box-shadow: 0 0 0 3px rgba(91,91,214,.2);
+}
+label, .prijem .panel label { color: #374151; }
+
+/* nadpis, filtry stavů, hledání, stavový řádek – jedna karta nad tabulkou */
+.obsah > .nadpis-radek, .filtr-stavu, .filtr, .stavovy-radek { border-color: var(--ram); }
+.obsah > .nadpis-radek { border-radius: 12px 12px 0 0; }
+.obsah > .nadpis-radek:not(:has(+ .filtr-stavu, + .filtr)) { border-radius: 12px; box-shadow: var(--stin); }
+.obsah > .nadpis-radek h1 { font-weight: 700; }
+.filtr-stavu { gap: .25rem; padding: .4rem .6rem; border-top-color: var(--ram); }
+.filtr-stavu a { color: #4b5563; border: 0; border-radius: 8px; font-weight: 500; }
+.filtr-stavu a:hover { background: #f3f4f6; color: var(--text); }
+.filtr-stavu a[aria-current="page"] { background: var(--akcent-svetly); color: var(--akcent-tmavy); font-weight: 600; border: 0; }
+.filtr { background: #fff; }
+.stavovy-radek { background: #fff; color: var(--text-tlumeny); border-radius: 0 0 12px 12px; }
+
+/* datová mřížka: bílá karta, jen vodorovné čáry, malá šedá hlavička velkými písmeny */
+.overflow-auto:has(> table) { border-color: var(--ram); box-shadow: var(--stin); }
+th, td { border: 0; border-bottom: 1px solid #eef0f3; }
+thead th { background: #fafafa; color: #5b6472; font-weight: 600; font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; border-bottom: 1px solid var(--ram); }
+table.striped tbody tr:nth-child(odd) td { background: #fcfcfd; }
+tbody tr:hover td { background: #f6f6fe !important; }
+tbody tr.vybrany td { background: var(--vybrany-radek) !important; color: var(--text); }
+tbody tr.vybrany td:first-child { box-shadow: inset 3px 0 0 var(--akcent); }
+tbody td a { color: var(--akcent-tmavy); font-weight: 600; text-decoration: none; }
+tbody td a:hover { text-decoration: underline; }
+tfoot td { background: #fafafa; }
+th.razeni a:hover { background: #f3f4f6; }
+th.razeni.serazeno { background: var(--akcent-svetly); color: var(--akcent-tmavy); }
+th.razeni .sipka { color: var(--akcent); }
+.soucty { background: #fff; border-color: var(--ram); border-radius: 0 0 12px 12px; }
+.prazdna-mrizka, .na-zakazce, .okno-cenik .vysledky-ceniku { border-color: var(--ram); }
+.titulek-mrizky { border-radius: 12px 12px 0 0; }
+
+/* stavy: jemný štítek s tečkou (tmavší barva textu kvůli čitelnosti) */
+.stav { color: var(--barva-stavu); background: color-mix(in srgb, var(--barva-stavu) 12%, #fff); border-radius: 999px; padding: 0 .55rem; font-weight: 600; }
+.stav::before { content: "● "; font-size: .75em; }
+.stav-prijato { --barva-stavu: var(--c-prijato); }
+.stav-v_oprave { --barva-stavu: var(--c-v_oprave); }
+.stav-hotovo { --barva-stavu: var(--c-hotovo); }
+.stav-predano { --barva-stavu: var(--c-predano); }
+
+/* okna a hlášky */
+#okno-formular-obsah { border: 0; border-radius: 14px; }
+dialog.potvrzeni article { border: 0; border-radius: 14px; }
+.zprava { border-radius: 10px; }
+
+@media print {
+  .horni-lista, .menu { display: none !important; }
+  .stav { background: none; color: #000; }
+  thead th { color: #000; border-bottom: 1px solid #000; }
+  button, [role=button], article, .overflow-auto:has(> table) { box-shadow: none !important; }
+}
+
+/* ---------- ROZMĚRY stylu „Moderní“ (písmo 14 px, vzdušné řádky a pole jako ve vzorníku) ---------- */
+:root[data-theme="light"] {
+  --pico-font-size: 87.5%;                      /* 14 px základ */
+  --pico-line-height: 1.45;
+  --pico-spacing: 1rem;
+  --pico-typography-spacing-vertical: .85rem;
+  --pico-form-element-spacing-vertical: .7rem;  /* pole 10 px nahoře/dole */
+  --pico-form-element-spacing-horizontal: .85rem; /* 12 px po stranách */
+  --pico-block-spacing-vertical: 1rem;
+  --pico-block-spacing-horizontal: 1.25rem;
+  --radek: 5px 12px;                            /* buňka tabulky – husté řádky (≈ 30 px), víc položek na stránku */
+  --mezera: 16px;                               /* mezery mezi kartami */
+}
+h1 { font-size: 1.6rem; font-weight: 700; letter-spacing: -.01em; }
+h2 { font-size: 1.2rem; } h3 { font-size: 1.05rem; }
+
+/* horní lišta, menu */
+.horni-lista { padding: 10px 20px; gap: 16px; }
+.horni-lista .logo { font-size: 1.15rem; }
+.horni-lista .hledani input { padding: 8px 12px; }
+.horni-lista .prijem { padding: 8px 16px; }
+.menu { padding: 8px 20px; top: var(--vyska-listy, 58px); }
+.menu ul { gap: 4px; }
+.menu a { padding: 7px 12px; }
+.menu .verze { font-size: .8rem; }
+
+/* rozvržení: obsah + sloupec akcí */
+.rozvrzeni { gap: var(--mezera); }
+.obsah { padding: 20px; }
+.s-akcemi .obsah { padding-left: 0; }
+.akce { width: 170px; margin: 20px 0 0 20px; padding: 12px; gap: 8px; top: 120px; }
+.akce a[role=button], .akce button { padding: 9px 16px; font-size: 1rem; }
+.akce .poznamka { font-size: .8rem; margin-top: 4px; }
+
+/* tlačítka a pole */
+button, [role=button], input[type=submit] { padding: 9px 16px; }
+label { font-size: .85rem; font-weight: 600; margin-bottom: 12px; }
+input:not([type=checkbox],[type=radio],[type=range],[type=file]), select, textarea { margin-top: 4px; }
+textarea { min-height: 70px; }
+fieldset { padding: 12px 14px 4px; margin-bottom: var(--mezera); }
+legend { padding: 0 6px; font-size: 1rem; }
+.mrizka { gap: 0 14px; }
+
+/* hlavička seznamu, filtry, hledání, stavový řádek */
+.obsah > .nadpis-radek { padding: 18px 20px 10px; margin-bottom: var(--mezera); }
+.obsah > .nadpis-radek h1 { font-size: 1.6rem; }
+.filtr-stavu { padding: 4px 20px 12px; gap: 6px; }
+.filtr-stavu a { padding: 5px 12px; font-size: .88rem; }
+.filtr { padding: 0 20px 14px; gap: 12px; }
+.filtr input, .filtr select { padding-top: 9px; padding-bottom: 9px; }
+.filtr label { font-size: .88rem; }
+
+/* ceník: záložky Práce / Materiál v barvách typu (stejné jako štítek v tabulce) */
+.filtr-typu a { display: inline-flex; align-items: center; gap: 7px; padding: 7px 16px; font-size: .95rem;
+  border: 1px solid var(--ram) !important; }
+.filtr-typu .pocet { font-size: .78rem; font-weight: 600; padding: 0 7px; border-radius: 10px; background: #f3f4f6; color: #4b5563; }
+.filtr-typu .tecka { width: 10px; height: 10px; border-radius: 50%; }
+.filtr-typu .zalozka-prace .tecka { background: #1e40af; }
+.filtr-typu .zalozka-material .tecka { background: #c27a00; }
+.filtr-typu .zalozka-prace[aria-current="page"] { background: #e0ecff; color: #1e40af; border-color: #93b4f5 !important; }
+.filtr-typu .zalozka-material[aria-current="page"] { background: #fdf0d5; color: #8a5300; border-color: #e8c27a !important; }
+.filtr-typu a[aria-current="page"] .pocet { background: #fff; color: inherit; }
+.stavovy-radek { padding: 8px 16px; font-size: .85rem; margin-bottom: var(--mezera); }
+
+/* tabulky */
+table { font-size: .95rem; }
+th, td, table.polozky td, table.polozky th, table.vyber-cenik td,
+.okno-cenik .vyber-cenik td, .okno-tabulka td { padding: var(--radek); }
+th.razeni { padding: 0; }
+th.razeni a { padding: var(--radek); }
+/* seznam zakázek zůstává vzdušný (≈ 46 px na řádek) */
+table.seznam-zakazek { --radek: 12px 16px; }
+thead th { font-size: .72rem; }
+.overflow-auto:has(> table) { margin-bottom: var(--mezera); border-radius: 12px; overflow: auto; }
+.stav, .stav-dokladu { padding: 2px 9px; font-size: .8rem; }
+/* SPZ: černé tučné písmo ve světle šedém štítku – víc SPZ vedle sebe je jasně oddělených */
+.spz { font-family: inherit; font-size: 1.05em; font-weight: 700; color: #111827; letter-spacing: .03em;
+  background: #f1f2f5; border: 1px solid #d1d5db; border-radius: 6px; padding: 0 7px; line-height: 1.5;
+  white-space: nowrap; margin: 1px 0; }
+a:has(> .spz) { text-decoration: none; }
+/* značka a model vedle SPZ v seznamu zakázek */
+.popis-vozidla { font-size: 1.05em; font-weight: 500; color: #1f2937; margin-left: 10px; }
+.spz.spz-chybi { font-weight: 500; font-style: italic; color: #6b7280; background: #fff; border-style: dashed; }
+a:hover > .spz { border-color: var(--akcent); background: var(--akcent-svetly); }
+@media print { .spz { background: none; border-color: #999; } }
+.vstup-spz { font-family: inherit; font-weight: 700; letter-spacing: .03em; }
+/* seznam vozidel: VIN proložené, ať se dá číst po znacích */
+.seznam-vozidel td.vin { letter-spacing: .04em; color: #374151; }
+/* šířky sloupců podle obsahu; volné místo se rozdělí poměrně mezi všechny sloupce */
+.seznam-vozidel th, .seznam-vozidel td { white-space: nowrap; }
+.seznam-vozidel td, .seznam-vozidel th.razeni a { padding-right: 16px; }
+.seznam-vozidel td:last-child { max-width: 15rem; overflow: hidden; text-overflow: ellipsis; }
+.seznam-vozidel td:nth-child(3) { max-width: 14rem; overflow: hidden; text-overflow: ellipsis; }
+.seznam-vozidel td:nth-child(4) { max-width: 13rem; overflow: hidden; text-overflow: ellipsis; }
+/* ceník materiálu a ceník prací: jeden řádek na položku, dlouhé texty zkrácené (celé v bublině) */
+.seznam-materialu td, .seznam-praci td { white-space: nowrap; }
+.seznam-materialu td:nth-child(1) { max-width: 12rem; overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: #111827; }
+.seznam-materialu td:nth-child(2), .seznam-praci td:nth-child(2) { max-width: 26rem; overflow: hidden; text-overflow: ellipsis; }
+.seznam-materialu td:nth-child(3) { max-width: 12rem; overflow: hidden; text-overflow: ellipsis; }
+/* seznam zákazníků: užší jméno (dlouhé názvy firem zkrácené, celé v bublině), adresa na jednom řádku */
+.seznam-zakazniku td { white-space: nowrap; }
+.seznam-zakazniku td:nth-child(1) { max-width: 15rem; overflow: hidden; text-overflow: ellipsis; }
+.seznam-zakazniku td:nth-child(3) { max-width: 22rem; overflow: hidden; text-overflow: ellipsis; }
+.seznam-zakazniku td:last-child { white-space: normal; }
+/* karta vozidla: širší první panel, VIN čitelně (proložené, bez zalomení) */
+.hlavicka-detailu:has(.karta-vozidla) { grid-template-columns: minmax(0, 1.3fr) repeat(3, minmax(0, 1fr)); }
+.karta-vozidla dl { gap: 5px 14px; }
+.karta-vozidla .vin { font-weight: 600; letter-spacing: .06em; overflow-wrap: anywhere; }
+@media (max-width: 1100px) { .hlavicka-detailu:has(.karta-vozidla) { grid-template-columns: 1fr 1fr; } }
+@media (max-width: 600px) { .hlavicka-detailu:has(.karta-vozidla) { grid-template-columns: 1fr; } }
+
+/* detail zakázky / vozidla / zákazníka */
+.hlavicka-zakazky { gap: var(--mezera); margin-bottom: var(--mezera); }
+.hlavicka-zakazky .panel { padding: 0 16px 12px; font-size: .95rem; }
+.titulek-panelu { margin: 0 -16px 10px; padding: 8px 16px; }
+.hlavicka-zakazky dl { gap: 4px 12px; }
+.titulek-mrizky { padding: 10px 16px; font-size: .95rem; }
+.soucty { padding: 10px 16px; font-size: .95rem; gap: 6px 24px; margin-top: calc(-1 * var(--mezera)); margin-bottom: var(--mezera); }
+.prazdna-mrizka { padding: 16px; }
+article { padding: 18px 20px; margin-bottom: var(--mezera); }
+article > header { margin: -18px -20px 14px; padding: 12px 20px; }
+.nadpis-radek .zmena-stavu button { padding: 6px 12px; font-size: .85rem; }
+
+/* formulář příjmu / úpravy (panely) */
+.prijem-panely, .uprava-panely { gap: var(--mezera); }
+.prijem .panel { padding: 12px 16px 6px; }
+.prijem .panel + .panel { margin-top: var(--mezera); }
+.uprava-panely > .panel + .panel { margin-top: 0; }
+.prijem .panel label { font-size: .85rem; margin-bottom: 12px; }
+.prijem .panel input:not([type=checkbox],[type=radio]), .prijem .panel select, .prijem .panel textarea {
+  font-size: 1rem; padding: 9px 12px; margin-top: 4px;
+}
+.prijem .panel select { padding-right: 2.2rem; }
+.prijem .mrizka { gap: 0 12px; }
+.prijem .radek-s-tlacitky { margin-bottom: 12px; gap: 8px; }
+.prijem .radek-s-tlacitky .roztahnout { margin-bottom: 0; }
+.prijem .panel input[type=date], .prijem .panel input[type=datetime-local] { padding-left: 8px; padding-right: 6px; }
+/* prostřední panel (Zakázka) širší, aby se vešlo datum a čas příjmu */
+.prijem-panely { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr); }
+.prijem .radek-s-tlacitky button, .prijem .otevrit-okno { padding: 8px 14px; font-size: .9rem; }
+.prijem .stav-panelu, .prijem .panel .napoveda { font-size: .85rem; margin-bottom: 10px; }
+.okno-formular .obsah { padding: 20px 20px 20px 0; }
+.okno-cenik .radek-pridat input.vstup-mnozstvi { padding: 6px 8px; font-size: .95rem; width: 4.5rem; }
+.okno-cenik .radek-pridat button { padding: 6px 12px; font-size: .9rem; }
+.hlaseni-okna { padding: 8px 14px; font-size: .95rem; }
+
+@media (max-width: 760px) {
+  .obsah, .s-akcemi .obsah { padding: 12px; }
+  .akce { margin: 12px 12px 0; width: auto; }
+  .menu { padding: 6px 12px; }
+}
+

@@ -1,0 +1,472 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Autoservis – vzorník stylů</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto:wght@400;500;700&family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&family=Fraunces:opsz,wght@9..144,500;9..144,600&family=JetBrains+Mono:wght@400;600&family=Nunito:wght@400;600;700;800&display=swap">
+<style>
+/* =====================================================================
+   Vzorník stylů – samostatná ukázka, s aplikací nemá nic společného.
+   Každý styl = sada proměnných na body[data-styl="N"] + pár výjimek.
+   ===================================================================== */
+:root{
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --head-font: var(--font);
+  --fs: 15px;
+  --bg:#f6f7f9; --surface:#fff; --surface2:#f1f3f6; --text:#1d2430; --muted:#6b7380;
+  --border:#d7dce3; --accent:#1e6fd9; --accent-text:#fff; --accent-soft:#e3eefc;
+  --header-bg:#fff; --header-text:var(--text); --menu-bg:#fff; --menu-text:var(--muted);
+  --menu-active-bg:transparent; --menu-active-text:var(--accent);
+  --sel-bg:#dbe8fb; --sel-text:inherit; --zebra:transparent; --th-bg:transparent; --th-text:var(--muted);
+  --radius:8px; --btn-radius:var(--radius); --input-bg:#fff; --shadow:none; --gap:16px;
+  --row-pad:9px 12px; --input-pad:9px 11px;
+  --s-prijato:#64748b; --s-oprava:#d97706; --s-hotovo:#16a34a; --s-vydano:#2563eb; --s-storno:#dc2626;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{font-family:var(--font);font-size:var(--fs);background:var(--bg);color:var(--text);line-height:1.45;
+  padding-bottom:84px;transition:background .25s,color .25s}
+
+/* ---------- Přepínač stylů (není součást návrhu) ---------- */
+.vzornik{position:fixed;left:0;right:0;bottom:0;z-index:50;background:#111827;color:#e5e7eb;
+  font:13px/1.3 system-ui,"Segoe UI",sans-serif;padding:8px 12px;display:flex;gap:10px;align-items:center;
+  box-shadow:0 -4px 20px rgba(0,0,0,.25)}
+.vzornik .lbl{white-space:nowrap;opacity:.7}
+.vzornik .seznam{display:flex;gap:6px;overflow-x:auto;flex:1;scrollbar-width:thin}
+.vzornik button{all:unset;cursor:pointer;white-space:nowrap;padding:7px 11px;border-radius:6px;background:#1f2937;color:#e5e7eb;border:1px solid #374151}
+.vzornik button:hover{background:#374151}
+.vzornik button[aria-pressed=true]{background:#fbbf24;color:#111;border-color:#fbbf24;font-weight:600}
+.vzornik .popis{white-space:nowrap;opacity:.75;max-width:34ch;overflow:hidden;text-overflow:ellipsis}
+.vzornik kbd{background:#374151;border-radius:4px;padding:1px 5px;font-size:11px}
+@media (max-width:800px){.vzornik .popis,.vzornik .napoveda{display:none}}
+
+/* ---------- Kostra stránky (stejné rozvržení jako aplikace) ---------- */
+.horni-lista{display:flex;align-items:center;gap:var(--gap);padding:10px 20px;background:var(--header-bg);color:var(--header-text);border-bottom:1px solid var(--border)}
+.logo{font-family:var(--head-font);font-weight:700;font-size:1.15em;white-space:nowrap;color:inherit;text-decoration:none}
+.hledani{flex:1;max-width:560px}
+.hledani input{width:100%}
+.menu{display:flex;align-items:center;gap:2px;padding:0 20px;background:var(--menu-bg);border-bottom:1px solid var(--border);overflow-x:auto}
+.menu a{padding:11px 14px;color:var(--menu-text);text-decoration:none;white-space:nowrap;border-bottom:2px solid transparent;font-weight:500}
+.menu a:hover{color:var(--text)}
+.menu a[aria-current]{color:var(--menu-active-text);background:var(--menu-active-bg);border-bottom-color:var(--accent)}
+.menu .verze{margin-left:auto;color:var(--muted);font-size:.8em;white-space:nowrap}
+.rozvrzeni{display:grid;grid-template-columns:1fr 170px;gap:var(--gap);padding:20px;max-width:1400px;margin:0 auto}
+@media (max-width:900px){.rozvrzeni{grid-template-columns:1fr}.akce{order:-1;flex-direction:row!important;flex-wrap:wrap}}
+.akce{display:flex;flex-direction:column;gap:8px;align-self:start;position:sticky;top:12px}
+.akce .tlumene{font-size:.8em;color:var(--muted);margin:4px 0 0}
+.karta{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px 20px;margin-bottom:var(--gap)}
+h1,h2{font-family:var(--head-font);margin:0 0 12px;line-height:1.2}
+h1{font-size:1.6em} h2{font-size:1.2em}
+.nadpis-radek{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+/* ---------- Tlačítka a pole ---------- */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;font:inherit;font-weight:600;cursor:pointer;
+  padding:9px 16px;border-radius:var(--btn-radius);border:1px solid var(--accent);background:var(--accent);color:var(--accent-text);text-decoration:none;white-space:nowrap}
+.btn:hover{filter:brightness(1.08)}
+.btn.druhe{background:var(--surface);color:var(--text);border-color:var(--border)}
+.btn.obrys{background:transparent;color:var(--accent);border-color:var(--accent)}
+.btn.nebezpecne{background:transparent;color:var(--s-storno);border-color:var(--s-storno)}
+.btn:disabled{opacity:.45;cursor:default;filter:none}
+input,select,textarea{font:inherit;color:var(--text);background:var(--input-bg);border:1px solid var(--border);border-radius:var(--radius);padding:var(--input-pad);width:100%}
+input:focus,select:focus,textarea:focus{outline:2px solid var(--accent);outline-offset:-1px;border-color:var(--accent)}
+textarea{min-height:70px;resize:vertical}
+label{display:block;font-size:.85em;font-weight:600;color:var(--muted);margin-bottom:4px}
+.check{display:flex;align-items:center;gap:8px;font-weight:500;color:var(--text);font-size:.95em}
+.check input{width:auto}
+
+/* ---------- Filtr stavu ---------- */
+.filtr-stavu{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.filtr-stavu a{padding:5px 12px;border-radius:999px;border:1px solid var(--border);color:var(--text);text-decoration:none;font-size:.88em;background:var(--surface)}
+.filtr-stavu a[aria-current]{background:var(--accent);border-color:var(--accent);color:var(--accent-text)}
+.filtr{display:flex;gap:8px;margin-bottom:12px}
+.filtr input{max-width:420px}
+
+/* ---------- Tabulka ---------- */
+.tab-obal{overflow-x:auto;border:1px solid var(--border);border-radius:var(--radius);background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.95em}
+th,td{padding:var(--row-pad);text-align:left;border-bottom:1px solid var(--border);white-space:nowrap}
+th{background:var(--th-bg);color:var(--th-text);font-weight:600;font-size:.85em;text-transform:none;position:relative;cursor:pointer;user-select:none}
+th.serazeno::after{content:" ▾";opacity:.7}
+tbody tr:nth-child(even){background:var(--zebra)}
+tbody tr{cursor:default}
+tbody tr:hover{background:color-mix(in srgb,var(--sel-bg) 45%,transparent)}
+tbody tr.vybrany,tbody tr.vybrany:hover{background:var(--sel-bg);color:var(--sel-text)}
+tbody tr:last-child td{border-bottom:0}
+td.cislo{font-variant-numeric:tabular-nums;text-align:right}
+th.cislo{text-align:right}
+td.pozadavek{white-space:normal;min-width:200px;max-width:340px}
+.spz{font-family:"JetBrains Mono",Consolas,monospace;font-weight:600;letter-spacing:.03em}
+.odkaz{color:var(--accent);text-decoration:none;font-weight:600}
+.stav{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.8em;font-weight:600;color:#fff;background:var(--c)}
+.stav.prijato{--c:var(--s-prijato)} .stav.oprava{--c:var(--s-oprava)} .stav.hotovo{--c:var(--s-hotovo)} .stav.vydano{--c:var(--s-vydano)} .stav.storno{--c:var(--s-storno)}
+.stavovy-radek{display:flex;justify-content:space-between;color:var(--muted);font-size:.85em;padding:8px 2px 0}
+
+/* ---------- Formulář ---------- */
+.mrizka{display:grid;grid-template-columns:repeat(4,1fr);gap:12px 14px}
+.mrizka .s2{grid-column:span 2} .mrizka .s4{grid-column:1/-1}
+@media (max-width:700px){.mrizka{grid-template-columns:1fr 1fr}.mrizka .s2,.mrizka .s4{grid-column:1/-1}}
+fieldset{border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px 14px;margin:0 0 14px}
+legend{padding:0 6px;font-weight:700;font-family:var(--head-font)}
+.tlacitka{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;margin-top:6px}
+.chyba-pole{border-color:var(--s-storno)!important;outline-color:var(--s-storno)!important}
+.napoveda-pole{color:var(--s-storno);font-size:.8em;margin-top:3px}
+.souhrn{display:flex;gap:24px;flex-wrap:wrap;margin-top:4px;font-size:.9em;color:var(--muted)}
+.souhrn b{color:var(--text);font-size:1.15em;font-variant-numeric:tabular-nums}
+
+/* =====================================================================
+   1 – Současný (blízko Pico CSS, jak to vypadá teď)
+   ===================================================================== */
+body[data-styl="1"]{--accent:#0172ad;--accent-soft:#e6f2f9;--sel-bg:#d6eaf6;--radius:6px;--bg:#fff;--header-bg:#fff;--zebra:#fafbfc}
+
+/* =====================================================================
+   2 – Klasický desktop (šedé Windows okno, jako starší servisní programy)
+   ===================================================================== */
+body[data-styl="2"]{--font:Tahoma,"Segoe UI",Verdana,sans-serif;--fs:13px;--bg:#d4d0c8;--surface:#ece9d8;--surface2:#fff;--text:#000;--muted:#333;
+  --border:#808080;--accent:#0a246a;--accent-text:#fff;--header-bg:linear-gradient(#0a246a,#3a6ea5);--header-text:#fff;--menu-bg:#ece9d8;--menu-text:#000;
+  --menu-active-bg:#fff;--menu-active-text:#000;--sel-bg:#316ac5;--sel-text:#fff;--zebra:#f4f3ee;--th-bg:#ece9d8;--th-text:#000;
+  --radius:0;--input-bg:#fff;--row-pad:3px 6px;--input-pad:3px 5px;--gap:10px}
+body[data-styl="2"] .horni-lista{background:var(--header-bg);border-bottom:0;padding:6px 10px}
+body[data-styl="2"] .menu{padding:0 6px;border-bottom:1px solid #808080}
+body[data-styl="2"] .menu a{padding:5px 10px;border:1px solid transparent;border-bottom:0;margin-top:3px}
+body[data-styl="2"] .menu a[aria-current]{border-color:#808080;border-bottom:1px solid #fff;margin-bottom:-1px;font-weight:700}
+body[data-styl="2"] .karta{border:2px outset #fff;padding:10px}
+body[data-styl="2"] .btn{background:#ece9d8;color:#000;border:2px outset #fff;font-weight:400;padding:4px 14px}
+body[data-styl="2"] .btn:active{border-style:inset}
+body[data-styl="2"] .horni-lista .btn{border-color:#fff}
+body[data-styl="2"] input,body[data-styl="2"] select,body[data-styl="2"] textarea{border:2px inset #fff}
+body[data-styl="2"] th{border-right:1px solid #808080;border-bottom:2px outset #fff;font-weight:400}
+body[data-styl="2"] td{border-right:1px solid #e0ddd2;border-bottom-color:#e0ddd2}
+body[data-styl="2"] .tab-obal{border:2px inset #fff}
+body[data-styl="2"] .filtr-stavu a{border-radius:0;background:#ece9d8;border:2px outset #fff;padding:2px 10px}
+body[data-styl="2"] .filtr-stavu a[aria-current]{border-style:inset;background:#fff;color:#000}
+body[data-styl="2"] .stav{border-radius:0;color:var(--c);background:transparent;padding:0;font-weight:700}
+body[data-styl="2"] h1{font-size:1.4em}
+body[data-styl="2"] label{color:#000;font-weight:400}
+
+/* =====================================================================
+   3 – Moderní SaaS (čisté, fialovo-modrý akcent, měkké stíny)
+   ===================================================================== */
+body[data-styl="3"]{--font:"Inter",system-ui,sans-serif;--fs:14px;--bg:#f7f7fb;--surface:#fff;--text:#111827;--muted:#6b7280;--border:#e5e7eb;
+  --accent:#5b5bd6;--accent-soft:#eeeefd;--sel-bg:#eeeefd;--th-bg:#fafafa;--th-text:#6b7280;--radius:12px;--btn-radius:10px;
+  --shadow:0 1px 2px rgba(16,24,40,.05),0 4px 14px rgba(16,24,40,.05);--row-pad:12px 16px;--input-pad:10px 12px}
+body[data-styl="3"] .menu a[aria-current]{border-bottom-color:transparent;background:var(--accent-soft);border-radius:8px}
+body[data-styl="3"] .menu{gap:4px;padding:8px 20px}
+body[data-styl="3"] .menu a{padding:7px 12px;border-radius:8px;border:0}
+body[data-styl="3"] th{text-transform:uppercase;letter-spacing:.05em;font-size:.72em}
+body[data-styl="3"] .tab-obal{box-shadow:var(--shadow)}
+body[data-styl="3"] .stav{background:color-mix(in srgb,var(--c) 14%,#fff);color:var(--c)}
+body[data-styl="3"] .stav::before{content:"● ";font-size:.8em}
+body[data-styl="3"] tbody tr.vybrany{box-shadow:inset 3px 0 0 var(--accent)}
+
+/* =====================================================================
+   4 – Tmavý (dílna večer, šetří oči)
+   ===================================================================== */
+body[data-styl="4"]{--font:"Inter",system-ui,sans-serif;--fs:14px;--bg:#0f1115;--surface:#171a21;--surface2:#1d212a;--text:#e6e8ec;--muted:#8b93a3;--border:#2a2f3a;
+  --accent:#4f9cff;--accent-text:#0b1220;--accent-soft:#16273f;--header-bg:#13161c;--menu-bg:#13161c;--sel-bg:#1d3354;--zebra:#191c24;--th-bg:#1b1f27;
+  --input-bg:#11141a;--radius:8px;--shadow:0 1px 0 rgba(255,255,255,.03) inset;
+  --s-prijato:#94a3b8;--s-oprava:#f59e0b;--s-hotovo:#22c55e;--s-vydano:#60a5fa;--s-storno:#f87171}
+body[data-styl="4"] .stav{background:color-mix(in srgb,var(--c) 18%,transparent);color:var(--c);border:1px solid color-mix(in srgb,var(--c) 40%,transparent)}
+body[data-styl="4"] .btn.druhe{background:var(--surface2)}
+
+/* =====================================================================
+   5 – Kompaktní mřížka (jako Excel: hodně řádků na obrazovce)
+   ===================================================================== */
+body[data-styl="5"]{--font:"Segoe UI",system-ui,sans-serif;--fs:12.5px;--bg:#fff;--surface:#fff;--text:#1f1f1f;--muted:#5f6368;--border:#d0d4d9;
+  --accent:#217346;--accent-soft:#e3f1e8;--sel-bg:#cfe8d8;--zebra:#f8faf9;--th-bg:#f0f2f1;--th-text:#333;--radius:2px;--row-pad:3px 8px;--input-pad:3px 6px;--gap:10px}
+body[data-styl="5"] .horni-lista{padding:5px 12px;background:#217346;color:#fff;border:0}
+body[data-styl="5"] .horni-lista .btn{background:#fff;color:#217346;border-color:#fff}
+body[data-styl="5"] .menu{padding:0 12px;background:#f3f3f3}
+body[data-styl="5"] .menu a{padding:5px 10px}
+body[data-styl="5"] .rozvrzeni{padding:10px;grid-template-columns:1fr 140px}
+body[data-styl="5"] .karta{padding:10px 12px;box-shadow:none}
+body[data-styl="5"] th,body[data-styl="5"] td{border-right:1px solid var(--border)}
+body[data-styl="5"] th{font-weight:600}
+body[data-styl="5"] .btn{padding:4px 10px;font-weight:500}
+body[data-styl="5"] h1{font-size:1.35em}
+body[data-styl="5"] .stav{border-radius:2px;padding:0 6px}
+body[data-styl="5"] .mrizka{gap:6px 10px}
+body[data-styl="5"] tbody tr.vybrany td{outline:0}
+body[data-styl="5"] tbody tr.vybrany td:first-child{box-shadow:inset 3px 0 0 #217346}
+
+/* =====================================================================
+   6 – Dílna / industriální (žlutá–černá, kondenzované písmo)
+   ===================================================================== */
+body[data-styl="6"]{--font:"Barlow",system-ui,sans-serif;--head-font:"Barlow Condensed","Arial Narrow",sans-serif;--fs:16px;--bg:#ecebe7;--surface:#fff;--text:#16161a;--muted:#3a3a40;
+  --border:#8f8c84;--accent:#f5b400;--accent-text:#16161a;--accent-soft:#fff3c4;--header-bg:#16161a;--header-text:#fff;--menu-bg:#16161a;--menu-text:#fff;
+  --menu-active-bg:#f5b400;--menu-active-text:#16161a;--sel-bg:#ffe680;--sel-text:#16161a;--th-bg:#16161a;--th-text:#fff;--radius:3px;--zebra:#f5f4f0;
+  --s-prijato:#4b5563;--s-oprava:#f5b400;--s-hotovo:#15803d;--s-vydano:#1d4ed8;--s-storno:#b91c1c}
+/* čitelnost: žádný žlutý text na světlém/šedém podkladu, žlutá jen jako plocha s černým textem */
+body[data-styl="6"] .menu{border-top:1px solid #33333a}
+body[data-styl="6"] .menu a[aria-current]{border-bottom-color:#f5b400}
+body[data-styl="6"] .menu a:not([aria-current]):hover{color:#f5b400;border-bottom-color:#f5b400}
+body[data-styl="6"] .menu a[aria-current]:hover{color:#16161a}
+body[data-styl="6"] .menu .verze{color:#d0d0d6}
+body[data-styl="6"] .btn.obrys{background:#fff;color:#16161a;border-color:#16161a}
+body[data-styl="6"] .stav.oprava{color:#16161a}
+body[data-styl="6"] .filtr-stavu a{border-color:#16161a;color:#16161a;font-weight:600}
+body[data-styl="6"] .filtr-stavu a[aria-current]{border-color:#16161a}
+body[data-styl="6"] input:focus,body[data-styl="6"] select:focus,body[data-styl="6"] textarea:focus{outline:3px solid #16161a;border-color:#16161a;box-shadow:0 0 0 6px #f5b400}
+body[data-styl="6"] label{color:#16161a}
+body[data-styl="6"] tbody tr:hover{background:#fff6cc}
+body[data-styl="6"] .btn:disabled{opacity:.6;background:#e5e4df;color:#3a3a40;border-color:#8f8c84}
+body[data-styl="6"] .horni-lista{border-bottom:4px solid #f5b400;background-image:none}
+body[data-styl="6"] .logo{font-size:1.5em;text-transform:uppercase;letter-spacing:.04em}
+body[data-styl="6"] .menu{border:0}
+body[data-styl="6"] .menu a{font-family:var(--head-font);text-transform:uppercase;letter-spacing:.06em;font-size:1.05em}
+body[data-styl="6"] h1,body[data-styl="6"] h2,body[data-styl="6"] legend{text-transform:uppercase;letter-spacing:.03em}
+body[data-styl="6"] h1{font-size:2em}
+body[data-styl="6"] th{font-family:var(--head-font);text-transform:uppercase;letter-spacing:.08em;font-size:.9em}
+body[data-styl="6"] .btn{font-family:var(--head-font);text-transform:uppercase;letter-spacing:.06em;font-size:1.05em;border-width:2px}
+body[data-styl="6"] .btn.druhe{border-color:#16161a}
+body[data-styl="6"] .karta{border-top:4px solid #16161a}
+body[data-styl="6"] .stav{border-radius:2px;text-transform:uppercase;font-family:var(--head-font);letter-spacing:.06em;font-size:.85em}
+body[data-styl="6"] .tab-obal{border-color:#16161a}
+body[data-styl="6"] .odkaz{color:#16161a;font-weight:700}
+
+/* =====================================================================
+   7 – Material (Google styl: karty, výrazné plovoucí tlačítko)
+   ===================================================================== */
+body[data-styl="7"]{--font:"Roboto",system-ui,sans-serif;--fs:15px;--bg:#ecebe7;--surface:#fff;--text:#16161a;--muted:#3a3a40;--border:#d6d4ce;
+  --accent:#f5b400;--accent-text:#16161a;--accent-soft:#fff3c4;--header-bg:#16161a;--header-text:#fff;--menu-bg:#16161a;--menu-text:#fff;--menu-active-text:#f5b400;
+  --sel-bg:#ffe680;--sel-text:#16161a;--th-text:#3a3a40;--radius:6px;--btn-radius:20px;--shadow:0 1px 3px rgba(0,0,0,.14),0 1px 2px rgba(0,0,0,.22);--row-pad:12px 16px;--input-pad:12px;
+  --s-prijato:#4b5563;--s-oprava:#f5b400;--s-hotovo:#15803d;--s-vydano:#1d4ed8;--s-storno:#b91c1c}
+body[data-styl="7"] .horni-lista,body[data-styl="7"] .menu{border:0}
+body[data-styl="7"] .menu{box-shadow:0 3px 6px rgba(0,0,0,.25);border-top:1px solid #33333a}
+body[data-styl="7"] .menu a[aria-current]{border-bottom:3px solid #f5b400}
+body[data-styl="7"] .menu a:hover{color:#f5b400}
+body[data-styl="7"] .menu .verze{color:#d0d0d6}
+body[data-styl="7"] .hledani input{background:rgba(255,255,255,.14);border:0;color:#fff}
+body[data-styl="7"] .hledani input::placeholder{color:rgba(255,255,255,.75)}
+body[data-styl="7"] .hledani input:focus{outline:2px solid #f5b400}
+body[data-styl="7"] .horni-lista .btn{border:0;box-shadow:0 2px 6px rgba(245,180,0,.35)}
+body[data-styl="7"] .karta,body[data-styl="7"] .tab-obal{border:0;box-shadow:var(--shadow)}
+body[data-styl="7"] .btn{text-transform:uppercase;letter-spacing:.05em;font-weight:700;font-size:.9em;padding:9px 20px}
+body[data-styl="7"] .btn:not(.druhe):not(.obrys):not(.nebezpecne){box-shadow:0 2px 4px rgba(0,0,0,.25)}
+body[data-styl="7"] .btn.druhe{border:0;color:#16161a;background:transparent}
+body[data-styl="7"] .btn.druhe:hover{background:#f1f0eb}
+body[data-styl="7"] .btn.obrys{color:#16161a;border:2px solid #16161a;background:#fff}
+body[data-styl="7"] .btn:disabled{background:#e5e4df;color:#3a3a40;box-shadow:none!important}
+body[data-styl="7"] .odkaz{color:#16161a;font-weight:700}
+body[data-styl="7"] th{font-weight:700}
+body[data-styl="7"] tbody tr:hover{background:#fff6cc}
+body[data-styl="7"] tbody tr.vybrany{box-shadow:inset 4px 0 0 #16161a}
+body[data-styl="7"] .filtr-stavu a{border-color:#bdbab2;font-weight:500}
+body[data-styl="7"] .filtr-stavu a[aria-current]{font-weight:700;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+body[data-styl="7"] input,body[data-styl="7"] select,body[data-styl="7"] textarea{border:0;border-bottom:1px solid #6b6b70;border-radius:6px 6px 0 0;background:#f1f0eb}
+body[data-styl="7"] input:focus,body[data-styl="7"] select:focus,body[data-styl="7"] textarea:focus{outline:0;border-bottom:3px solid #16161a;background:#fff6cc}
+body[data-styl="7"] label{color:#3a3a40}
+body[data-styl="7"] fieldset{border:0;padding:0}
+body[data-styl="7"] legend{padding:0 0 0 10px;margin-bottom:10px;color:#16161a;font-weight:700;border-left:4px solid #f5b400}
+body[data-styl="7"] .stav{border-radius:4px}
+body[data-styl="7"] .stav.oprava{color:#16161a}
+
+/* =====================================================================
+   8 – Severský minimal (teplý papír, patkové nadpisy, klid)
+   ===================================================================== */
+body[data-styl="8"]{--font:"Inter",system-ui,sans-serif;--head-font:"Fraunces",Georgia,serif;--fs:15px;--bg:#f4f1ea;--surface:#fbfaf6;--text:#2b2a26;--muted:#7c776b;
+  --border:#e2ddd0;--accent:#2f5d50;--accent-soft:#e1ebe6;--header-bg:#f4f1ea;--menu-bg:#f4f1ea;--sel-bg:#e6ede6;--th-text:#7c776b;--radius:2px;--btn-radius:2px;
+  --input-bg:#fbfaf6;--row-pad:13px 14px;
+  --s-prijato:#8a8578;--s-oprava:#b7791f;--s-hotovo:#2f855a;--s-vydano:#2c5282;--s-storno:#9b2c2c}
+body[data-styl="8"] h1{font-size:2.1em;font-weight:500}
+body[data-styl="8"] h2,body[data-styl="8"] legend{font-weight:500}
+body[data-styl="8"] .logo{font-family:var(--head-font);font-weight:600}
+body[data-styl="8"] .menu{border-bottom:1px solid var(--border)}
+body[data-styl="8"] .menu a[aria-current]{border-bottom-color:var(--text);color:var(--text)}
+body[data-styl="8"] .karta{border:0;border-top:1px solid var(--border);background:transparent;padding:22px 0}
+body[data-styl="8"] .tab-obal{border:0;border-top:1px solid var(--text);border-radius:0;background:transparent}
+body[data-styl="8"] th{font-size:.75em;text-transform:uppercase;letter-spacing:.1em;font-weight:500}
+body[data-styl="8"] .stav{background:transparent;color:var(--c);padding:0;font-weight:500;font-size:.88em}
+body[data-styl="8"] .stav::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--c);margin-right:7px;vertical-align:1px}
+body[data-styl="8"] .filtr-stavu a{border-radius:0;border:0;border-bottom:1px solid transparent;background:transparent;padding:4px 2px;margin-right:12px}
+body[data-styl="8"] .filtr-stavu a[aria-current]{background:transparent;color:var(--text);border-bottom-color:var(--text)}
+body[data-styl="8"] input,body[data-styl="8"] select,body[data-styl="8"] textarea{border:0;border-bottom:1px solid #bdb6a6;border-radius:0;background:transparent;padding-left:0}
+body[data-styl="8"] fieldset{border:0;padding:0}
+
+/* =====================================================================
+   9 – Velký kontrast / dotyk (tablet v dílně, rukavice, horší oči)
+   ===================================================================== */
+body[data-styl="9"]{--font:"Nunito",system-ui,sans-serif;--fs:18px;--bg:#fff;--surface:#fff;--text:#000;--muted:#333;--border:#000;
+  --accent:#0040c1;--accent-soft:#dfe8ff;--header-bg:#000;--header-text:#fff;--menu-bg:#fff;--menu-text:#000;--menu-active-bg:#000;--menu-active-text:#ffd60a;
+  --sel-bg:#ffd60a;--sel-text:#000;--th-bg:#000;--th-text:#fff;--radius:10px;--row-pad:14px 14px;--input-pad:13px 14px;--gap:20px;
+  --s-prijato:#333;--s-oprava:#a14c00;--s-hotovo:#006b2e;--s-vydano:#0040c1;--s-storno:#b00020}
+body[data-styl="9"] .menu{border-bottom:3px solid #000;padding:6px 20px;gap:6px}
+body[data-styl="9"] .menu a{border:2px solid #000;border-radius:10px;padding:8px 16px;font-weight:800}
+body[data-styl="9"] .menu a[aria-current]{border-bottom-color:#000}
+body[data-styl="9"] .btn{padding:14px 22px;border-width:3px;font-weight:800;min-height:52px}
+body[data-styl="9"] .btn.druhe{border-color:#000}
+body[data-styl="9"] .horni-lista .btn{background:#ffd60a;color:#000;border-color:#ffd60a}
+body[data-styl="9"] input,body[data-styl="9"] select,body[data-styl="9"] textarea{border-width:2px}
+body[data-styl="9"] input:focus,body[data-styl="9"] select:focus,body[data-styl="9"] textarea:focus{outline:4px solid #ffd60a;outline-offset:0;border-color:#000}
+body[data-styl="9"] .karta,body[data-styl="9"] .tab-obal{border-width:2px}
+body[data-styl="9"] label{color:#000;font-weight:800;font-size:.9em}
+body[data-styl="9"] .filtr-stavu a{border-width:2px;font-weight:700;padding:8px 16px}
+body[data-styl="9"] .stav{font-size:.85em;padding:4px 12px}
+body[data-styl="9"] .rozvrzeni{grid-template-columns:1fr 220px}
+body[data-styl="9"] th{font-size:.85em}
+
+/* =====================================================================
+   10 – Sklo a přechod (výrazný, „moderní dashboard“)
+   ===================================================================== */
+body[data-styl="10"]{--font:"Inter",system-ui,sans-serif;--fs:14px;--bg:#0b1020;--surface:rgba(255,255,255,.07);--surface2:rgba(255,255,255,.1);--text:#eef1ff;--muted:#a3abc9;
+  --border:rgba(255,255,255,.14);--accent:#7c5cff;--accent-text:#fff;--accent-soft:rgba(124,92,255,.2);--header-bg:rgba(10,14,30,.55);--menu-bg:transparent;
+  --sel-bg:rgba(124,92,255,.32);--zebra:rgba(255,255,255,.025);--th-bg:rgba(255,255,255,.05);--input-bg:rgba(255,255,255,.06);--radius:14px;--btn-radius:12px;
+  --shadow:0 10px 40px rgba(0,0,0,.35);--row-pad:12px 16px;
+  --s-prijato:#94a3b8;--s-oprava:#fbbf24;--s-hotovo:#34d399;--s-vydano:#60a5fa;--s-storno:#fb7185}
+body[data-styl="10"]{background:radial-gradient(1200px 600px at 10% -10%,#3b2a8f 0%,transparent 60%),radial-gradient(900px 500px at 100% 0%,#0e5a7a 0%,transparent 55%),#0b1020;background-attachment:fixed}
+body[data-styl="10"] .horni-lista{backdrop-filter:blur(12px)}
+body[data-styl="10"] .karta,body[data-styl="10"] .tab-obal{backdrop-filter:blur(14px)}
+body[data-styl="10"] .btn:not(.druhe):not(.obrys):not(.nebezpecne){background:linear-gradient(135deg,#7c5cff,#22c1ee);border:0;box-shadow:0 6px 20px rgba(124,92,255,.4)}
+body[data-styl="10"] .btn.druhe{background:var(--surface2);color:var(--text)}
+body[data-styl="10"] .menu a[aria-current]{border-bottom-color:transparent;background:var(--surface2);border-radius:10px;color:#fff}
+body[data-styl="10"] .menu{padding:8px 20px;gap:4px;border-bottom:0}
+body[data-styl="10"] .menu a{padding:7px 12px;border-radius:10px;border:0}
+body[data-styl="10"] .stav{background:color-mix(in srgb,var(--c) 20%,transparent);color:var(--c);border:1px solid color-mix(in srgb,var(--c) 45%,transparent)}
+body[data-styl="10"] .filtr-stavu a{background:var(--surface)}
+body[data-styl="10"] .filtr-stavu a[aria-current]{background:linear-gradient(135deg,#7c5cff,#22c1ee);border-color:transparent}
+body[data-styl="10"] select option{background:#1a1f35}
+body[data-styl="10"] h1{background:linear-gradient(90deg,#fff,#b9a8ff);-webkit-background-clip:text;background-clip:text;color:transparent}
+</style>
+</head>
+<body data-styl="1">
+
+<header class="horni-lista">
+  <a href="#" class="logo">🔧 Autoservis</a>
+  <form class="hledani" role="search" onsubmit="return false"><input type="search" placeholder="Hledat SPZ, VIN, jméno, číslo zakázky…" aria-label="Hledat"></form>
+  <a href="#" class="btn">+ Nová zakázka</a>
+</header>
+<nav class="menu">
+  <a href="#" aria-current="page">Zakázky</a><a href="#">Vozidla</a><a href="#">Zákazníci</a><a href="#">Ceník</a><a href="#">Sklad</a><a href="#">Faktury</a><a href="#">Nastavení</a>
+  <span class="verze">verze 0.9.4</span>
+</nav>
+
+<div class="rozvrzeni">
+  <main>
+    <section class="karta">
+      <div class="nadpis-radek"><h1>Zakázky</h1></div>
+      <nav class="filtr-stavu">
+        <a href="#" aria-current="page">Otevřené (14)</a><a href="#">Přijato (5)</a><a href="#">V opravě (6)</a><a href="#">Hotovo (3)</a><a href="#">Vydáno (212)</a><a href="#">Storno (4)</a><a href="#">Všechny (230)</a>
+      </nav>
+      <form class="filtr" onsubmit="return false"><input type="search" placeholder="Číslo, SPZ, zákazník, požadavek…"></form>
+      <div class="tab-obal">
+        <table>
+          <thead><tr><th class="serazeno">Číslo</th><th>Přijato</th><th>SPZ</th><th>Vozidlo</th><th>Zákazník</th><th>Požadavek</th><th>Stav</th><th class="cislo">Cena s DPH</th></tr></thead>
+          <tbody>
+            <tr><td><a class="odkaz" href="#">Z26-0231</a></td><td>18. 11. 2026</td><td class="spz">2AB 4512</td><td>Škoda Octavia III 2.0 TDI</td><td>Jan Novák</td><td class="pozadavek">Výměna oleje a filtrů, kontrola brzd</td><td><span class="stav prijato">Přijato</span></td><td class="cislo">—</td></tr>
+            <tr class="vybrany"><td><a class="odkaz" href="#">Z26-0229</a></td><td>17. 11. 2026</td><td class="spz">5T3 8801</td><td>VW Passat B8 2.0 TDI</td><td>Stavby Horák s.r.o.</td><td class="pozadavek">Klepání přední nápravy, geometrie</td><td><span class="stav oprava">V opravě</span></td><td class="cislo">8 640 Kč</td></tr>
+            <tr><td><a class="odkaz" href="#">Z26-0228</a></td><td>17. 11. 2026</td><td class="spz">1BC 2290</td><td>Ford Focus 1.0 EcoBoost</td><td>Petra Dvořáková</td><td class="pozadavek">Přezutí na zimní pneu + uskladnění letních</td><td><span class="stav hotovo">Hotovo</span></td><td class="cislo">1 450 Kč</td></tr>
+            <tr><td><a class="odkaz" href="#">Z26-0226</a></td><td>16. 11. 2026</td><td class="spz">4AK 7715</td><td>Hyundai i30 1.4 T-GDi</td><td>Martin Svoboda</td><td class="pozadavek">STK + emise, svítí check engine</td><td><span class="stav oprava">V opravě</span></td><td class="cislo">3 210 Kč</td></tr>
+            <tr><td><a class="odkaz" href="#">Z26-0224</a></td><td>15. 11. 2026</td><td class="spz">8E2 0034</td><td>Toyota Corolla 1.8 Hybrid</td><td>Lucie Králová</td><td class="pozadavek">Pravidelný servis 60 000 km</td><td><span class="stav vydano">Vydáno</span></td><td class="cislo">5 980 Kč</td></tr>
+            <tr><td><a class="odkaz" href="#">Z26-0221</a></td><td>14. 11. 2026</td><td class="spz">3SE 6120</td><td>Renault Kangoo 1.5 dCi</td><td>Pekárna U Mlýna</td><td class="pozadavek">Rozvody, vodní pumpa</td><td><span class="stav hotovo">Hotovo</span></td><td class="cislo">14 320 Kč</td></tr>
+            <tr><td><a class="odkaz" href="#">Z26-0219</a></td><td>13. 11. 2026</td><td class="spz">7P1 4478</td><td>Peugeot 308 1.2 PureTech</td><td>Tomáš Procházka</td><td class="pozadavek">Výměna baterie</td><td><span class="stav storno">Storno</span></td><td class="cislo">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="stavovy-radek"><span>Zobrazeno 1–7 z 14</span><span>Dvojklik otevře zakázku · Ctrl+Enter uloží formulář</span></div>
+    </section>
+
+    <section class="karta">
+      <div class="nadpis-radek"><h2>Příjem vozidla – nová zakázka</h2><span style="color:var(--muted);font-size:.85em">Z26-0232</span></div>
+      <form onsubmit="return false">
+        <fieldset>
+          <legend>Zákazník</legend>
+          <div class="mrizka">
+            <div class="s2"><label for="f-jm">Jméno / firma</label><input id="f-jm" value="Jan Novák"></div>
+            <div><label for="f-tel">Telefon</label><input id="f-tel" value="+420 603 123 456"></div>
+            <div><label for="f-ic">IČO</label><input id="f-ic" placeholder="nepovinné"></div>
+          </div>
+        </fieldset>
+        <fieldset>
+          <legend>Vozidlo</legend>
+          <div class="mrizka">
+            <div><label for="f-spz">SPZ</label><input id="f-spz" class="spz" value="2AB 4512"></div>
+            <div class="s2"><label for="f-vin">VIN</label><input id="f-vin" class="spz chyba-pole" value="TMBJJ7NE8F01234"><div class="napoveda-pole">VIN musí mít 17 znaků (zadáno 15).</div></div>
+            <div><label for="f-km">Stav tachometru</label><input id="f-km" value="148 250" inputmode="numeric"></div>
+            <div><label for="f-pal">Palivo v nádrži</label><select id="f-pal"><option>Rezerva</option><option selected>1/4</option><option>1/2</option><option>3/4</option><option>Plná</option></select></div>
+            <div><label for="f-ter">Termín předání</label><input id="f-ter" type="date" value="2026-11-20"></div>
+            <div class="s2"><label for="f-mech">Mechanik</label><select id="f-mech"><option>Petr Malý</option><option>Karel Vrba</option></select></div>
+            <div class="s4"><label for="f-poz">Požadavek zákazníka</label><textarea id="f-poz">Výměna oleje a filtrů, kontrola brzd. Zákazník hlásí pískání při brzdění.</textarea></div>
+            <div class="s4" style="display:flex;gap:22px;flex-wrap:wrap">
+              <label class="check"><input type="checkbox" checked> Vrátit vyměněné díly</label>
+              <label class="check"><input type="checkbox"> Volat před překročením ceny</label>
+            </div>
+          </div>
+        </fieldset>
+        <div class="souhrn"><span>Odhad práce <b>2,5 h</b></span><span>Odhad dílů <b>3 120 Kč</b></span><span>Celkem s DPH <b>6 410 Kč</b></span></div>
+        <div class="tlacitka">
+          <button type="button" class="btn nebezpecne">Smazat</button>
+          <button type="button" class="btn druhe">Zrušit</button>
+          <button type="button" class="btn">Uložit zakázku</button>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <aside class="akce" aria-label="Akce">
+    <a href="#" class="btn">Nová zakázka</a>
+    <button type="button" class="btn druhe">Otevřít</button>
+    <button type="button" class="btn obrys">Upravit</button>
+    <button type="button" class="btn druhe">Tisk</button>
+    <button type="button" class="btn druhe" disabled>Fakturovat</button>
+    <p class="tlumene">Vyberte řádek kliknutím.</p>
+  </aside>
+</div>
+
+<div class="vzornik" role="toolbar" aria-label="Výběr stylu">
+  <span class="lbl">Styl:</span>
+  <div class="seznam" id="seznam-stylu"></div>
+  <span class="popis" id="popis-stylu"></span>
+  <span class="napoveda"><kbd>←</kbd> <kbd>→</kbd></span>
+</div>
+
+<script>
+const STYLY = [
+  ["Současný", "Blízko dnešního vzhledu (Pico CSS) – výchozí bod pro srovnání."],
+  ["Klasický desktop", "Šedé okno ve stylu Windows XP – jako starší servisní programy."],
+  ["Moderní SaaS", "Čisté bílé plochy, měkké stíny, fialovo-modrý akcent."],
+  ["Tmavý", "Tmavý režim – šetří oči večer a v tmavší dílně."],
+  ["Kompaktní mřížka", "Malé písmo, hustá tabulka jako v Excelu – nejvíc řádků na obrazovce."],
+  ["Dílna", "Industriální žluto-černý, kondenzované písmo, výrazné nadpisy."],
+  ["Material Dílna", "Tvary Material (karty se stínem, oblá tlačítka, plněná pole) v barvách stylu 6."],
+  ["Severský minimal", "Teplý papírový podklad, patkové nadpisy, hodně vzduchu."],
+  ["Velký kontrast", "Velké písmo a tlačítka pro tablet / dotyk, maximální čitelnost."],
+  ["Sklo a přechod", "Tmavé pozadí s barevnými přechody a průsvitnými panely."],
+];
+const seznam = document.getElementById("seznam-stylu");
+const popis = document.getElementById("popis-stylu");
+STYLY.forEach(([nazev], i) => {
+  const b = document.createElement("button");
+  b.type = "button"; b.textContent = `${i + 1}. ${nazev}`; b.dataset.n = i + 1;
+  b.onclick = () => nastav(i + 1);
+  seznam.appendChild(b);
+});
+function nastav(n) {
+  n = ((n - 1 + STYLY.length) % STYLY.length) + 1;
+  document.body.dataset.styl = n;
+  seznam.querySelectorAll("button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.n == n));
+  seznam.querySelector(`[data-n="${n}"]`).scrollIntoView({block: "nearest", inline: "nearest"});
+  popis.textContent = STYLY[n - 1][1];
+  history.replaceState(null, "", "#" + n);
+  try { localStorage.setItem("vzornik-styl", n); } catch (e) {}
+}
+document.addEventListener("keydown", (e) => {
+  if (e.target.closest("input, textarea, select")) return;
+  const akt = +document.body.dataset.styl;
+  if (e.key === "ArrowRight") nastav(akt + 1);
+  if (e.key === "ArrowLeft") nastav(akt - 1);
+  if (/^[0-9]$/.test(e.key)) nastav(e.key === "0" ? 10 : +e.key);
+});
+// výběr řádku kliknutím (jen pro dojem)
+document.addEventListener("click", (e) => {
+  const tr = e.target.closest("tbody tr");
+  if (!tr) return;
+  tr.parentElement.querySelectorAll(".vybrany").forEach((r) => r.classList.remove("vybrany"));
+  tr.classList.add("vybrany");
+});
+let start = parseInt(location.hash.slice(1));
+if (!start) { try { start = parseInt(localStorage.getItem("vzornik-styl")); } catch (e) {} }
+nastav(start || 1);
+</script>
+</body>
+</html>

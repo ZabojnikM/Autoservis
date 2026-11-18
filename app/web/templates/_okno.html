@@ -1,0 +1,13 @@
+{# Rám pro formulář otevřený jako okno (dialog #okno-formular v base.html).
+   Stránka zvolí rám podmínkou: {% extends "_okno.html" if okno else "base.html" %}.
+   Bloky jsou stejné jako v base.html: akce (tlačítka vlevo) a content. #}
+<div class="okno-formular">
+  {% if chyba %}<p class="chyba" role="alert" {% if chyba.pole is defined and chyba.pole %}data-pole="{{ chyba.pole }}"{% endif %}>{{ chyba }}</p>{% endif %}
+  {% if zprava %}<p class="uspech" role="status">{{ zprava }}</p>{% endif %}
+  <div class="rozvrzeni s-akcemi">
+    <main class="obsah">{% block content %}{% endblock %}</main>
+    <aside class="akce" aria-label="Akce">{% block akce %}{% endblock %}</aside>
+  </div>
+</div>
+{# title v okně nezobrazujeme – nadpis je v obsahu #}
+{% if false %}{% block title %}{% endblock %}{% endif %}

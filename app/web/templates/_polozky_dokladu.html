@@ -1,0 +1,35 @@
+{# Položky a rekapitulace vystaveného dokladu. Potřebuje: f, rek #}
+<div class="overflow-auto">
+<table class="polozky">
+  <thead><tr>
+    <th>Položka</th><th class="cislo">Množství</th><th class="cislo">Cena/j.{% if f.platce_dph %} bez DPH{% endif %}</th>
+    {% if f.platce_dph %}<th class="cislo">DPH</th>{% endif %}
+    <th class="cislo">Celkem{% if f.platce_dph %} bez DPH{% endif %}</th>
+  </tr></thead>
+  <tbody>
+  {% for r in f.polozky %}
+    <tr>
+      <td>{{ r.nazev }}{% if r.kod %} <span class="kod-polozky">(kód {{ r.kod }})</span>{% endif %}</td>
+      <td class="cislo">{{ r.mnozstvi|mnozstvi }} {{ r.jednotka }}</td>
+      <td class="cislo">{{ r.cena|penize }}</td>
+      {% if f.platce_dph %}<td class="cislo">{{ r.sazba_dph|mnozstvi }} %</td>{% endif %}
+      <td class="cislo">{{ r.zaklad|penize }}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<div class="rekapitulace">
+  <dl>
+    <dt>Práce</dt><dd>{{ rek.prace|penize }}</dd>
+    <dt>Materiál</dt><dd>{{ rek.material|penize }}</dd>
+    {% if f.platce_dph %}
+      {% for sazba, zaklad in rek.zaklady.items() %}
+        <dt>Základ {{ sazba|mnozstvi }} %</dt><dd>{{ zaklad|penize }}</dd>
+        <dt>DPH {{ sazba|mnozstvi }} %</dt><dd>{{ rek.dane[sazba]|penize }}</dd>
+      {% endfor %}
+    {% endif %}
+    {% if f.zaokrouhleni %}<dt>Zaokrouhlení</dt><dd>{{ f.zaokrouhleni|penize }}</dd>{% endif %}
+    <dt class="celkem">Celkem k úhradě</dt><dd class="celkem">{{ f.celkem|penize }} {{ f.mena }}</dd>
+  </dl>
+</div>

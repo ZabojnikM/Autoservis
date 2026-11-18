@@ -1,0 +1,42 @@
+{% from "_makra.html" import pole, pole_vin, vstup_spz %}
+{# Obsah #vozidlo-udaje v panelu Vozidlo na příjmu. Může přepsat i pole SPZ a panel zákazníka (out-of-band). #}
+{% if prepsat_spz %}{{ vstup_spz(hodnoty.get('spz'), oob=True) }}{% endif %}
+{% if zakaznik_oob is defined and zakaznik_oob %}{% include "_prijem_zakaznik.html" %}{% endif %}
+
+<input type="hidden" name="vozidlo_id" value="{{ vozidlo.id if vozidlo else '' }}">
+{% if vozidlo %}
+  <p class="stav-panelu">✅ Vozidlo z databáze – změny údajů se uloží k němu.
+    <a href="/vozidla/{{ vozidlo.id }}" target="_blank">Historie vozidla</a></p>
+  {% if otevrene %}
+  <p class="upozorneni">⚠ Vozidlo už má otevřenou zakázku:
+    {% for z in otevrene %}<a href="/zakazky/{{ z.id }}" target="_blank">{{ z.cislo }}</a> ({{ z.nazev_stavu }}){% if not loop.last %}, {% endif %}{% endfor %}
+  </p>
+  {% endif %}
+{% elif hodnoty.get('spz') %}
+  <p class="tlumene stav-panelu">Nové vozidlo – uloží se se zakázkou.</p>
+{% else %}
+  <p class="tlumene stav-panelu">Zadejte SPZ (Enter / Tab) – známé vozidlo se vyplní i se zákazníkem.</p>
+{% endif %}
+
+<div class="mrizka">
+  {{ pole('v_znacka', 'Značka', hodnoty, placeholder='např. Škoda') }}
+  {{ pole('v_model', 'Model / typ', hodnoty, placeholder='např. Octavia 1.9 TDI') }}
+</div>
+{{ pole_vin(hodnoty, 'v_') }}
+<div class="mrizka">
+  {{ pole('v_rok_vyroby', 'Rok výroby', hodnoty, extra='inputmode="numeric" pattern="(19|20)[0-9]{2}" title="Rok čtyřmi číslicemi, např. 2015"') }}
+  {{ pole('v_datum_registrace', 'Datum 1. registrace', hodnoty, typ='date') }}
+</div>
+<div class="mrizka">
+  {{ pole('v_kod_motoru', 'Kód motoru', hodnoty) }}
+  {{ pole('v_objem', 'Objem', hodnoty) }}
+  {{ pole('v_vykon', 'Výkon', hodnoty) }}
+</div>
+<div class="mrizka">
+  {{ pole('v_palivo', 'Druh paliva', hodnoty, placeholder='např. nafta') }}
+  {{ pole('v_olej', 'Olej', hodnoty) }}
+  {{ pole('v_barva', 'Barva', hodnoty) }}
+</div>
+<div class="mrizka">
+  {{ pole('v_cislo_motoru', 'Typ vozidla (TP)', hodnoty) }}
+  {{ pole('v_termin_stk', 'Termín STK', hodnoty, typ='date') }}</div>
