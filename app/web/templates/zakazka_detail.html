@@ -68,7 +68,8 @@
     <p class="hlavni-udaj"><a href="/vozidla/{{ v.id }}">{{ spz(v.spz) }}</a>
       {% if v.znacka or v.model %}{{ v.popis }}{% endif %}</p>
     <dl>
-      {% if v.vin %}<dt>VIN</dt><dd>{{ v.vin }}</dd>{% endif %}
+      {% if v.vin %}<dt>VIN</dt><dd class="vin-zakazky">{{ v.vin }}
+        <button type="button" class="kopirovat maly neni-tisk" data-kopirovat="{{ v.vin }}" title="Zkopírovat VIN do schránky">Kopírovat</button></dd>{% endif %}
       {% if v.rok_vyroby %}<dt>Rok</dt><dd>{{ v.rok_vyroby }}</dd>{% endif %}
       {% if v.kod_motoru or v.objem or v.vykon %}<dt>Motor</dt>
         <dd>{{ [v.kod_motoru, v.objem, v.vykon]|select|join(' · ') }}</dd>{% endif %}

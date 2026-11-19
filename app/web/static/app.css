@@ -743,6 +743,8 @@ a:hover > .spz { border-color: var(--akcent); background: var(--akcent-svetly); 
 .karta-vozidla .udaj.vin .udaj-hodnota { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 1.25rem;
   font-weight: 700; letter-spacing: .08em; }
 button.kopirovat { width: auto; margin: 0; padding: 4px 12px !important; font-size: .82rem !important; }
+.vin-zakazky { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.vin-zakazky button.kopirovat { padding: 1px 8px !important; font-size: .75rem !important; }
 button.kopirovat.zkopirovano { background: var(--c-hotovo, #15803d) !important; border-color: var(--c-hotovo, #15803d) !important; color: #fff !important; }
 .karta-vozidla .po-terminu { color: var(--c-chyba); font-weight: 700; }
 .poznamka-vozidla { margin-top: .6rem; }

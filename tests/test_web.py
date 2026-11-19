@@ -1009,3 +1009,10 @@ def test_okno_ceniku_razeni_podle_kodu():
     poradi = [okno.index(t) for t in ("Žárovka H4", "Brzdy", "Akumulátor", "Bez kódu díl")]
     assert poradi == sorted(poradi)
     assert "<strong>AA 1</strong>" in okno and "<strong>Žárovka H4</strong>" not in okno
+
+
+def test_zakazka_kopirovat_vin():
+    """#45: v kartě Vozidlo na detailu zakázky jde VIN zkopírovat."""
+    r = _prijem(spz="7K45454", v_vin="TMBJJ7NE8J0123456")
+    detail = client.get(r.headers["location"].split("?")[0]).text
+    assert 'data-kopirovat="TMBJJ7NE8J0123456"' in detail
