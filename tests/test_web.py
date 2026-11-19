@@ -1126,3 +1126,26 @@ def test_detail_vozidla_a_zakaznika_sjednocene():
     assert '<p class="hlavni-udaj hlavni-vozidla">Škoda Fabia</p>' in vozidlo
     zakaznik = client.get(f"/zakaznici/{kid}").text
     assert ">Poznámka</h2>" not in zakaznik and 'class="tlumene vedle">Zakázky</span>' in zakaznik
+
+
+def test_horni_lista_nazev_firmy_a_logo():
+    """Jedna horní lišta: menu vlevo, uprostřed název firmy (z Nastavení), vpravo hledání a ozubené kolo."""
+    stranka = client.get("/zakazky").text
+    assert 'class="horni-lista jedna-lista"' in stranka and 'aria-label="Nastavení"' in stranka
+    assert "<span>Autoservis</span>" in stranka  # nic nevyplněno → výchozí
+    client.post("/nastaveni", data={"nazev_servisu": "Servis Novák", "rada_faktura": "FV{RRRR}",
+                                    "rada_vyuctovani": "VY{RRRR}"})
+    assert "<span>Servis Novák</span>" in client.get("/zakazky").text
+    png = bytes.fromhex("89504e470d0a1a0a0000000d4948445200000001000000010806000000"
+                        "1f15c4890000000d49444154789c6360000002000154a24f5d0000000049454e44ae426082")
+    r = client.post("/nastaveni", data={"nazev_v_liste": "Autoservis Novák", "rada_faktura": "FV{RRRR}",
+                                        "rada_vyuctovani": "VY{RRRR}"},
+                    files={"logo_soubor": ("logo.png", png, "image/png")}, follow_redirects=False)
+    assert r.status_code == 303
+    stranka = client.get("/zakazky").text
+    assert "<span>Autoservis Novák</span>" in stranka and 'src="data:image/png;base64,' in stranka
+    r = client.post("/nastaveni", data={"rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"},
+                    files={"logo_soubor": ("x.txt", b"text", "text/plain")})
+    assert r.status_code == 422 and "Logo musí být obrázek" in r.text
+    client.post("/nastaveni", data={"smazat_logo": "1", "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    assert "data:image/png" not in client.get("/zakazky").text

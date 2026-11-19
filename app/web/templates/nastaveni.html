@@ -17,7 +17,20 @@
   (pole jsou označená červeně). Údaje servisu se tisknou na fakturu a zakázkový list.</p>
 {% endif %}
 
-<form method="post" action="/nastaveni" class="formular" id="formular-nastaveni">
+<form method="post" action="/nastaveni" class="formular" id="formular-nastaveni" enctype="multipart/form-data">
+  <fieldset class="panel">
+    <legend>Horní lišta</legend>
+    {# uprostřed horní lišty: logo a název firmy #}
+    {{ p('nazev_v_liste', 'Název v horní liště', placeholder=nast.nazev_servisu or 'Autoservis') }}
+    <div class="radek-loga">
+      {% if nast.logo %}<img src="{{ nast.logo }}" alt="Logo" class="nahled-loga">{% endif %}
+      <label>Logo (PNG, JPG, SVG nebo WebP, nejvýš 500 kB)
+        <input type="file" name="logo_soubor" accept="image/png,image/jpeg,image/svg+xml,image/webp"></label>
+      {% if nast.logo %}<label class="volba"><input type="checkbox" name="smazat_logo" value="1"> smazat logo</label>{% endif %}
+    </div>
+    <p class="tlumene poznamka">Prázdný název = název servisu níže. Logo se ukáže vlevo od názvu.</p>
+  </fieldset>
+
   <fieldset class="panel">
     <legend>Údaje servisu (dodavatel)</legend>
     {{ p('nazev_servisu', 'Název / jméno podnikatele') }}

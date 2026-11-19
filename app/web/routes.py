@@ -27,7 +27,22 @@ POLE_VOZIDLA = vozidla.POLE
 POLE_ZAKAZKY = ["tachometr", "pozadavek", "poznamka"]
 
 
+def _udaje_listy(request: Request) -> dict:
+    """Název firmy a logo do horní lišty (z Nastavení). Bere stejné spojení s databází jako stránka
+    (v testech přesměrované na testovací databázi)."""
+    zdroj = request.app.dependency_overrides.get(get_session, get_session)
+    gen = zdroj()
+    try:
+        nast = nastaveni.nacti(next(gen))
+        return {"nazev": nast.nazev_do_listy, "logo": nast.logo}
+    except Exception:  # lišta nesmí shodit stránku
+        return {"nazev": "Autoservis", "logo": ""}
+    finally:
+        gen.close()
+
+
 def _stranka(request: Request, sablona: str, status_code: int = 200, **kontext) -> HTMLResponse:
+    kontext.setdefault("lista", _udaje_listy(request))
     return templates.TemplateResponse(request, sablona, kontext, status_code=status_code)
 
 
@@ -916,11 +931,18 @@ def nastaveni_stranka(request: Request, db: DB, ulozeno: str = ""):
 
 @router.post("/nastaveni", response_class=HTMLResponse)
 async def nastaveni_uloz(request: Request, db: DB):
-    data = await _formular(request)
+    form = await request.form()
+    soubor = form.get("logo_soubor")
+    data = {k: str(v) for k, v in form.items() if k != "logo_soubor"}
     for zaskrtavatko in ("platce_dph", "zaokrouhlit_hotovost"):
         data.setdefault(zaskrtavatko, "")
     try:
         nastaveni.uloz(db, data)
+        # logo do horní lišty: nahrané nahradí původní, „smazat logo“ ho odebere
+        if getattr(soubor, "filename", None):
+            nastaveni.uloz_logo(db, await soubor.read(), soubor.content_type)
+        elif data.get("smazat_logo"):
+            nastaveni.uloz_logo(db, None, None)
     except ChybaValidace as e:
         db.rollback()
         return _stranka(request, "nastaveni.html", 422, aktivni="nastaveni", nast=nastaveni.nacti(db),

@@ -10,7 +10,7 @@ from app.services import ChybaValidace, cislo_nebo_none, desetinne_nebo_none
 TEXTOVA_POLE = [
     "mena", "nazev_servisu", "ulice", "mesto", "psc", "ico", "dic", "telefon", "email", "web",
     "cislo_uctu", "iban", "vystavil", "rada_faktura", "rada_vyuctovani", "text_pod_fakturou",
-    "api_klic_registr",
+    "api_klic_registr", "nazev_v_liste",
 ]
 RADY = ["rada_faktura", "rada_vyuctovani"]
 ANO_NE_POLE = ["platce_dph", "zaokrouhlit_hotovost"]
@@ -44,6 +44,13 @@ class NastaveniServisu:
     text_pod_fakturou: str = ""
     # Registr silničních vozidel (dataovozidlech.cz) – načtení údajů vozidla podle VIN
     api_klic_registr: str = ""
+    # horní lišta aplikace: název firmy uprostřed (prázdné = název servisu) a logo (data URI, uložené v DB)
+    nazev_v_liste: str = ""
+    logo: str = ""
+
+    @property
+    def nazev_do_listy(self) -> str:
+        return self.nazev_v_liste or self.nazev_servisu or "Autoservis"
 
     @property
     def udaje_vyplneny(self) -> bool:
@@ -131,5 +138,28 @@ def uloz(session: Session, data: dict) -> NastaveniServisu:
         zaznam = session.get(Nastaveni, klic) or Nastaveni(klic=klic)
         zaznam.hodnota = hodnota
         session.add(zaznam)
+    session.commit()
+    return nacti(session)
+
+
+LOGO_TYPY = {"image/png": "png", "image/jpeg": "jpg", "image/svg+xml": "svg", "image/webp": "webp"}
+LOGO_MAX = 500 * 1024
+
+
+def uloz_logo(session: Session, obsah: bytes | None, typ: str | None) -> NastaveniServisu:
+    """Logo do horní lišty – uloží se do nastavení jako data URI (zálohuje se s databází).
+    Prázdný `obsah` logo smaže."""
+    import base64
+    if not obsah:
+        hodnota = ""
+    else:
+        if typ not in LOGO_TYPY:
+            raise ChybaValidace("Logo musí být obrázek PNG, JPG, SVG nebo WebP.", "logo_soubor")
+        if len(obsah) > LOGO_MAX:
+            raise ChybaValidace("Logo je moc velké – nejvýš 500 kB.", "logo_soubor")
+        hodnota = f"data:{typ};base64," + base64.b64encode(obsah).decode("ascii")
+    zaznam = session.get(Nastaveni, "logo") or Nastaveni(klic="logo")
+    zaznam.hodnota = hodnota
+    session.add(zaznam)
     session.commit()
     return nacti(session)

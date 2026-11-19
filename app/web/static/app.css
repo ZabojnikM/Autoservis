@@ -356,7 +356,7 @@ button.smazat-radek:hover { background: var(--c-chyba) !important; color: #fff !
 [role=button].upravit-radek:hover { background: var(--akcent); color: #fff; }
 
 /* krátká hláška po uložení – vpravo nahoře, sama zmizí */
-.zprava { position: fixed; top: 6.25rem; left: 50%; transform: translateX(-50%); z-index: 100; max-width: min(560px, 90vw);
+.zprava { position: fixed; top: 4.5rem; left: 50%; transform: translateX(-50%); z-index: 100; max-width: min(560px, 90vw);
   display: flex; align-items: center; gap: .75rem; background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; border-left: 4px solid var(--c-hotovo); padding: .45rem .9rem; font-size: .9rem; box-shadow: 0 3px 12px rgba(0,0,0,.15); transition: opacity .4s; }
 .zprava.mizi { opacity: 0; }
 .upozorneni-text { margin: 0 0 .5rem; color: #b45309; font-weight: 600; font-size: .9rem; }
@@ -886,3 +886,23 @@ fieldset.panel > legend ~ * { clear: both; }
 
 /* detail zákazníka: v souhrnu Vozidla a Zakázky na jednom řádku */
 dd .vedle { margin-left: 1rem; margin-right: .35rem; }
+
+/* jedna horní lišta: menu vlevo | logo a název firmy uprostřed | hledání a Nastavení vpravo */
+.horni-lista.jedna-lista { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px;
+  height: auto; min-height: 58px; padding: 6px 16px; }
+.jedna-lista .menu { position: static; background: none; border: 0; padding: 0; justify-self: start; }
+.jedna-lista .menu ul { display: flex; gap: 2px; margin: 0; padding: 0; }
+.jedna-lista .menu li { list-style: none; padding: 0; margin: 0; }
+.jedna-lista .menu a { display: block; padding: 6px 10px; font-size: .95rem; text-decoration: none; }
+.jedna-lista .firma { display: flex; align-items: center; gap: 10px; justify-self: center; text-decoration: none;
+  color: var(--text, #111827); font-size: 1.35rem; font-weight: 700; white-space: nowrap; }
+.jedna-lista .logo-firmy { height: 36px; width: auto; max-width: 160px; object-fit: contain; }
+.jedna-lista .lista-vpravo { display: flex; align-items: center; gap: 10px; justify-self: end; }
+.jedna-lista .hledani { margin: 0; }
+.jedna-lista .hledani input { width: 300px; margin: 0; }
+.jedna-lista .ozubene-kolo { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px;
+  border-radius: 10px; color: #4b5563; }
+.jedna-lista .ozubene-kolo:hover, .jedna-lista .ozubene-kolo.aktivni { background: var(--akcent-svetly); color: var(--akcent-tmavy); }
+@media (max-width: 1400px) { .jedna-lista .hledani input { width: 210px; } .jedna-lista .firma { font-size: 1.15rem; } }
+.radek-loga { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.nahled-loga { height: 48px; width: auto; max-width: 200px; object-fit: contain; border: 1px solid var(--ram); border-radius: 8px; padding: 4px; background: #fff; }
