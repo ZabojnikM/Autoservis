@@ -726,7 +726,6 @@ a:hover > .spz { border-color: var(--akcent); background: var(--akcent-svetly); 
 @media print { .spz { background: none; border-color: #999; } }
 .vstup-spz { font-family: inherit; font-weight: 700; letter-spacing: .03em; }
 /* seznam vozidel: VIN proložené, ať se dá číst po znacích */
-.seznam-vozidel td.vin { letter-spacing: .04em; color: #374151; }
 /* šířky sloupců podle obsahu; volné místo se rozdělí poměrně mezi všechny sloupce */
 .seznam-vozidel th, .seznam-vozidel td { white-space: nowrap; }
 .seznam-vozidel td, .seznam-vozidel th.razeni a { padding-right: 16px; }
@@ -735,7 +734,7 @@ a:hover > .spz { border-color: var(--akcent); background: var(--akcent-svetly); 
 .seznam-vozidel td:nth-child(4) { max-width: 13rem; overflow: hidden; text-overflow: ellipsis; }
 /* ceník materiálu a ceník prací: jeden řádek na položku, dlouhé texty zkrácené (celé v bublině) */
 .seznam-materialu td, .seznam-praci td { white-space: nowrap; }
-.seznam-materialu td:nth-child(1) { max-width: 12rem; overflow: hidden; text-overflow: ellipsis; font-weight: 600; color: #111827; }
+.seznam-materialu td:nth-child(1) { max-width: 12rem; overflow: hidden; text-overflow: ellipsis; }
 .seznam-materialu td:nth-child(2), .seznam-praci td:nth-child(2) { max-width: 26rem; overflow: hidden; text-overflow: ellipsis; }
 .seznam-materialu td:nth-child(3) { max-width: 12rem; overflow: hidden; text-overflow: ellipsis; }
 /* seznam zákazníků: užší jméno (dlouhé názvy firem zkrácené, celé v bublině), adresa na jednom řádku */
@@ -930,3 +929,32 @@ dd .vedle { margin-left: 1rem; margin-right: .35rem; }
 .cislo-dokladu-pole input { width: 7rem; margin: 0; font-weight: 700; }
 /* #15: místo smazaného dokladu v přehledu */
 tr.volne-misto td { color: var(--tlumene, #64748b); font-style: italic; background: repeating-linear-gradient(135deg, transparent 0 8px, rgba(148,163,184,.08) 8px 16px); }
+
+/* ---------------------------------------------------------------- #57: jednotný vzhled hlavních seznamů
+   Platí pro Zakázky, Vozidla, Zákazníky, Materiál, Práce, Faktury / Vyúčtování a Příjem vozidel.
+   - hlavní údaj řádku (td.hlavni): polotučně tmavě – číslo zakázky / dokladu, jméno, SPZ, název položky;
+     řádek se otevírá klikem, odkaz v hlavním údaji proto není fialový
+   - fialová jen pro odkazy na jiný záznam (majitel, vozidla zákazníka)
+   - vedlejší kódy (td.kod): VIN, kód dílu, kód práce – stejný neutrální styl
+   - prázdné hodnoty: tlumená pomlčka (filtr |pomlcka)
+   - částky a km vpravo (td.cislo), konečná částka polotučně (td.castka-hlavni)
+   - stavy: jeden typ štítku (zaoblený, bez rámečku), barva podle významu */
+tbody td.hlavni, tbody td.hlavni a { color: var(--text); font-weight: 600; }
+tbody td.hlavni a:hover { color: var(--akcent-tmavy); }
+tbody td.kod { color: #374151; font-weight: 400; letter-spacing: .03em; }
+tbody td.kod.vin { letter-spacing: .04em; }
+.prazdne { color: var(--text-tlumeny); }
+tbody td.castka-hlavni { font-weight: 600; color: var(--text); }
+tbody td.cislo { text-align: right; font-variant-numeric: tabular-nums; }
+/* SPZ jako doplňkový údaj i jako hlavní údaj: vždy stejný neutrální štítek */
+tbody td a:has(> .spz) { color: inherit; }
+/* hlavičky: stejné písmo pro řaditelné i neřaditelné sloupce, aktivní řazení barvou a šipkou */
+thead th, thead th.razeni a { font-size: .8rem; font-weight: 600; color: #5b6472; text-transform: uppercase; letter-spacing: .05em; }
+thead th.razeni.serazeno, thead th.razeni.serazeno a { color: var(--akcent-tmavy); }
+/* stavové štítky zakázek, dokladů a příjmů */
+.stav, .stav-dokladu, .stav-db { display: inline-block; padding: 2px 9px; border: 0; border-radius: 999px;
+  font-size: .8rem; font-weight: 600; line-height: 1.5; white-space: nowrap; vertical-align: middle; }
+.stav::before { content: none; }
+/* typ dokladu podle barvy čísla: faktura fialově, vyúčtování černě */
+tbody td.hlavni.doklad-faktura, tbody td.hlavni.doklad-faktura a { color: var(--akcent-tmavy); }
+tbody td.hlavni.doklad-vyuctovani, tbody td.hlavni.doklad-vyuctovani a { color: #000; }

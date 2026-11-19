@@ -18,12 +18,12 @@
   <tbody>
   {% for k in zakaznici %}
     <tr data-otevrit="/zakaznici/{{ k.id }}" data-upravit="/zakaznici/{{ k.id }}/upravit">
-      <td title="{{ k.nazev }}"><a href="/zakaznici/{{ k.id }}">{{ k.nazev }}</a></td>
-      <td>{{ k.telefon or '' }}</td>
-      {% set adr = adresa(k.ulice, k.psc, k.mesto) %}
-      <td title="{{ adr }}">{{ adr }}</td>
-      <td>{{ k.ico or '' }}</td>
-      <td>{% for v in k.vozidla %}<a href="/vozidla/{{ v.id }}">{{ spz(v.spz) }}</a> {% endfor %}</td>
+      <td class="hlavni" title="{{ k.nazev }}"><a href="/zakaznici/{{ k.id }}">{{ k.nazev }}</a></td>
+      <td>{{ k.telefon|pomlcka }}</td>
+      {% set adr = adresa(k.ulice, k.psc, k.mesto)|trim %}
+      <td title="{{ adr }}">{{ adr|pomlcka }}</td>
+      <td>{{ k.ico|pomlcka }}</td>
+      <td>{% for v in k.vozidla %}<a href="/vozidla/{{ v.id }}">{{ spz(v.spz) }}</a> {% else %}{{ none|pomlcka }}{% endfor %}</td>
     </tr>
   {% endfor %}
   </tbody>

@@ -115,7 +115,7 @@
     <tbody>
     {% for f in doklady %}
       <tr class="doklad-{{ f.stav }}" data-otevrit="/faktury/{{ f.id }}" title="Klik otevře doklad">
-        <td><a href="/faktury/{{ f.id }}"><strong>{{ f.cislo }}</strong></a>
+        <td class="hlavni doklad-{{ f.typ }}"><a href="/faktury/{{ f.id }}">{{ f.cislo }}</a>
           {% if f.typ == 'vyuctovani' %}<span class="tlumene">vyúčt.</span>{% endif %}</td>
         <td>{{ f.datum_vystaveni|datum }}</td>
         <td>{% if f.typ == 'faktura' %}{{ f.datum_splatnosti|datum }}{% else %}<span class="tlumene">—</span>{% endif %}</td>

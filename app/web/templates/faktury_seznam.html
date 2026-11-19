@@ -34,20 +34,20 @@
     {% if f.je_volne_misto %}
     {# #15: místo smazaného dokladu – číslo jde znovu použít při vystavení #}
     <tr class="volne-misto" title="Doklad s tímto číslem byl smazán – číslo jde ručně použít při vystavení">
-      <td><strong>{{ f.cislo }}</strong>{% if f.typ == 'vyuctovani' %} <span class="tlumene">vyúčt.</span>{% endif %}</td>
+      <td class="hlavni doklad-{{ f.typ }}">{{ f.cislo }}{% if f.typ == 'vyuctovani' %} <span class="tlumene">vyúčt.</span>{% endif %}</td>
       <td>{{ f.datum_vystaveni|datum }}</td>
       <td colspan="6" class="tlumene">Volné po smazání</td>
     </tr>
     {% else %}
     <tr class="doklad-{{ f.stav }}" data-otevrit="/faktury/{{ f.id }}">
-      <td><a href="/faktury/{{ f.id }}"><strong>{{ f.cislo }}</strong></a>
+      <td class="hlavni doklad-{{ f.typ }}"><a href="/faktury/{{ f.id }}">{{ f.cislo }}</a>
         {% if f.typ == 'vyuctovani' %}<span class="tlumene">vyúčt.</span>{% endif %}</td>
       <td>{{ f.datum_vystaveni|datum }}</td>
-      <td>{% if f.typ == 'faktura' %}{{ f.datum_splatnosti|datum }}{% else %}<span class="tlumene">—</span>{% endif %}</td>
-      <td>{{ f.odb_nazev }}</td>
-      <td>{% if f.spz %}{{ spz(f.spz) }}{% endif %}</td>
-      <td class="cislo">{{ f.celkem|penize }}</td>
-      <td class="cislo">{% if f.zbyva %}<strong>{{ f.zbyva|penize }}</strong>{% endif %}</td>
+      <td>{% if f.typ == 'faktura' %}{{ f.datum_splatnosti|datum }}{% else %}{{ none|pomlcka }}{% endif %}</td>
+      <td>{{ f.odb_nazev|pomlcka }}</td>
+      <td>{% if f.spz %}{{ spz(f.spz) }}{% else %}{{ none|pomlcka }}{% endif %}</td>
+      <td class="cislo castka-hlavni">{{ f.celkem|penize }}</td>
+      <td class="cislo">{% if f.zbyva %}{{ f.zbyva|penize }}{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td><span class="stav-dokladu stav-dokladu-{{ f.stav }}">{{ f.nazev_stavu }}</span></td>
     </tr>
     {% endif %}

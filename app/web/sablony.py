@@ -104,6 +104,17 @@ def _polozek(pocet) -> str:
 
 
 templates.env.filters["polozek"] = _polozek
+
+
+def _pomlcka(hodnota):
+    """Prázdná hodnota v seznamu → jednotná tlumená pomlčka (#57); jinak hodnota (escapovaná)."""
+    from markupsafe import Markup, escape
+    if hodnota is None or (isinstance(hodnota, str) and not hodnota.strip()):
+        return Markup('<span class="prazdne">—</span>')
+    return escape(hodnota)
+
+
+templates.env.filters["pomlcka"] = _pomlcka
 templates.env.globals["StavZakazky"] = StavZakazky
 templates.env.globals["TypPolozky"] = TypPolozky
 templates.env.globals["TypDokladu"] = TypDokladu

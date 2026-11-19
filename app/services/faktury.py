@@ -363,7 +363,7 @@ def _volna_mista(session: Session, filtr: str, hledat: str | None, rok: int | No
             continue
         vysledek.append(VolneMisto(s.cislo, s.typ, s.datum_vystaveni))
     return vysledek
-VYCHOZI_FILTR = "vse"
+VYCHOZI_FILTR = "vyuctovani"  # výchozí záložka přehledu dokladů
 
 
 def seznam(

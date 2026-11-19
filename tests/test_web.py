@@ -210,7 +210,10 @@ def test_faktura_cely_tok():
     tisk = client.get(f"/faktury/{fid}/tisk").text
     assert "Faktura – daňový doklad" in tisk and "Autoservis Test" in tisk and "CZ6508000000192000145399" in tisk
 
-    assert "FV" in client.get("/faktury").text
+    prehled = client.get("/faktury").text  # výchozí záložka Vyúčtování – faktura v ní není
+    assert 'href="/faktury?filtr=vyuctovani&rok=&q=" aria-current="page"' in prehled and f"/faktury/{fid}" not in prehled
+    vse = client.get("/faktury", params={"filtr": "vse"}).text
+    assert f'<td class="hlavni doklad-faktura"><a href="/faktury/{fid}">FV' in vse  # faktura fialově (#57)
     zakazka = client.get(loc).text
     assert "Vystavit fakturu" not in zakazka and "vyúčtovaná" in zakazka
 
@@ -218,7 +221,7 @@ def test_faktura_cely_tok():
     assert r.status_code == 422 and "vyšší" in r.text
     r = client.post(f"/faktury/{fid}/uhrady", data={"castka": "1210", "zpusob": "prevod"}, follow_redirects=True)
     assert "Uhrazeno" in r.text
-    assert f"/faktury/{fid}" in client.get("/faktury").text  # výchozí záložka Všechny ukazuje i uhrazené
+    assert f"/faktury/{fid}" in client.get("/faktury", params={"filtr": "vse"}).text  # Všechny ukazují i uhrazené
     assert f"/faktury/{fid}" in client.get("/faktury", params={"filtr": "faktury"}).text
     assert f"/faktury/{fid}" not in client.get("/faktury", params={"filtr": "vyuctovani"}).text
 
@@ -1259,3 +1262,22 @@ def test_nastaveni_platce_dph_u_dic():
     text = client.get("/nastaveni").text
     dic, platce, dph = text.index('name="dic"'), text.index('name="platce_dph"'), text.index("<legend>Ceny a DPH")
     assert dic < platce < dph and "DIČ je povinné jen pro plátce DPH" in text
+
+
+def test_jednotny_vzhled_seznamu():
+    """#57: hlavní údaj td.hlavni, kódy td.kod, prázdné hodnoty pomlčkou, konečná částka polotučně."""
+    client.post("/nastaveni", data={"platce_dph": "1", "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    _prijem(spz="7JJ7777")
+    client.post("/cenik/nova", data={"nazev": "Filtr vzhledu", "cena": "100", "kod": ""})
+    client.post("/prace/nova", data={"nazev": "Práce vzhledu", "cena": "500"})
+    for url in ("/zakazky", "/vozidla", "/zakaznici", "/cenik", "/prace"):
+        text = client.get(url).text
+        assert '<td class="hlavni' in text, url
+    vozidla = client.get("/vozidla").text
+    assert '<td class="kod vin">' in vozidla and '<span class="prazdne">—</span>' in vozidla
+    cenik = client.get("/cenik").text
+    assert 'class="cislo castka-hlavni"' in cenik and "<strong>" not in cenik.split("<tbody>")[1].split("</tbody>")[0]
+    assert 'class="cislo castka-hlavni"' in client.get("/prace").text
+    from app.web.sablony import _pomlcka
+    assert str(_pomlcka("")) == '<span class="prazdne">—</span>' and str(_pomlcka("<b>")) == "&lt;b&gt;"
+    assert str(_pomlcka(0)) == "0"
