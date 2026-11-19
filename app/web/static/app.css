@@ -490,10 +490,10 @@ th.razeni.cislo a { text-align: right; }
 .okno-cenik .vyber-cenik .sl-typ { width: 6.5rem; }
 .okno-cenik .vyber-cenik .sl-kod { width: 12rem; }
 .okno-cenik .vyber-cenik .sl-zamenitelny { width: 11rem; }
-/* okno ceníku: tlačítka v liště nad seznamem (Vložit vlevo, Storno vpravo) */
-.lista-okna { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: .4rem; }
+/* okno ceníku: spodní lišta – tlačítka vlevo (Storno poslední), nápověda vpravo dole */
+.lista-okna { display: flex; flex-wrap: wrap; align-items: flex-end; gap: 8px; margin-top: .5rem; }
 .lista-okna > button, .lista-okna > [role=button] { width: auto; margin: 0; }
-.lista-okna .napoveda-okna { flex: 1 1 18rem; font-size: .8rem; line-height: 1.3; }
+.lista-okna .napoveda-okna { margin-left: auto; max-width: 30rem; text-align: right; font-size: .8rem; line-height: 1.3; }
 .okno-cenik .vyber-cenik .sl-cena { width: 6.5rem; }
 .okno-cenik .vyber-cenik .sl-cena-mj { width: 9.5rem; }  /* „1 600,00 / úkon“ */
 /* poslední sloupec: Upravit | množství | Přidat – musí se vejít celý, jinak se pole množství ořízne */

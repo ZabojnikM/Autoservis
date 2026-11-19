@@ -932,8 +932,10 @@ def test_okno_ceniku_jen_pro_jeden_typ():
     assert "/polozky/nova" not in material and "Ruční položka" not in material
     # #3: tlačítka v liště nad seznamem, okno bez sloupce akcí vlevo (sloupec Kód je širší)
     assert '<aside class="akce"' not in material and 's-akcemi' not in material
-    lista = material.split('class="lista-okna')[1].split('id="cenik-vysledky"')[0]
-    assert lista.index(">Vložit</button>") < lista.index("Nová položka ceníku") < lista.index(">Storno</button>")
+    # #27: lišta pod seznamem, tlačítka v řadě vlevo se Stornem na konci, nápověda až za nimi (vpravo dole)
+    assert material.index('id="cenik-vysledky"') < material.index('class="lista-okna')
+    lista = material.split('class="lista-okna')[1]
+    assert lista.index(">Vložit</button>") < lista.index("Nová položka ceníku") < lista.index(">Import</button>")         < lista.index(">Storno</button>") < lista.index('class="tlumene napoveda-okna"')
     prace = client.get(f"{loc}/cenik", params={"typ": "prace", "okno": "1"}).text
     assert "Přidat práci z ceníku" in prace and "Výměna filtru" in prace and "Filtr oleje" not in prace
     assert "Zaměnitelný díl" not in prace
@@ -992,3 +994,17 @@ def test_smazani_zakazky_s_polozkami_s_potvrzenim():
     r = client.post(f"{loc}/smazat", follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"].startswith("/zakazky")
     assert client.get(loc).status_code == 404
+
+
+def test_okno_ceniku_razeni_podle_kodu():
+    """#28: okno ceníku řadí podle kódu (bez kódu na konec) a kód je tučně."""
+    for kod, nazev in [("ZZ 9", "Akumulátor"), (None, "Bez kódu díl"), ("AA 1", "Žárovka H4"), ("MM 5", "Brzdy")]:
+        data = {"typ": "material", "nazev": nazev, "cena": "10"}
+        if kod:
+            data["kod"] = kod
+        client.post("/cenik/nova", data=data)
+    loc = _prijem().headers["location"].split("?")[0]
+    okno = client.get(f"{loc}/cenik", params={"typ": "material", "okno": "1"}).text
+    poradi = [okno.index(t) for t in ("Žárovka H4", "Brzdy", "Akumulátor", "Bez kódu díl")]
+    assert poradi == sorted(poradi)
+    assert "<strong>AA 1</strong>" in okno and "<strong>Žárovka H4</strong>" not in okno
