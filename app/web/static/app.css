@@ -755,7 +755,12 @@ a:hover > .spz { border-color: var(--akcent); background: var(--akcent-svetly); 
 /* karta vozidla: vlevo velký panel Vozidlo (údaje ve skupinách), vpravo Majitel a pod ním Termíny a historie */
 .karta-vozidla-panely { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
   gap: var(--mezera); margin-bottom: var(--mezera); align-items: start; }
-.karta-vozidla-vpravo { display: grid; gap: var(--mezera); }
+.karta-vozidla-vpravo { display: grid; gap: var(--mezera); grid-template-rows: auto 1fr; }
+/* #47: tři panely nahoře stejně vysoké (levý se natáhne na výšku pravého sloupce a naopak) */
+.karta-vozidla-panely { align-items: stretch !important; }
+.karta-vozidla .hlavni-vozidla { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 1.2rem; margin: .2rem 0 .5rem; }
+.karta-vozidla .hlavni-vozidla .spz { font-size: 1.35rem; padding: 1px 10px; border-width: 2px; font-weight: 800; letter-spacing: .06em; }
+.karta-vozidla dl { grid-template-columns: max-content 1fr; }
 .karta-vozidla-panely .panel { background: #fff; border: 1px solid var(--ram); border-radius: 12px; box-shadow: var(--stin);
   padding: 0 18px 14px; font-size: .95rem; }
 .karta-vozidla-panely dl { gap: 6px 12px; }

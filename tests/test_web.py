@@ -703,13 +703,12 @@ def test_detail_vozidla_zalozky_historie():
     assert r.status_code == 200 and 'class="karta-vozidla-panely"' in r.text
     # vlevo Vozidlo (i technické údaje), vpravo Majitel a pod ním Termíny a historie
     assert r.text.index(">Vozidlo<") < r.text.index(">Majitel<") < r.text.index(">Termíny a historie<")
-    assert "Technické údaje" not in r.text and "Druh paliva" in r.text
-    # #5: bez nadpisu se SPZ a modelem nad kartou, údaje v pořadí jako formulář vozidla
-    assert '<div class="nadpis-radek">' not in r.text.split('class="karta-vozidla-panely"')[0].split('<main')[-1]
-    poradi = ["SPZ<", "Značka<", "Model / typ<", ">VIN<", "Rok výroby<", "Typ vozidla (TP)<", "Kód motoru<",
-              "Objem<", "Výkon<", "Druh paliva<", "Olej<", "Barva<", "Datum 1. registrace<", "Termín STK<"]
+    assert "Technické údaje" not in r.text
+    # #47: karta jako panel Vozidlo v zakázce – SPZ + značka a model nahoře, pod tím „název: hodnota“,
+    # prázdné údaje se nezobrazují (žádné „—“), motor sloučený; málo údajů → odkaz Doplnit
     karta = r.text.split('class="panel karta-vozidla"')[1].split("</section>")[0]
-    assert [karta.index(t) for t in poradi] == sorted(karta.index(t) for t in poradi)
+    assert 'class="hlavni-udaj hlavni-vozidla"' in karta and "<dl>" in karta
+    assert "—" not in karta and "<dt>Barva</dt>" not in karta and "Doplnit údaje vozidla" in karta
     assert "Zakázky (1)" in r.text and "Práce (1)" in r.text and "Materiál (1)" in r.text
     assert "Jana Dvořáková" in r.text and "Nejde startovat" in r.text and f'data-otevrit="{loc}"' in r.text
     prace = client.get(f"/vozidla/{vid}", params={"zalozka": "prace"}).text
@@ -1051,3 +1050,16 @@ def test_prazdny_pozadavek_a_interni_poznamka():
     detail = client.get(loc).text
     assert "Nevyplněno" in detail and f'href="{loc}/upravit" data-okno>Doplnit</a>' in detail
     assert 'class="interni-poznamka neni-tisk"' in detail and "Klíče na recepci" in detail
+
+
+def test_karta_vozidla_udaje_jako_v_zakazce():
+    """#47: vyplněné údaje jako seznam název: hodnota, motor = kód · objem · výkon, STK po termínu zvýrazněná."""
+    r = client.post("/vozidla/nove", data={"spz": "4K44444", "znacka": "Škoda", "model": "Octavia", "vin": "TMBAA11U123456789",
+                                           "rok_vyroby": "2015", "kod_motoru": "CRKB", "objem": "1968", "vykon": "110 kW",
+                                           "palivo": "nafta", "termin_stk": "2020-01-01", "zakaznik_vyber": "bez"},
+                    follow_redirects=False)
+    karta = client.get(r.headers["location"].split("?")[0]).text.split('class="panel karta-vozidla"')[1].split("</section>")[0]
+    poradi = ["<dt>VIN</dt>", "<dt>Rok výroby</dt>", ">Motor</dt>", "<dt>Druh paliva</dt>", "<dt>Termín STK</dt>"]
+    assert [karta.index(t) for t in poradi] == sorted(karta.index(t) for t in poradi)
+    assert "CRKB · 1968 · 110 kW" in karta and 'class="po-terminu"' in karta
+    assert "<dt>Olej</dt>" not in karta and "Doplnit údaje vozidla" not in karta
