@@ -10,6 +10,7 @@ from sqlmodel import Session
 
 from app.db import get_session
 from app.models import FormaUhrady, StavZakazky, TypDokladu, TypPolozky, Uhrada
+from app.services import ares
 from app.services import (
     ChybaValidace, cenik, cisty_text, faktury, hledani, nastaveni, polozky, registr_vozidel, vozidla, zakaznici,
     zakazky,
@@ -659,6 +660,16 @@ def zakaznici_vyber_blok(request: Request, db: DB, vybrat_id: int, pole: str = "
 def _formular_zakaznika(request, zakaznik, hodnoty, okno=False, chyba=None):
     return _stranka(request, "zakaznik_form.html", _status_formulare(okno, chyba), aktivni="zakaznici",
                     zakaznik=zakaznik, hodnoty=hodnoty, okno=okno, chyba=chyba)
+
+
+@router.get("/zakaznici/ares")
+def zakaznik_z_ares(ico: str = ""):
+    """Údaje firmy z ARES podle IČO pro tlačítko Načti (#11). JSON {pole: {...}} nebo {chyba, pole_chyby};
+    formulář se doplní v prohlížeči (příjem zakázky s předponou k_, formulář zákazníka bez)."""
+    try:
+        return {"pole": ares.na_pole_zakaznika(ares.nacti(ico))}
+    except ChybaValidace as e:
+        return {"chyba": str(e), "pole_chyby": e.pole}
 
 
 @router.get("/zakaznici/novy", response_class=HTMLResponse)

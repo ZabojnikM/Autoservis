@@ -28,9 +28,8 @@
         <label class="roztahnout">IČO
           <input type="text" name="ico" value="{{ hodnoty.get('ico') or '' }}" inputmode="numeric" autocomplete="off">
         </label>
-        {# TODO: napojit na ARES – zatím jen tlačítko (viz PLAN.md) #}
-        <button type="button" class="maly secondary outline" title="Načíst údaje firmy z rejstříku podle IČO"
-                onclick="upozorni('Načtení údajů z rejstříku (ARES) zatím není hotové – připravuje se.')">Načti</button>
+        <button type="button" class="maly secondary outline" title="Načíst název, adresu a DIČ firmy z ARES podle IČO"
+                onclick="nactiZAres(this, '')">Načti</button>
       </div>
       {{ pole('dic', 'DIČ', hodnoty) }}
     </div>

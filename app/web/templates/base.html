@@ -353,6 +353,34 @@
       }
     }
 
+    // ---- Tlačítko Načti u IČO (#11): název, adresa a DIČ firmy z ARES; doplněná pole zeleně, uloží se až Uložit.
+    async function nactiZAres(tlacitko, predpona) {
+      const form = tlacitko.closest("form");
+      const pole = (jmeno) => form.querySelector(`[name="${predpona}${jmeno}"]`);
+      const ico = pole("ico").value.replace(/\s/g, "");
+      if (!ico) { upozorni("Nejdřív zadejte IČO."); pole("ico").focus(); return; }
+      tlacitko.disabled = true; tlacitko.setAttribute("aria-busy", "true");
+      try {
+        const odpoved = await fetch("/zakaznici/ares?ico=" + encodeURIComponent(ico));
+        if (!odpoved.ok) throw new Error(odpoved.status);
+        const v = await odpoved.json();
+        if (v.chyba) { upozorni(v.chyba); pole("ico").focus(); return; }
+        let zmeneno = 0;
+        for (const [jmeno, hodnota] of Object.entries(v.pole)) {
+          const p = pole(jmeno);
+          if (!p || p.value === hodnota) continue;
+          p.value = hodnota; zmeneno++;
+          p.classList.add("doplneno-z-registru");
+          p.dispatchEvent(new Event("input", {bubbles: true}));  // okno pozná neuložené změny
+        }
+        ukazZpravu(`ARES: ${zmeneno ? "doplněno polí: " + zmeneno : "údaje se shodují"} (${v.pole.nazev || ico}). Nezapomeňte uložit.`);
+      } catch (e) {
+        upozorni("Načtení z ARES se nepovedlo (" + e.message + ").");
+      } finally {
+        tlacitko.disabled = false; tlacitko.removeAttribute("aria-busy");
+      }
+    }
+
     // ---- Okno Přidat z ceníku: řádek s data-pridat přidá dvojklik nebo Enter (s množstvím z řádku, předvyplněno 1).
     // Šipky ↓ ↑ v hledání i v mřížce vybírají řádek, Enter ho přidá.
     function pridejRadek(tr) {
