@@ -86,7 +86,7 @@ def prijem(
     """Příjem vozidla do servisu – vytvoří zakázku.
 
     Vozidlo se určí podle `zakazka["vozidlo_id"]`, jinak podle SPZ v `vozidlo`;
-    neexistuje-li, založí se z údajů `vozidlo`.
+    neexistuje-li, založí se z údajů `vozidlo`. Bez SPZ i bez `vozidlo_id` je zakázka bez vozidla (#50).
 
     Zákazník (`zakaznik`) je nepovinný:
       - `vyber="bez"` → zakázka bez zákazníka (lze doplnit později),
@@ -101,15 +101,15 @@ def prijem(
         bez = zakaznik.get("vyber") == "bez"
         zakaznik_id = None if bez else _vyres_zakaznika(session, zakaznik)
         vuz = _urci_vozidlo(session, zakazka, vozidlo, zakaznik_id)
-        if zakaznik_id is not None and vuz.zakaznik_id is None:
+        if vuz is not None and zakaznik_id is not None and vuz.zakaznik_id is None:
             vuz.zakaznik_id = zakaznik_id
             session.add(vuz)
         if not bez and zakaznik_id is None:
-            zakaznik_id = cislo_nebo_none(zakazka.get("zakaznik_id"), "Zákazník") or vuz.zakaznik_id
+            zakaznik_id = cislo_nebo_none(zakazka.get("zakaznik_id"), "Zákazník") or (vuz.zakaznik_id if vuz else None)
         if zakaznik_id is not None:
             zakaznici_sluzba.ziskej(session, zakaznik_id)
 
-        nova = Zakazka(cislo=dalsi_cislo(session), vozidlo_id=vuz.id, zakaznik_id=zakaznik_id)
+        nova = Zakazka(cislo=dalsi_cislo(session), vozidlo_id=vuz.id if vuz else None, zakaznik_id=zakaznik_id)
         _nastav(nova, zakazka)
         session.add(nova)
         session.commit()
@@ -128,15 +128,16 @@ def prijem_z_formulare(session: Session, zakazka: dict, vozidlo: dict, zakaznik:
       - nevybraný, ale vyplněný → nový zákazník (firma je pak povinná),
       - prázdný panel → zakázka bez zákazníka.
     `vozidlo`: `vozidlo_id` a pole vozidla. Vybrané vozidlo (nebo nalezené podle SPZ) se upraví,
-    jinak se založí nové. Vozidlu bez majitele se přiřadí zákazník zakázky. Vše v jedné transakci.
+    jinak se založí nové; prázdný panel → zakázka bez vozidla (#50). Vozidlu bez majitele se přiřadí
+    zákazník zakázky. Vše v jedné transakci.
     """
     try:
         zakaznik_id = _zakaznik_z_panelu(session, zakaznik)
         vuz = _vozidlo_z_panelu(session, vozidlo)
-        if zakaznik_id is not None and vuz.zakaznik_id is None:
+        if vuz is not None and zakaznik_id is not None and vuz.zakaznik_id is None:
             vuz.zakaznik_id = zakaznik_id
             session.add(vuz)
-        nova = Zakazka(cislo=dalsi_cislo(session), vozidlo_id=vuz.id, zakaznik_id=zakaznik_id)
+        nova = Zakazka(cislo=dalsi_cislo(session), vozidlo_id=vuz.id if vuz else None, zakaznik_id=zakaznik_id)
         _nastav(nova, zakazka)
         session.add(nova)
         session.commit()
@@ -167,11 +168,15 @@ def _zakaznik_z_panelu(session: Session, zakaznik: dict) -> int | None:
 zakaznik_z_panelu = _zakaznik_z_panelu  # i pro formulář vozidla (stejný panel Zákazník jako na příjmu)
 
 
-def _vozidlo_z_panelu(session: Session, vozidlo: dict) -> Vozidlo:
+def _vozidlo_z_panelu(session: Session, vozidlo: dict) -> Vozidlo | None:
+    """Vozidlo z panelu příjmu / úpravy zakázky. Prázdný panel (bez SPZ a bez dalších údajů) = bez vozidla."""
     data = {p: vozidlo[p] for p in vozidla_sluzba.POLE if p in vozidlo}
     spz = vozidla_sluzba.normalizuj_spz(data.get("spz"))
     if not spz:
-        raise ChybaValidace("Vyplňte SPZ vozidla.", "spz")
+        if not any(cisty_text(v) for v in data.values()):
+            return None  # zakázka bez vozidla (#50)
+        raise ChybaValidace("Vyplňte SPZ vozidla, nebo panel vozidla vyprázdněte (tlačítko Nové vozidlo) – "
+                            "zakázka pak bude bez vozidla.", "spz")
     vybrane = id_nebo_none(vozidlo.get("vozidlo_id"), "Vozidlo")
     if vybrane is not None and vozidla_sluzba.ziskej(session, vybrane).spz != spz:
         vybrane = None  # SPZ přepsaná na jinou → jde o jiné vozidlo (SPZ se mění v úpravě vozidla)
@@ -191,10 +196,12 @@ def _vyres_zakaznika(session: Session, zakaznik: dict) -> int | None:
     return zakaznici_sluzba.z_vyberu(session, vyber, zakaznik)
 
 
-def _urci_vozidlo(session: Session, zakazka: dict, vozidlo: dict, zakaznik_id: int | None) -> Vozidlo:
+def _urci_vozidlo(session: Session, zakazka: dict, vozidlo: dict, zakaznik_id: int | None) -> Vozidlo | None:
     vozidlo_id = cislo_nebo_none(zakazka.get("vozidlo_id"), "Vozidlo")
     if vozidlo_id is not None:
         return vozidla_sluzba.ziskej(session, vozidlo_id)
+    if not vozidla_sluzba.normalizuj_spz(vozidlo.get("spz")):
+        return None  # bez vozidla (#50)
 
     existujici = vozidla_sluzba.najdi_podle_spz(session, vozidlo.get("spz", ""))
     if existujici:
@@ -242,10 +249,10 @@ def uprav_z_formulare(session: Session, zakazka_id: int, zakazka: dict, vozidlo:
     try:
         zakaznik_id = _zakaznik_z_panelu(session, zakaznik)
         vuz = _vozidlo_z_panelu(session, vozidlo)
-        if zakaznik_id is not None and vuz.zakaznik_id is None:
+        if vuz is not None and zakaznik_id is not None and vuz.zakaznik_id is None:
             vuz.zakaznik_id = zakaznik_id
             session.add(vuz)
-        zaznam.vozidlo_id = vuz.id
+        zaznam.vozidlo_id = vuz.id if vuz else None  # prázdný panel vozidla = zakázka bez vozidla
         zaznam.zakaznik_id = zakaznik_id
         _nastav(zaznam, zakazka)
         session.add(zaznam)
@@ -286,7 +293,8 @@ def ziskej(session: Session, zakazka_id: int) -> Zakazka:
 
 
 def _dotaz_seznamu(stav: str | None, jen_otevrene: bool, hledat: str | None):
-    dotaz = select(Zakazka).join(Vozidlo, Zakazka.vozidlo_id == Vozidlo.id) \
+    # outer join: i zakázky bez vozidla (#50) zůstanou v seznamu, hledání i řazení
+    dotaz = select(Zakazka).outerjoin(Vozidlo, Zakazka.vozidlo_id == Vozidlo.id) \
         .outerjoin(Zakaznik, Zakazka.zakaznik_id == Zakaznik.id)
     if isinstance(stav, (list, tuple)):
         dotaz = dotaz.where(col(Zakazka.stav).in_(stav))

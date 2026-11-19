@@ -109,7 +109,8 @@ class Vozidlo(SQLModel, table=True):
 class Zakazka(SQLModel, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
     cislo: str = Field(index=True, unique=True)
-    vozidlo_id: int = Field(foreign_key="vozidlo.id", index=True)
+    # zakázka může být i bez vozidla (#50) – stejně jako bez zákazníka
+    vozidlo_id: Optional[int] = Field(default=None, foreign_key="vozidlo.id", index=True)
     zakaznik_id: Optional[int] = Field(default=None, foreign_key="zakaznik.id", index=True)
     datum_prijeti: NaiveDatetime = Field(default_factory=datetime.now)
     tachometr: Optional[int] = None

@@ -1,5 +1,9 @@
 """Připojení k databázi SQLite."""
+import re
+import sqlite3
 from collections.abc import Iterator
+from datetime import datetime
+from pathlib import Path
 
 from sqlalchemy import event, inspect, text
 from sqlalchemy.engine import Engine
@@ -62,6 +66,7 @@ def init_db(eng: Engine | None = None) -> None:
     config.DATA_DIR.mkdir(parents=True, exist_ok=True)
     SQLModel.metadata.create_all(eng)
     doplnit_sloupce(eng)
+    uvolnit_povinne_sloupce(eng)
 
 
 def doplnit_sloupce(eng: Engine) -> list[str]:
@@ -93,6 +98,84 @@ def doplnit_sloupce(eng: Engine) -> list[str]:
                 conn.execute(text(f'ALTER TABLE "{tabulka.name}" ADD COLUMN "{sloupec.name}" {typ}{vychozi}'))
                 pridane.append(f"{tabulka.name}.{sloupec.name}")
     return pridane
+
+
+def _zaloha_pred_migraci(eng: Engine) -> Path | None:
+    """Kopie souborové databáze do data/backups/ (SQLite backup – bezpečné i za běhu)."""
+    soubor = eng.url.database
+    if not soubor or soubor == ":memory:" or not Path(soubor).exists():
+        return None
+    zalohy = Path(soubor).resolve().parent / "backups"
+    zalohy.mkdir(parents=True, exist_ok=True)
+    cil = zalohy / f"pred-migraci-{datetime.now():%Y%m%d-%H%M%S}.db"
+    zdroj, kopie = sqlite3.connect(soubor), sqlite3.connect(cil)
+    try:
+        zdroj.backup(kopie)
+    finally:
+        kopie.close()
+        zdroj.close()
+    return cil
+
+
+def uvolnit_povinne_sloupce(eng: Engine) -> list[str]:
+    """Migrace: sloupec, který je v modelu nepovinný, ale v databázi NOT NULL (např. `zakazka.vozidlo_id`
+    po povolení zakázky bez vozidla, #50), se uvolní. SQLite neumí ALTER COLUMN – tabulka se přestaví
+    podle postupu z dokumentace SQLite (nová tabulka, kopie dat, výměna, indexy). Předtím záloha DB.
+    Vrací seznam uvolněných sloupců „tabulka.sloupec“."""
+    existujici = inspect(eng)
+    zmeny: dict[str, list[str]] = {}
+    for tabulka in SQLModel.metadata.sorted_tables:
+        if not existujici.has_table(tabulka.name):
+            continue
+        v_db = {s["name"]: s for s in existujici.get_columns(tabulka.name)}
+        for sloupec in tabulka.columns:
+            if (sloupec.nullable and not sloupec.primary_key and sloupec.name in v_db
+                    and not v_db[sloupec.name]["nullable"]):
+                zmeny.setdefault(tabulka.name, []).append(sloupec.name)
+    if not zmeny:
+        return []
+    _zaloha_pred_migraci(eng)
+    hotovo = []
+    surove = eng.raw_connection()
+    try:
+        con = surove.driver_connection
+        puvodni_izolace = con.isolation_level
+        con.isolation_level = None  # transakce řídíme ručně (PRAGMA foreign_keys jen mimo transakci)
+        cur = con.cursor()
+        cur.execute("PRAGMA foreign_keys=OFF")
+        try:
+            cur.execute("BEGIN")
+            for nazev, sloupce in zmeny.items():
+                sql = cur.execute("SELECT sql FROM sqlite_master WHERE type='table' AND name=?", (nazev,)).fetchone()[0]
+                for s in sloupce:
+                    nove = re.sub(rf'("?{s}"?\s+[A-Z]+(?:\(\d+\))?)\s+NOT NULL', r"\1", sql, count=1)
+                    if nove == sql:
+                        raise RuntimeError(f"Migrace: v definici {nazev} se nenašlo {s} NOT NULL.")
+                    sql = nove
+                    hotovo.append(f"{nazev}.{s}")
+                docasna = f"{nazev}__nova"
+                sql = re.sub(rf'^CREATE TABLE\s+"?{nazev}"?', f'CREATE TABLE "{docasna}"', sql, count=1)
+                indexy = [r[0] for r in cur.execute(
+                    "SELECT sql FROM sqlite_master WHERE type='index' AND tbl_name=? AND sql IS NOT NULL", (nazev,))]
+                cur.execute(sql)
+                cur.execute(f'INSERT INTO "{docasna}" SELECT * FROM "{nazev}"')
+                cur.execute(f'DROP TABLE "{nazev}"')
+                cur.execute(f'ALTER TABLE "{docasna}" RENAME TO "{nazev}"')
+                for index in indexy:
+                    cur.execute(index)
+            chyby = cur.execute("PRAGMA foreign_key_check").fetchall()
+            if chyby:
+                raise RuntimeError(f"Migrace: porušené cizí klíče {chyby[:3]}")
+            cur.execute("COMMIT")
+        except Exception:
+            cur.execute("ROLLBACK")
+            raise
+        finally:
+            cur.execute("PRAGMA foreign_keys=ON")
+            con.isolation_level = puvodni_izolace
+    finally:
+        surove.close()
+    return hotovo
 
 
 def get_session() -> Iterator[Session]:

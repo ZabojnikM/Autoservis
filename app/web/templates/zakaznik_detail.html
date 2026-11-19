@@ -104,7 +104,7 @@
       <tr data-otevrit="/zakazky/{{ z.id }}" title="Dvojklik otevře zakázku">
         <td><a href="/zakazky/{{ z.id }}"><strong>{{ z.cislo }}</strong></a></td>
         <td>{{ z.datum_prijeti|datum }}</td>
-        <td>{{ spz(z.vozidlo.spz) }} <span class="tlumene">{% if z.vozidlo.znacka or z.vozidlo.model %}{{ z.vozidlo.popis }}{% endif %}</span></td>
+        <td>{% if z.vozidlo %}{{ spz(z.vozidlo.spz) }} <span class="tlumene">{% if z.vozidlo.znacka or z.vozidlo.model %}{{ z.vozidlo.popis }}{% endif %}</span>{% else %}<span class="tlumene">bez vozidla</span>{% endif %}</td>
         <td class="zkratit">{{ z.pozadavek }}</td>
         <td class="cislo">{{ soucty[z.id].celkem|penize }}</td>
         <td>{% if z.platna_faktura %}<a href="/faktury/{{ z.platna_faktura.id }}">{{ z.platna_faktura.cislo }}</a>{% endif %}</td>

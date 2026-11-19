@@ -10,7 +10,7 @@
 <div class="okno-cenik formular prijem siroky" data-bez-potvrzeni>
   {% if pridano %}<span data-obnovit-po-zavreni hidden></span>{% endif %}
   <header class="okno-hlavicka">
-    <h1>{{ nadpis_okna }} <span class="oznaceni">zakázka {{ zakazka.cislo }} · {{ spz(zakazka.vozidlo.spz) }}</span></h1>
+    <h1>{{ nadpis_okna }} <span class="oznaceni">zakázka {{ zakazka.cislo }}{% if zakazka.vozidlo %} · {{ spz(zakazka.vozidlo.spz) }}{% endif %}</span></h1>
     <span class="tlacitka-hlavicky neni-tisk">
       {# TODO: tlačítko Import položek do zakázky se vrátí, až bude import hotový (#8) #}
       {% if okno %}

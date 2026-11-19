@@ -12,8 +12,8 @@
 {% block content %}
 <div class="nadpis-radek">
   <h1>Vystavit {{ nazev }}
-    <span class="oznaceni">zakázka <a href="/zakazky/{{ zakazka.id }}">{{ zakazka.cislo }}</a> · {{ spz(zakazka.vozidlo.spz) }}
-      <span class="tlumene">{% if zakazka.vozidlo.znacka or zakazka.vozidlo.model %}{{ zakazka.vozidlo.popis }} {% endif %}· {{ zakazka.polozky|length|polozek }} ·</span>
+    <span class="oznaceni">zakázka <a href="/zakazky/{{ zakazka.id }}">{{ zakazka.cislo }}</a>{% set v = zakazka.vozidlo %}{% if v %} · {{ spz(v.spz) }}{% else %} · bez vozidla{% endif %}
+      <span class="tlumene">{% if v and (v.znacka or v.model) %}{{ v.popis }} {% endif %}· {{ zakazka.polozky|length|polozek }} ·</span>
       <strong>{{ rek.celkem|penize }} {{ nast.mena }}</strong></span></h1>
 </div>
 

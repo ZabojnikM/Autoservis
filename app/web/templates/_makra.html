@@ -100,7 +100,7 @@
 
 {% macro vstup_spz(hodnota, oob=False, autofocus=True) -%}
 {# Pole SPZ při příjmu – po potvrzení (Enter / Tab) dohledá vozidlo. oob=True: přepíše pole po výběru z databáze. #}
-<input type="text" id="spz" name="spz" value="{{ hodnota or '' }}" required {% if not oob and autofocus %}autofocus{% endif %}
+<input type="text" id="spz" name="spz" value="{{ hodnota or '' }}" {% if not oob and autofocus %}autofocus{% endif %}
        class="vstup-spz" autocomplete="off" placeholder="např. 1AB 2345" data-kontrola-spz
        hx-get="/zakazky/nova/vozidlo" hx-trigger="change"
        hx-target="#vozidlo-udaje" hx-include="#panel-zakaznik, #vozidlo-udaje" hx-sync="this:replace"
@@ -178,7 +178,7 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
         title="Dvojklik otevře zakázku">
       <td><a href="/zakazky/{{ z.id }}"><strong>{{ z.cislo }}</strong></a></td>
       <td>{{ z.datum_prijeti|datum }}</td>
-      {% if ukaz_vozidlo %}<td>{{ spz(z.vozidlo.spz) }} <span class="popis-vozidla">{{ z.vozidlo.popis }}</span></td>{% endif %}
+      {% if ukaz_vozidlo %}<td>{% if z.vozidlo %}{{ spz(z.vozidlo.spz) }} <span class="popis-vozidla">{{ z.vozidlo.popis }}</span>{% else %}<span class="tlumene">bez vozidla</span>{% endif %}</td>{% endif %}
       {% if ukaz_zakaznika %}<td>{{ z.zakaznik.nazev if z.zakaznik else '' }}</td>{% endif %}
       <td class="zkratit">{{ z.pozadavek }}</td>
       <td>{{ stav(z) }}</td>

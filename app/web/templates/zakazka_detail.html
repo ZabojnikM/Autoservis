@@ -65,6 +65,7 @@
   <section class="panel">
     <h2 class="titulek-panelu">Vozidlo</h2>
     {% set v = zakazka.vozidlo %}
+    {% if v %}
     <p class="hlavni-udaj"><a href="/vozidla/{{ v.id }}">{{ spz(v.spz) }}</a>
       {% if v.znacka or v.model %}{{ v.popis }}{% endif %}</p>
     <dl>
@@ -75,6 +76,10 @@
         <dd>{{ [v.kod_motoru, v.objem, v.vykon]|select|join(' · ') }}</dd>{% endif %}
       {% if v.olej %}<dt>Olej</dt><dd>{{ v.olej }}</dd>{% endif %}
     </dl>
+    {% else %}
+    {# zakázka bez vozidla (#50) – vozidlo jde doplnit v úpravě zakázky, dokud nemá doklad #}
+    <p class="prazdny-udaj">Bez vozidla{% if not doklad %} · <a href="/zakazky/{{ zakazka.id }}/upravit" data-okno>Doplnit</a>{% endif %}</p>
+    {% endif %}
   </section>
   <section class="panel">
     <h2 class="titulek-panelu">Zákazník</h2>

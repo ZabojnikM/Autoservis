@@ -59,11 +59,15 @@
 
   <div class="udaje">
     <dl>
+      {% if v %}
       <dt>Vozidlo</dt><dd>{{ v.spz }}{% if v.znacka or v.model %} – {{ v.popis }}{% endif %}</dd>
       {% if v.vin %}<dt>VIN</dt><dd>{{ v.vin }}</dd>{% endif %}
       {% if v.rok_vyroby %}<dt>Rok výroby</dt><dd>{{ v.rok_vyroby }}</dd>{% endif %}
       {% set motor = [v.kod_motoru, v.objem, v.vykon]|select|join(', ') or v.motor %}
       {% if motor %}<dt>Motor</dt><dd>{{ motor }}{% if v.palivo %}, {{ v.palivo }}{% endif %}</dd>{% endif %}
+      {% else %}
+      <dt>Vozidlo</dt><dd>neuvedeno</dd>
+      {% endif %}
     </dl>
     <dl>
       <dt>Přijato</dt><dd>{{ zakazka.datum_prijeti|datumcas }}</dd>
