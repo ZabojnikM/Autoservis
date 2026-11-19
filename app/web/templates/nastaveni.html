@@ -54,10 +54,13 @@
   <fieldset class="panel">
     <legend>Bankovní účet</legend>
     <div class="mrizka">
-      {{ p('cislo_uctu', 'Číslo účtu', placeholder='např. 123456789/0800') }}
-      {{ p('iban', 'IBAN (nepovinný – dopočítá se z čísla účtu)') }}
+      {{ p('cislo_uctu', 'Účet pro faktury', placeholder='např. 123456789/0800') }}
+      {{ p('iban', 'IBAN účtu pro faktury (nepovinný – dopočítá se)') }}
     </div>
-    <p class="tlumene">Z účtu se na fakturu tiskne <strong>QR platba</strong>. Bez čísla účtu jde fakturu vystavit jen s platbou hotově.</p>
+    <p class="tlumene">Tiskne se na fakturu placenou převodem, i do <strong>QR platby</strong>. Bez účtu jde fakturu vystavit jen s platbou hotově.</p>
+    {{ p('ucet_vyuctovani', 'Účet pro QR platbu na vyúčtování', placeholder='číslo účtu (123456789/0800) nebo IBAN') }}
+    <p class="tlumene">Může být jiný než účet pro faktury. Na vyúčtování se tiskne <strong>QR platba</strong> na celou částku;
+      bez tohoto účtu vyúčtování vystavit nejde (účet pro faktury se na vyúčtování nepoužije).</p>
   </fieldset>
 
   <fieldset class="panel">

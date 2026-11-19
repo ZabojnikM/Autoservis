@@ -41,7 +41,7 @@
     <legend>Do zakázky</legend>
     <div class="mrizka">
       {{ pole('mnozstvi', 'Množství', hodnoty, povinne=True,
-              extra='inputmode="decimal" pattern="[0-9\s]*([.,][0-9]+)?" title="Číslo, např. 1,5"') }}
+              extra='inputmode="decimal" pattern="[0-9\\s]*([.,][0-9]+)?" title="Číslo, např. 1,5"') }}
       {% if not radek or not radek.polozka_ceniku_id %}
       {# kam položku uložit (#41) – nová položka výchozí i do ceníku, úprava ručního řádku jen do zakázky #}
       <fieldset class="volba-do-ceniku" aria-label="Uložit">

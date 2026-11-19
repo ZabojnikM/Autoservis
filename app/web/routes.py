@@ -1013,6 +1013,7 @@ def _formular_vystaveni(request, db, zakazka, hodnoty, okno=False, chyba=None):
                     zakazka=zakazka, hodnoty=hodnoty, nast=nast,
                     rek=polozky.rekapitulace(zakazka), FormaUhrady=FormaUhrady, TypDokladu=TypDokladu,
                     okno=okno, chyba=chyba, predpona=predpona, volna=volna, predpona_volnych=len(predpona),
+                    typ=typ, ucet_vyuctovani_ok=bool(faktury.iban_vyuctovani(nast)),
                     vzor_rady=nast.rada_faktura if typ == TypDokladu.FAKTURA else nast.rada_vyuctovani)
 
 
@@ -1077,8 +1078,25 @@ def faktura_detail(request: Request, db: DB, faktura_id: int):
 def faktura_tisk(request: Request, db: DB, faktura_id: int):
     f = faktury.ziskej(db, faktura_id)
     nast = nastaveni.nacti(db)
+    if f.typ == TypDokladu.VYUCTOVANI:  # #55: vlastní účet pro vyúčtování, nikdy účet pro faktury
+        iban = faktury.iban_vyuctovani(nast)
+        cislo_uctu = nast.ucet_vyuctovani if iban and "/" in nast.ucet_vyuctovani else ""
+    else:
+        iban, cislo_uctu = faktury.iban_servisu(nast), nast.cislo_uctu
     return _stranka(request, "faktura_tisk.html", f=f, rek=faktury.rekapitulace(f), nast=nast,
-                    iban=faktury.iban_servisu(nast), qr=_qr(f, nast))
+                    iban=iban, cislo_uctu=cislo_uctu, qr=_qr(f, nast))
+
+
+@router.post("/faktury/{faktura_id}/uhrazeno")
+async def faktura_uhrazeno(request: Request, db: DB, faktura_id: int):
+    """Vyúčtování: přepnout stav Uhrazeno ⇄ Neuhrazeno (#55)."""
+    data = await _formular(request)
+    uhrazeno = data.get("uhrazeno") == "1"
+    try:
+        faktury.nastav_uhrazeno(db, faktura_id, uhrazeno)
+    except ChybaValidace as e:
+        return _presmeruj_s_chybou(f"/faktury/{faktura_id}", e)
+    return _presmeruj(f"/faktury/{faktura_id}", "Označeno jako uhrazené." if uhrazeno else "Označeno jako neuhrazené.")
 
 
 def _formular_uhrady(request, db, faktura_id, hodnoty, okno=False, chyba=None):

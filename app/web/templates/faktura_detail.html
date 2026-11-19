@@ -4,7 +4,13 @@
 {% block akce %}
   <a href="/faktury/{{ f.id }}/tisk" target="_blank" role="button">Tisk / PDF</a>
   {% if f.zakazka_id %}<a href="/zakazky/{{ f.zakazka_id }}" role="button" class="secondary">Zakázka</a>{% endif %}
-  {% if f.zbyva != 0 %}
+  {% if f.typ == 'vyuctovani' %}
+  {# #55: vyúčtování má jen stav Uhrazeno / Neuhrazeno – přepíná se oběma směry #}
+  <form method="post" action="/faktury/{{ f.id }}/uhrazeno">
+    <input type="hidden" name="uhrazeno" value="{{ '0' if f.je_uhrazena else '1' }}">
+    <button type="submit" class="{{ 'secondary outline' if f.je_uhrazena else '' }}">{{ 'Označit jako neuhrazené' if f.je_uhrazena else 'Označit jako uhrazené' }}</button>
+  </form>
+  {% elif f.zbyva != 0 %}
   <a href="/faktury/{{ f.id }}/uhrady/nova" role="button" data-okno>Zapsat úhradu</a>
   {% endif %}
   {# #15: chybný doklad se smaže – číslo zůstane v přehledu jako „Volné po smazání“ #}
@@ -41,7 +47,7 @@
       <dt>Vystaveno</dt><dd>{{ f.datum_vystaveni|datum }}</dd>
       {% if f.platce_dph and f.typ == 'faktura' %}<dt>DUZP</dt><dd>{{ f.duzp|datum }}</dd>{% endif %}
       <dt>Splatnost</dt><dd {% if f.po_splatnosti %}class="po-terminu"{% endif %}>{{ f.datum_splatnosti|datum }}</dd>
-      <dt>Forma úhrady</dt><dd>{{ f.nazev_formy_uhrady }}</dd>
+      {% if f.typ == 'faktura' %}<dt>Forma úhrady</dt><dd>{{ f.nazev_formy_uhrady }}</dd>{% endif %}
       <dt>Var. symbol</dt><dd>{{ f.variabilni_symbol or '—' }}</dd>
       <dt>Celkem</dt><dd><strong>{{ f.celkem|penize }} {{ f.mena }}</strong></dd>
       <dt>Uhrazeno</dt><dd>{{ f.uhrazeno|penize }} {{ f.mena }}</dd>
@@ -61,14 +67,15 @@
   <header><strong>Úhrady</strong></header>
   {% if f.uhrady %}
   <table>
-    <thead><tr><th>Datum</th><th>Způsob</th><th class="cislo">Částka</th><th>Poznámka</th><th></th></tr></thead>
+    {% set je_faktura = f.typ == 'faktura' %}
+    <thead><tr><th>Datum</th>{% if je_faktura %}<th>Způsob</th>{% endif %}<th class="cislo">Částka</th><th>Poznámka</th><th></th></tr></thead>
     <tbody>
     {% for u in f.uhrady %}
       <tr {% if u.zruseno %}class="zrusena-uhrada" title="Zrušeno {{ u.zruseno|datumcas }}"{% endif %}>
-        <td>{{ u.datum|datum }}</td><td>{{ u.nazev_zpusobu }}</td>
+        <td>{{ u.datum|datum }}</td>{% if je_faktura %}<td>{{ u.nazev_zpusobu }}</td>{% endif %}
         <td class="cislo">{{ u.castka|penize }}</td>
         <td class="tlumene">{{ u.poznamka or '' }}{% if u.zruseno %} <span class="zruseno">zrušeno {{ u.zruseno|datumcas }}</span>{% endif %}</td>
-        <td class="akce-radku">{% if not u.zruseno %}<form method="post" action="/uhrady/{{ u.id }}/smazat"
+        <td class="akce-radku">{% if not u.zruseno and je_faktura %}<form method="post" action="/uhrady/{{ u.id }}/smazat"
           data-potvrdit="Zrušit úhradu {{ u.castka|penize }} {{ f.mena }} ze {{ u.datum|datum }}? Zůstane v historii přeškrtnutá." data-potvrdit-ano="Zrušit úhradu">
           <button type="submit" class="odkaz" title="Zrušit úhradu">✕</button></form>{% endif %}</td>
       </tr>
@@ -77,7 +84,7 @@
   </table>
   {% else %}<p class="tlumene">Zatím žádné úhrady.</p>{% endif %}
 
-  {% if f.zbyva != 0 %}
+  {% if f.zbyva != 0 and f.typ == 'faktura' %}
   <p class="neni-tisk"><a href="/faktury/{{ f.id }}/uhrady/nova" data-okno>+ Zapsat úhradu</a>
     <span class="tlumene">(zbývá {{ f.zbyva|penize }} {{ f.mena }})</span></p>
   {% endif %}

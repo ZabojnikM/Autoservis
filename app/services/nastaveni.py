@@ -9,7 +9,7 @@ from app.services import ChybaValidace, cislo_nebo_none, desetinne_nebo_none
 
 TEXTOVA_POLE = [
     "mena", "nazev_servisu", "ulice", "mesto", "psc", "ico", "dic", "telefon", "email", "web",
-    "cislo_uctu", "iban", "vystavil", "rada_faktura", "rada_vyuctovani", "text_pod_fakturou",
+    "cislo_uctu", "iban", "ucet_vyuctovani", "vystavil", "rada_faktura", "rada_vyuctovani", "text_pod_fakturou",
     "api_klic_registr", "nazev_v_liste",
 ]
 RADY = ["rada_faktura", "rada_vyuctovani"]
@@ -34,6 +34,8 @@ class NastaveniServisu:
     web: str = ""
     cislo_uctu: str = ""
     iban: str = ""
+    # účet jen pro QR platbu na vyúčtování (#55) – může být jiný než účet pro faktury; číslo účtu nebo IBAN
+    ucet_vyuctovani: str = ""
     vystavil: str = ""
     # doklady
     splatnost_dni: int = 14
@@ -133,6 +135,11 @@ def uloz(session: Session, data: dict) -> NastaveniServisu:
         nove["ico"] = nove["ico"].replace(" ", "")
     if nove.get("iban"):
         nove["iban"] = nove["iban"].replace(" ", "").upper()
+    if nove.get("ucet_vyuctovani"):
+        from app.services.faktury import iban_z_uctu
+        if not iban_z_uctu(nove["ucet_vyuctovani"]):
+            raise ChybaValidace("Účet pro QR platbu na vyúčtování: zadejte číslo účtu (např. 123456789/0800) "
+                                "nebo IBAN (CZ…).", "ucet_vyuctovani")
 
     for klic, hodnota in nove.items():
         zaznam = session.get(Nastaveni, klic) or Nastaveni(klic=klic)

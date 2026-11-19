@@ -13,7 +13,7 @@ from app.services import ChybaValidace, cenik, faktury, nastaveni, polozky, zaka
 def zakazka(session):
     # bez údajů servisu a účtu fakturu vystavit nejde
     nastaveni.uloz(session, {"nazev_servisu": "Servis Test", "ico": "12345678", "dic": "CZ12345678", "mesto": "Brno",
-                             "cislo_uctu": "19-2000145399/0800"})
+                             "cislo_uctu": "19-2000145399/0800", "ucet_vyuctovani": "2001234567/2010"})
     z = zakazky.prijem(
         session, zakazka={"pozadavek": "Servis", "tachometr": "120000"},
         vozidlo={"spz": "1AB2345", "znacka": "Škoda", "model": "Fabia"},
@@ -73,11 +73,46 @@ def test_nelze_vystavit_dvakrat_ani_prazdnou(session, zakazka):
         _vystav(session, prazdna)
 
 
-def test_vyuctovani_hotove_zaokrouhli_a_uhradi(session, zakazka):
+def test_vyuctovani_zaokrouhli_a_vychozi_uhrazeno(session, zakazka):
+    assert faktury.vychozi_udaje(session, zakazka.id, TypDokladu.VYUCTOVANI)["uhrazeno_ihned"] == "1"
     f = _vystav(session, zakazka, typ=TypDokladu.VYUCTOVANI)
-    assert f.cislo.startswith("VY") and f.forma_uhrady == "hotove"
+    assert f.cislo.startswith("VY") and f.forma_uhrady == ""  # #55: vyúčtování formu úhrady nemá
     assert f.celkem == Decimal("787") and f.zaokrouhleni == Decimal("0.50")
-    assert f.je_uhrazena and f.stav == "uhrazena"
+    assert f.je_uhrazena and f.stav == "uhrazena" and f.uhrady[0].zpusob == ""
+
+
+def test_vyuctovani_neuhrazene_a_prepinani_stavu(session, zakazka):
+    """#55: odškrtnuté Uhrazeno → Neuhrazeno; stav jde přepínat oběma směry bez duplicit a bez ztráty historie."""
+    f = _vystav(session, zakazka, typ=TypDokladu.VYUCTOVANI, uhrazeno_ihned="")
+    assert f.stav == "neuhrazena" and not f.uhrady
+    f = faktury.nastav_uhrazeno(session, f.id, True)
+    f = faktury.nastav_uhrazeno(session, f.id, True)  # opakované přepnutí nic nezdvojí
+    assert f.je_uhrazena and len(f.uhrady) == 1 and f.uhrady[0].castka == Decimal("787")
+    f = faktury.nastav_uhrazeno(session, f.id, False)
+    f = faktury.nastav_uhrazeno(session, f.id, False)
+    assert f.stav == "neuhrazena" and len(f.uhrady) == 1 and f.uhrady[0].zruseno  # historie zůstala
+    f = faktury.nastav_uhrazeno(session, f.id, True)
+    assert f.je_uhrazena and len(f.platne_uhrady) == 1 and len(f.uhrady) == 2
+    assert f.celkem == Decimal("787")  # částka se nemění
+    assert [d.id for d in faktury.seznam(session, "vyuctovani") if d.stav == "uhrazena"] == [f.id]
+
+
+def test_prepnuti_stavu_jen_u_vyuctovani(session, zakazka):
+    f = _vystav(session, zakazka)
+    with pytest.raises(ChybaValidace, match="jen u vyúčtování"):
+        faktury.nastav_uhrazeno(session, f.id, True)
+
+
+def test_vyuctovani_vyzaduje_vlastni_ucet(session, zakazka):
+    """#55: bez účtu pro vyúčtování nejde vystavit – účet pro faktury se nepoužije."""
+    nastaveni.uloz(session, {"ucet_vyuctovani": ""})
+    with pytest.raises(ChybaValidace, match="účet pro QR platbu na vyúčtování"):
+        _vystav(session, zakazka, typ=TypDokladu.VYUCTOVANI)
+    with pytest.raises(ChybaValidace, match="Účet pro QR platbu"):
+        nastaveni.uloz(session, {"ucet_vyuctovani": "nesmysl"})
+    with pytest.raises(ChybaValidace):
+        nastaveni.uloz(session, {"ucet_vyuctovani": "CZ6608000000192000145399"})  # chybný kontrolní součet
+    assert nastaveni.uloz(session, {"ucet_vyuctovani": "CZ47 2010 0000 0020 0123 4567"}).ucet_vyuctovani
 
 
 def test_uhrady(session, zakazka):
@@ -165,6 +200,22 @@ def test_neplatce_bez_dph(session, zakazka):
     assert f.celkem == Decimal("650.00") and not f.platce_dph and f.nadpis == "Faktura"
 
 
+def test_qr_vyuctovani_z_vlastniho_uctu_na_celou_castku(session, zakazka):
+    """#55: QR na vyúčtování = účet pro vyúčtování, celková částka, i když je uhrazené."""
+    v = _vystav(session, zakazka, typ=TypDokladu.VYUCTOVANI)
+    assert v.je_uhrazena
+    kod = faktury.spayd(v, nastaveni.nacti(session))
+    assert kod.startswith("SPD*1.0*ACC:CZ4720100000002001234567*AM:787.00*CC:CZK")
+    bez_uctu = nastaveni.nacti(session)
+    bez_uctu.ucet_vyuctovani = ""
+    assert faktury.spayd(v, bez_uctu) is None  # účet pro faktury se nepoužije
+
+
+def test_faktura_hotove_bez_qr(session, zakazka):
+    f = _vystav(session, zakazka, forma_uhrady="hotove")
+    assert faktury.spayd(f, nastaveni.nacti(session)) is None
+
+
 def test_spayd_a_qr(session, zakazka):
     f = _vystav(session, zakazka)
     bez_uctu = nastaveni.nacti(session)
@@ -203,6 +254,7 @@ def test_nastaveni_udaje_a_rady(session):
 
 
 def test_faktura_vyzaduje_zakaznika_vyuctovani_ne(session):
+    nastaveni.uloz(session, {"ucet_vyuctovani": "2001234567/2010"})
     z = zakazky.prijem(session, zakazka={"pozadavek": "x"}, vozidlo={"spz": "5EE5555"}, zakaznik={"vyber": "bez"})
     polozky.pridej_rucne(session, z.id, {"nazev": "Díl", "cena": "100"})
     with pytest.raises(ChybaValidace, match="vyžaduje zákazníka"):

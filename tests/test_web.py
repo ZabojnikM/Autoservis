@@ -1,10 +1,19 @@
 ﻿import re
 
+import pytest
 from fastapi.testclient import TestClient
+
+from app.services import nastaveni
 
 from app.main import app
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def ucet_pro_vyuctovani(session):
+    """#55: vyúčtování bez účtu pro QR platbu vystavit nejde – v testech je účet nastavený předem."""
+    nastaveni.uloz(session, {"ucet_vyuctovani": "2001234567/2010"})
 
 
 def _prijem(spz="1AB2345", **navic):
@@ -793,7 +802,11 @@ def test_mazani_s_potvrzenim_v_okne_aplikace():
 
 def test_uhrada_v_okne():
     loc = _zakazka_s_polozkou()
-    r = client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "forma_uhrady": "prevod"}, follow_redirects=False)
+    client.post("/nastaveni", data={"nazev_servisu": "Autoservis Test", "ico": "12345678", "dic": "CZ12345678",
+                                    "mesto": "Brno", "platce_dph": "1", "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    # úhrady po částech jen u faktury – vyúčtování má přepínač stavu (#55)
+    r = client.post(f"{loc}/vystavit", data={"typ": "faktura", "odb_nazev": "Jana Dvořáková", "forma_uhrady": "hotove"},
+                    follow_redirects=False)
     fid = r.headers["location"].split("?")[0].rsplit("/", 1)[1]
     detail = client.get(f"/faktury/{fid}").text
     assert f'href="/faktury/{fid}/uhrady/nova" role="button" data-okno' in detail
@@ -1146,3 +1159,65 @@ def test_horni_lista_nazev_firmy_a_logo():
     assert r.status_code == 422 and "Logo musí být obrázek" in r.text
     client.post("/nastaveni", data={"smazat_logo": "1", "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
     assert "data:image/png" not in client.get("/zakazky").text
+
+
+# ---------------------------------------------------------------- #55: vystavení bez přepínače, vyúčtování
+
+def test_vyuctovani_bez_prepinace_stav_a_qr():
+    client.post("/nastaveni", data={"nazev_servisu": "Autoservis Test", "ico": "12345678", "dic": "CZ12345678", "mesto": "Brno",
+                                    "cislo_uctu": "19-2000145399/0800", "ucet_vyuctovani": "", "platce_dph": "1",
+                                    "zaokrouhlit_hotovost": "1", "vychozi_dph": "21",
+                                    "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    loc = _zakazka_s_polozkou()
+    faktura = client.get(f"{loc}/vystavit?typ=faktura").text
+    assert 'type="radio" name="typ"' not in faktura and 'name="typ" value="faktura"' in faktura
+    assert 'name="forma_uhrady"' in faktura
+    # bez účtu pro vyúčtování: výzva a vystavení neprojde (účet pro faktury se nepoužije)
+    formular = client.get(f"{loc}/vystavit?typ=vyuctovani").text
+    assert "Vystavit vyúčtování" in formular and 'type="radio" name="typ"' not in formular
+    assert 'name="forma_uhrady"' not in formular and "účet pro QR platbu na vyúčtování" in formular
+    assert client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "uhrazeno_ihned": "1"}).status_code == 422
+    r = client.post("/nastaveni", data={"ucet_vyuctovani": "nesmysl", "platce_dph": "1", "zaokrouhlit_hotovost": "1",
+                                        "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    assert r.status_code == 422 and "Účet pro QR platbu" in r.text
+    client.post("/nastaveni", data={"ucet_vyuctovani": "2001234567/2010", "platce_dph": "1", "zaokrouhlit_hotovost": "1",
+                                    "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    formular = client.get(f"{loc}/vystavit?typ=vyuctovani").text
+    assert re.search(r'name="uhrazeno_ihned" value="1"\s+checked', formular)  # výchozí Uhrazeno
+
+    # odškrtnuté Uhrazeno → Neuhrazeno
+    r = client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "odb_nazev": "Jana Dvořáková"}, follow_redirects=False)
+    assert r.status_code == 303
+    doklad = r.headers["location"].split("?")[0]
+    detail = client.get(doklad).text
+    assert "Neuhrazeno" in detail and "Označit jako uhrazené" in detail and "Forma úhrady" not in detail
+    assert "Zapsat úhradu" not in detail
+    seznam = client.get("/faktury", params={"filtr": "vyuctovani"}).text
+    assert doklad in seznam and "Neuhrazeno" in seznam
+
+    # přepnout oběma směry – stav se shoduje v detailu i seznamu
+    detail = client.post(f"{doklad}/uhrazeno", data={"uhrazeno": "1"}, follow_redirects=True).text
+    assert "Označit jako neuhrazené" in detail
+    assert "Uhrazeno</span>" in client.get("/faktury", params={"filtr": "vyuctovani"}).text
+    detail = client.post(f"{doklad}/uhrazeno", data={"uhrazeno": "0"}, follow_redirects=True).text
+    assert "Označit jako uhrazené" in detail
+    assert "Neuhrazeno" in client.get("/faktury", params={"filtr": "vyuctovani"}).text
+
+    # tisk: QR z účtu pro vyúčtování na celou částku, bez formy a stavu úhrady
+    for stav in ("0", "1"):
+        client.post(f"{doklad}/uhrazeno", data={"uhrazeno": stav})
+        tisk = client.get(f"{doklad}/tisk").text
+        assert "CZ4720100000002001234567" in tisk and "2001234567/2010" in tisk and "<svg" in tisk
+        assert "19-2000145399/0800" not in tisk and "CZ6508000000192000145399" not in tisk
+        assert "Forma úhrady" not in tisk and "neplaťte" not in tisk and "Hotově" not in tisk
+
+
+def test_faktura_hotove_tisk_bez_qr():
+    client.post("/nastaveni", data={"nazev_servisu": "Autoservis Test", "ico": "12345678", "dic": "CZ12345678", "mesto": "Brno",
+                                    "cislo_uctu": "19-2000145399/0800", "platce_dph": "1", "vychozi_dph": "21",
+                                    "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    loc = _zakazka_s_polozkou()
+    r = client.post(f"{loc}/vystavit", data={"typ": "faktura", "odb_nazev": "Jana Dvořáková", "forma_uhrady": "hotove"},
+                    follow_redirects=False)
+    tisk = client.get(f"{r.headers['location'].split('?')[0]}/tisk").text
+    assert "Hotově" in tisk and "<svg" not in tisk

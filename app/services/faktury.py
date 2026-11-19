@@ -2,7 +2,8 @@
 
 Doklad se vystavuje ze zakázky a zakázku uzavře. Po vystavení se nemění – jen úhrady. Chybný doklad se smaže
 (#15): jeho číslo zůstane v přehledu jako „Volné po smazání“ a jde ho ručně použít při dalším vystavení.
-Úhrada převodem nebo hotově (hotovost volitelně zaokrouhlená na koruny).
+Faktura: úhrada převodem nebo hotově (hotovost volitelně zaokrouhlená na koruny).
+Vyúčtování (#55): formu úhrady nemá, jen stav Uhrazeno / Neuhrazeno; QR platba z vlastního účtu v Nastavení.
 """
 import re
 from dataclasses import dataclass
@@ -110,14 +111,14 @@ def vychozi_udaje(session: Session, zakazka_id: int, typ: str = TypDokladu.FAKTU
     dnes = date.today()
     k = zakazka.zakaznik
     je_faktura = typ == TypDokladu.FAKTURA
-    # převodem jen když je kam platit (číslo účtu v Nastavení)
-    forma = FormaUhrady.PREVOD if je_faktura and iban_servisu(nast) else FormaUhrady.HOTOVE
+    # převodem jen když je kam platit (číslo účtu v Nastavení); vyúčtování formu úhrady nemá (#55)
+    forma = (FormaUhrady.PREVOD if iban_servisu(nast) else FormaUhrady.HOTOVE) if je_faktura else ""
     return {
         "typ": typ,
         "datum_vystaveni": dnes,
         "duzp": dnes,
         # hotovost se platí hned → splatnost = den vystavení
-        "datum_splatnosti": dnes + timedelta(days=nast.splatnost_dni) if forma == FormaUhrady.PREVOD else dnes,
+        "datum_splatnosti": dnes if forma == FormaUhrady.HOTOVE else dnes + timedelta(days=nast.splatnost_dni),
         "forma_uhrady": forma,
         "odb_nazev": k.nazev if k else "",
         "odb_ulice": (k.ulice or "") if k else "",
@@ -141,9 +142,16 @@ def vystav(session: Session, zakazka_id: int, data: dict) -> Faktura:
         raise ChybaValidace(f"K zakázce už je vystaven doklad {zakazka.platna_faktura.cislo}.")
     if not zakazka.polozky:
         raise ChybaValidace("Zakázka nemá žádné položky – není co fakturovat.")
-    forma = data.get("forma_uhrady") or FormaUhrady.PREVOD
-    if forma not in FormaUhrady.VSECHNY:
-        raise ChybaValidace("Forma úhrady musí být převodem, nebo hotově.")
+    je_vyuctovani = typ == TypDokladu.VYUCTOVANI
+    if je_vyuctovani:
+        forma = ""  # #55: vyúčtování formu úhrady nemá – sleduje se jen stav
+        if not iban_vyuctovani(nast):
+            raise ChybaValidace("Vyúčtování nejde vystavit – v Nastavení chybí platný účet pro QR platbu na vyúčtování. "
+                                "Doplňte ho v Nastavení (Bankovní účet).")
+    else:
+        forma = data.get("forma_uhrady") or FormaUhrady.PREVOD
+        if forma not in FormaUhrady.VSECHNY:
+            raise ChybaValidace("Forma úhrady musí být převodem, nebo hotově.")
 
     vystaveni = parsuj_datum(data.get("datum_vystaveni")) or date.today()
     duzp = parsuj_datum(data.get("duzp")) or vystaveni
@@ -182,7 +190,8 @@ def vystav(session: Session, zakazka_id: int, data: dict) -> Faktura:
             cena=r.cena, sazba_dph=r.sazba_dph if nast.platce_dph else Decimal("0"),
         ))
     celkem = polozky_sluzba.rekapitulace_radku(faktura.polozky).celkem
-    if forma == FormaUhrady.HOTOVE and nast.zaokrouhlit_hotovost:
+    # vyúčtování se zaokrouhluje na koruny stejně jako hotovostní faktura (dřív se vystavovalo jen hotově)
+    if (forma == FormaUhrady.HOTOVE or je_vyuctovani) and nast.zaokrouhlit_hotovost:
         na_koruny = celkem.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
         faktura.zaokrouhleni = na_koruny - celkem
         celkem = na_koruny
@@ -294,6 +303,27 @@ def zrus_uhradu(session: Session, uhrada_id: int) -> int:
 
 
 smaz_uhradu = zrus_uhradu  # starší název
+
+
+def nastav_uhrazeno(session: Session, faktura_id: int, uhrazeno: bool) -> Faktura:
+    """Přepne stav vyúčtování Uhrazeno ⇄ Neuhrazeno (#55). Formu úhrady nepředpokládá a částku nemění.
+
+    Uhrazeno = úhrada zbývající částky (jen když něco zbývá – opakované přepnutí nic nezdvojí).
+    Neuhrazeno = zrušení platných úhrad (zůstanou v historii přeškrtnuté, nic se nemaže)."""
+    faktura = ziskej(session, faktura_id)
+    if faktura.typ != TypDokladu.VYUCTOVANI:
+        raise ChybaValidace("Stav jde přepínat jen u vyúčtování – u faktury zapište nebo zrušte úhradu.")
+    if uhrazeno:
+        if faktura.zbyva > 0:
+            session.add(Uhrada(faktura_id=faktura.id, datum=date.today(), castka=faktura.zbyva, zpusob="",
+                               poznamka="Označeno jako uhrazené"))
+    else:
+        for u in faktura.platne_uhrady:
+            u.zruseno = datetime.now()
+            session.add(u)
+    session.commit()
+    session.refresh(faktura)
+    return faktura
 
 
 # ---------------------------------------------------------------- přehled
@@ -421,19 +451,50 @@ def iban_z_cisla_uctu(ucet: str) -> str | None:
     return f"CZ{kontrola:02d}{bban}"
 
 
+def iban_platny(iban: str) -> bool:
+    """Kontrolní součet IBAN (mod 97)."""
+    iban = (iban or "").replace(" ", "").upper()
+    if not re.fullmatch(r"[A-Z]{2}\d{2}[A-Z0-9]{10,30}", iban):
+        return False
+    prevedeno = "".join(str(int(z, 36)) for z in iban[4:] + iban[:4])
+    return int(prevedeno) % 97 == 1
+
+
+def iban_z_uctu(ucet: str) -> str | None:
+    """Číslo účtu nebo IBAN → IBAN. Neplatné → None."""
+    ucet = (ucet or "").replace(" ", "").upper()
+    if re.match(r"[A-Z]{2}", ucet):
+        return ucet if iban_platny(ucet) else None
+    return iban_z_cisla_uctu(ucet)
+
+
 def iban_servisu(nast) -> str | None:
+    """Účet pro faktury."""
     return nast.iban or iban_z_cisla_uctu(nast.cislo_uctu)
 
 
+def iban_vyuctovani(nast) -> str | None:
+    """Účet pro QR platbu na vyúčtování (#55) – nikdy se nebere účet pro faktury."""
+    return iban_z_uctu(nast.ucet_vyuctovani)
+
+
 def spayd(faktura: Faktura, nast) -> str | None:
-    """Řetězec pro QR platbu (formát SPAYD). Bez účtu nebo když není co platit → None."""
-    iban = iban_servisu(nast)
-    if not iban or faktura.zbyva <= 0:
+    """Řetězec pro QR platbu (formát SPAYD). Bez účtu nebo když není co platit → None.
+
+    Faktura: jen převodem, na zbývající částku, účet pro faktury.
+    Vyúčtování (#55): vždy na celkovou částku (bez ohledu na stav úhrady), účet pro vyúčtování."""
+    if faktura.typ == TypDokladu.VYUCTOVANI:
+        iban, castka = iban_vyuctovani(nast), faktura.celkem
+    else:
+        if faktura.forma_uhrady != FormaUhrady.PREVOD:
+            return None
+        iban, castka = iban_servisu(nast), faktura.zbyva
+    if not iban or castka <= 0:
         return None
     mena = KODY_MEN.get(faktura.mena.upper(), "CZK")
     zprava = re.sub(r"[*]", "", f"{faktura.nazev_typu} {faktura.cislo}")[:60]
     casti = [
-        "SPD*1.0", f"ACC:{iban}", f"AM:{faktura.zbyva:.2f}", f"CC:{mena}",
+        "SPD*1.0", f"ACC:{iban}", f"AM:{castka:.2f}", f"CC:{mena}",
         f"DT:{faktura.datum_splatnosti:%Y%m%d}", f"MSG:{zprava}",
     ]
     if faktura.variabilni_symbol:

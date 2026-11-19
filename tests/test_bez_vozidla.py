@@ -34,8 +34,10 @@ def test_zakazka_bez_vozidla_a_zakaznika_web():
     # vyúčtování bez vozidla i bez zákazníka: vystavit a vytisknout
     client.post(f"{loc}/polozky", data={"typ": "material", "nazev": "Olej 5W30", "mnozstvi": "1", "cena": "300"})
     assert "Bez vozidla" in client.get(f"{loc}/tisk").text or "neuvedeno" in client.get(f"{loc}/tisk").text
+    client.post("/nastaveni", data={"ucet_vyuctovani": "2001234567/2010", "platce_dph": "1", "zaokrouhlit_hotovost": "1",
+                                    "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
     assert client.get(f"{loc}/vystavit", params={"typ": "vyuctovani"}).status_code == 200
-    r = client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "odb_nazev": "", "forma_uhrady": "hotove"},
+    r = client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "odb_nazev": "", "uhrazeno_ihned": "1"},
                     follow_redirects=False)
     assert r.status_code == 303, r.text[:500]
     doklad = r.headers["location"].split("?")[0]

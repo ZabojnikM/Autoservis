@@ -15,7 +15,8 @@ FILTRY = {TypDokladu.FAKTURA: "faktury", TypDokladu.VYUCTOVANI: "vyuctovani"}
 @pytest.fixture(autouse=True)
 def udaje_servisu(session):
     nastaveni.uloz(session, {"nazev_servisu": "Servis Test", "ico": "12345678", "dic": "CZ12345678",
-                             "mesto": "Brno", "cislo_uctu": "19-2000145399/0800"})
+                             "mesto": "Brno", "cislo_uctu": "19-2000145399/0800",
+                             "ucet_vyuctovani": "2001234567/2010"})
 
 
 _spz = iter(range(1000, 9999))

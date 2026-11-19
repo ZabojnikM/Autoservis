@@ -5,9 +5,12 @@
 {% set url = '/zakazky/%d/vystavit' % zakazka.id %}
 {% block title %}Vystavit doklad{% endblock %}
 {% set chybi_udaje = typ == 'faktura' and not nast.udaje_vyplneny %}
+{% set chybi_ucet_vyuctovani = typ == 'vyuctovani' and not ucet_vyuctovani_ok %}
 {% block akce %}
   {{ tlacitka_formulare('formular-dokladu', okno, '/zakazky/%d' % zakazka.id, ok='Vystavit ' ~ nazev,
-                        zakazano='Nejdřív doplňte údaje servisu v Nastavení.' if chybi_udaje else '') }}
+                        zakazano='Nejdřív doplňte údaje servisu v Nastavení.' if chybi_udaje
+                                 else 'Nejdřív doplňte v Nastavení účet pro QR platbu na vyúčtování.' if chybi_ucet_vyuctovani
+                                 else '') }}
 {% endblock %}
 {% block content %}
 <div class="nadpis-radek">
@@ -25,6 +28,11 @@
 <p class="upozorneni-ram">Chybí údaje servisu: {{ nast.chybejici_udaje_text }}. Na vyúčtování budou chybět –
   <a href="/nastaveni" target="_blank">doplnit v Nastavení</a>.</p>
 {% endif %}
+{% if chybi_ucet_vyuctovani %}
+<p class="chyba">Vyúčtování nejde vystavit – v Nastavení chybí platný <strong>účet pro QR platbu na vyúčtování</strong>
+  (na vyúčtování se tiskne QR platba). <a href="/nastaveni" target="_blank">Doplnit v Nastavení</a> (otevře se v nové kartě),
+  pak okno zavřete a otevřete znovu.</p>
+{% endif %}
 {% if typ == 'faktura' and not (nast.cislo_uctu or nast.iban) %}
 <p class="upozorneni-ram">V Nastavení není číslo účtu – fakturu jde vystavit jen s platbou hotově.
   <a href="/nastaveni" target="_blank">Doplnit účet</a>.</p>
@@ -39,13 +47,8 @@
   <div class="uprava-panely">
     <fieldset class="panel">
       <legend>Doklad a úhrada</legend>
-      <div class="prepinac-typu">
-        {% for t in TypDokladu.VSECHNY %}
-        <label><input type="radio" name="typ" value="{{ t }}" {% if typ == t %}checked{% endif %}
-               {% if okno %}onchange="otevriOkno('{{ url }}?typ={{ t }}')"{% else %}onchange="location.href='?typ={{ t }}'"{% endif %}>
-          {{ TypDokladu.NAZVY[t] }}</label>
-        {% endfor %}
-      </div>
+      {# #55: typ dokladu se volí tlačítkem v detailu zakázky, tady se už nepřepíná #}
+      <input type="hidden" name="typ" value="{{ typ }}">
       {# #15: předpona řady je pevná (rok podle data vystavení), přepsat jde jen pořadové číslo #}
       <label>Číslo dokladu
         <span class="cislo-dokladu-pole">
@@ -68,6 +71,7 @@
         {% endif %}
         <label>Splatnost <input type="date" name="datum_splatnosti" value="{{ hodnoty.get('datum_splatnosti')|iso }}" required></label>
       </div>
+      {% if typ == 'faktura' %}
       <label>Forma úhrady
         {# hotově = splatnost v den vystavení, převodem = + splatnost z Nastavení #}
         <select name="forma_uhrady" data-splatnost-dni="{{ nast.splatnost_dni }}" onchange="
@@ -82,6 +86,13 @@
       <label class="volba"><input type="checkbox" name="uhrazeno_ihned" value="1" {% if hodnoty.get('uhrazeno_ihned') %}checked{% endif %}>
         zákazník <strong>platí hned</strong> (zapíše se úhrada celé částky)</label>
       {% if nast.zaokrouhlit_hotovost %}<p class="tlumene napoveda">Při platbě v hotovosti se částka zaokrouhlí na celé koruny.</p>{% endif %}
+      {% else %}
+      {# #55: vyúčtování formu úhrady nemá – jen stav, který jde později v detailu přepnout #}
+      <label class="volba"><input type="checkbox" name="uhrazeno_ihned" value="1" {% if hodnoty.get('uhrazeno_ihned') %}checked{% endif %}>
+        <strong>Uhrazeno</strong></label>
+      <p class="tlumene napoveda">Odškrtněte, pokud zákazník zaplatí později – vyúčtování bude Neuhrazeno. Stav jde změnit i později v detailu.
+        {% if nast.zaokrouhlit_hotovost %}Částka se zaokrouhlí na celé koruny.{% endif %}</p>
+      {% endif %}
       <label>Poznámka na dokladu
         <textarea name="poznamka" rows="2">{{ hodnoty.get('poznamka') or '' }}</textarea></label>
     </fieldset>
