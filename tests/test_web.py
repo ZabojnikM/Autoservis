@@ -918,7 +918,9 @@ def test_okno_ceniku_jen_pro_jeden_typ():
     material = client.get(f"{loc}/cenik", params={"typ": "material", "okno": "1"}).text
     assert "Přidat materiál z ceníku" in material and "Filtr oleje" in material and "Výměna filtru" not in material
     assert "<th>Zaměnitelný díl</th>" in material and "BOSCH 0451" in material and "<th>Typ</th>" not in material
-    assert '"typ": "material"' in material and f'href="/zakazky/{zid}/polozky/nova?typ=material"' in material
+    assert '"typ": "material"' in material and "Nová položka ceníku" in material
+    # ruční položka se do okna ceníku nedává – je jen tlačítkem + Ruční v mřížce zakázky (#25)
+    assert "/polozky/nova" not in material and "Ruční položka" not in material
     prace = client.get(f"{loc}/cenik", params={"typ": "prace", "okno": "1"}).text
     assert "Přidat práci z ceníku" in prace and "Výměna filtru" in prace and "Filtr oleje" not in prace
     assert "Zaměnitelný díl" not in prace

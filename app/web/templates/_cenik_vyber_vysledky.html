@@ -55,7 +55,7 @@
 <p class="tlumene maly-text omezeni">Zobrazeno prvních {{ limit }} položek – upřesněte hledání.</p>
 {% endif %}
 {% elif q %}
-<p class="tlumene" style="padding:.5rem .6rem">V ceníku nic nenalezeno – zadejte <a href="/zakazky/{{ zakazka_id }}/polozky/nova{% if typ_okna %}?typ={{ typ_okna }}{% endif %}" {% if okno %}data-okno{% endif %}>ruční položku</a>.</p>
+<p class="tlumene" style="padding:.5rem .6rem">V ceníku nic nenalezeno.</p>
 {% else %}
 <p class="tlumene" style="padding:.5rem .6rem">{{ {'material': 'Ceník materiálu', 'prace': 'Ceník prací'}.get(typ_okna, 'Ceník') }} je prázdný.</p>
 {% endif %}
