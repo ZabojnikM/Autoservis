@@ -297,7 +297,8 @@ table.polozky td, table.polozky th { padding: .2rem .5rem; }
 /* detail zakázky jako pracovní okno: hlavička v pásu, položky jako mřížka, součty dole */
 .nadpis-radek .zmena-stavu { margin: 0; gap: .25rem; }
 
-.hlavicka-zakazky { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, .8fr) minmax(0, 1.4fr); align-items: stretch; }
+/* panely v řadě vždy stejně široké (rovnoměrné dělení) */
+.hlavicka-zakazky { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); align-items: stretch; }
 .hlavicka-zakazky .panel { background: #fff; border: 1px solid var(--ram); }
 .titulek-panelu { font-weight: 600; color: #374151; background: var(--titulek); border-bottom: 1px solid var(--ram); }
 
@@ -743,7 +744,7 @@ a:hover > .spz { border-color: var(--akcent); background: var(--akcent-svetly); 
 .seznam-zakazniku td:nth-child(3) { max-width: 22rem; overflow: hidden; text-overflow: ellipsis; }
 .seznam-zakazniku td:last-child { white-space: normal; }
 /* karta vozidla: vlevo velký panel Vozidlo (údaje ve skupinách), vpravo Majitel a pod ním Termíny a historie */
-.karta-vozidla-panely { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr) minmax(0, 1fr);
+.karta-vozidla-panely { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--mezera); margin-bottom: var(--mezera); align-items: start; }
 /* #47: tři panely nahoře stejně vysoké (levý se natáhne na výšku pravého sloupce a naopak) */
 .karta-vozidla-panely { align-items: stretch !important; }
@@ -779,7 +780,7 @@ button.kopirovat.zkopirovano { background: var(--c-hotovo, #15803d) !important; 
 .karta-vozidla .po-terminu { color: var(--c-chyba); font-weight: 700; }
 .poznamka-vozidla { margin-top: .6rem; }
 
-@media print { .karta-vozidla-panely { grid-template-columns: 1.35fr 1fr 1fr; } .karta-vozidla-panely .panel { box-shadow: none; } }
+@media print { .karta-vozidla-panely { grid-template-columns: repeat(3, 1fr); } .karta-vozidla-panely .panel { box-shadow: none; } }
 .karta-vozidla-panely + .filtr-stavu { border-top-color: var(--ram); }
 @media screen and (max-width: 1100px) { .karta-vozidla-panely { grid-template-columns: 1fr 1fr; } .karta-vozidla-panely .karta-vozidla { grid-column: 1 / -1; } }
 
@@ -810,7 +811,7 @@ article > header { margin: -18px -20px 14px; padding: 12px 20px; }
 .prijem .radek-s-tlacitky .roztahnout { margin-bottom: 0; }
 .prijem .panel input[type=date], .prijem .panel input[type=datetime-local] { padding-left: 8px; padding-right: 6px; }
 /* prostřední panel (Zakázka) širší, aby se vešlo datum a čas příjmu */
-.prijem-panely { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.2fr); }
+.prijem-panely { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 /* panely vedle sebe začínají stejně vysoko (Pico dává další fieldset odsazení shora, #40) */
 .prijem .prijem-panely > .panel + .panel { margin-top: 0; }
 .prijem .radek-s-tlacitky button, .prijem .otevrit-okno { padding: 8px 14px; font-size: .9rem; }
