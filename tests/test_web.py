@@ -663,12 +663,12 @@ def test_okno_cenik_radek_upravit_kartu():
     loc = _prijem().headers["location"].split("?")[0]
     zid = loc.rsplit("/", 1)[1]
     r = client.get("/cenik/vyber", params={"q": "kapal", "zakazka_id": zid, "okno": "1"}).text
-    # řádek: dvojklik / Enter přidá, množství předvyplněné 1, vlevo Upravit (karta materiálu i práce)
+    # řádek: dvojklik / Enter přidá, množství předvyplněné 1; tlačítko Upravit v okně není (jen Vložit)
     assert r.count("data-pridat") == 2 and 'name="mnozstvi" value="1"' in r
+    assert "upravit-kartu" not in r and ">Upravit<" not in r
     okno = client.get(f"{loc}/cenik", params={"okno": "1"}).text
     assert re.search(r'<input type="search"[^<]*>\s*<div id="cenik-vysledky"', okno)  # pole hledání uzavřené
-    cid = re.search(r'hx-get="/cenik/(\d+)/upravit"', r).group(1)
-    assert re.search(r'hx-get="/prace/\d+/upravit"', r) and "z_ceniku" in r
+    cid = re.findall(r'name="polozka_ceniku_id" value="(\d+)"', r)[0]  # Brzdová kapalina (řazení podle názvu je první)
     # karta otevřená z okna ceníku: Zpět (do okna ceníku) místo Zrušit, bez mazání
     karta = client.get(f"/cenik/{cid}/upravit", params={"okno": "1", "z_ceniku": zid, "q": "kapal"}).text
     assert re.search(rf'hx-get="/zakazky/{zid}/cenik"[^>]*>Zpět</button>', karta)

@@ -1,7 +1,7 @@
 {# Výsledky hledání v ceníku pro přidání do zakázky (okno Přidat z ceníku).
    okno=True: přidání přes HTMX, odpověď = znovu vykreslené okno s hláškou.
-   Řádek: dvojklik nebo Enter (vybraný šipkami) přidá zadané množství (předvyplněno 1);
-   Upravit otevře kartu položky ceníku – v okně ve stejném okně, po uložení se vrátí sem. #}
+   Řádek: jen množství s − / + a Vložit (také dvojklik nebo Enter na vybraném řádku), bez Upravit –
+   karta položky se upravuje v ceníku (Materiál / Práce). #}
 {# typ_okna = material / prace: jen jeden ceník se sloupci jako karta Materiál / Práce (bez sloupce Typ);
    bez typu oba ceníky se sloupcem Typ. #}
 {% set ukaz_typ = not typ_okna %}
@@ -15,7 +15,6 @@
   <tbody>
   {% for p in nalezene %}
     {% set cena = p.cena %}
-    {% set adresa_karty = ('/prace/%d/upravit' if p.typ == 'prace' else '/cenik/%d/upravit') % p.id %}
     <tr data-pridat title="Dvojklik nebo Enter = vložit do zakázky">
       {% if ukaz_typ %}<td><span class="typ typ-{{ p.typ }}">{{ p.nazev_typu }}</span></td>{% endif %}
       {# kód je hlavní údaj – tučně, seznam je podle něj seřazený (#28) #}
@@ -25,14 +24,6 @@
       <td class="cislo">{{ cena|penize }} <span class="tlumene">/ {{ p.jednotka }}</span></td>
       <td class="cislo tlumene">{% if nast.platce_dph %}{{ (cena * (100 + p.sazba_dph) / 100)|penize }}{% endif %}</td>
       <td class="bunka-pridat"><div>
-        {% if okno %}
-        <button type="button" class="maly secondary outline upravit-kartu" title="Upravit kartu položky ceníku"
-                hx-get="{{ adresa_karty }}" hx-target="#okno-formular-obsah"
-                hx-vals='{{ {"okno": "1", "z_ceniku": zakazka_id|string, "q": q or ""}|tojson }}'>Upravit</button>
-        {% else %}
-        <a href="{{ adresa_karty }}" role="button" class="maly secondary outline upravit-kartu"
-           title="Upravit kartu položky ceníku">Upravit</a>
-        {% endif %}
         {# Vložit zapíše řádek rovnou do zakázky; v okně přes HTMX – okno se vrátí s potvrzením (#46) #}
         <form method="post" action="/zakazky/{{ zakazka_id }}/polozky" class="radek-pridat"
               {% if okno %}hx-post="/zakazky/{{ zakazka_id }}/polozky" hx-target="#okno-formular-obsah"{% endif %}>
