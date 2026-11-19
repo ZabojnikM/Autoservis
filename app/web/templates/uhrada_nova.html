@@ -17,7 +17,7 @@
     <div class="mrizka">
       <label>Částka <span class="povinne">*</span>
         <input type="text" name="castka" value="{{ hodnoty.get('castka') or f.zbyva|penize }}" inputmode="decimal" required autofocus
-               pattern="[+\-]?[0-9  ]*([.,][0-9]+)?\s*(Kč|kč)?" title="Částka, např. 1 500,50"></label>
+               pattern="[+\-]?[0-9\s]*([.,][0-9]+)?\s*(Kč|kč)?" title="Částka, např. 1 500,50"></label>
       <label>Datum <input type="date" name="datum" value="{{ hodnoty.get('datum') or dnes()|iso }}"></label>
     </div>
     <label>Způsob

@@ -22,7 +22,7 @@
       <legend>Zakázka</legend>
       <div class="mrizka">
         {{ pole('datum_prijeti', 'Přijetí', hodnoty, typ='datetime-local') }}
-        {{ pole('tachometr', 'Stav km', hodnoty, extra='inputmode="numeric" pattern="[0-9  ]*" title="Jen číslice"') }}
+        {{ pole('tachometr', 'Stav km', hodnoty, extra='inputmode="numeric" pattern="[0-9\s]*" title="Jen číslice"') }}
       </div>
       {{ textove_pole('pozadavek', 'Popis zakázky (požadavek / závada)', hodnoty, radky=5) }}
       {{ textove_pole('poznamka', 'Interní poznámka', hodnoty, radky=2) }}
