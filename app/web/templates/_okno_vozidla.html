@@ -2,7 +2,7 @@
 {# Okno „Databáze vozidel“ – stejný seznam jako /vozidla, s filtrem a tlačítkem Vložit. #}
 <header class="okno-hlavicka">
   <h3>Databáze vozidel</h3>
-  <button type="button" class="secondary outline maly" onclick="document.getElementById('okno-databaze').close()">✕ Zavřít</button>
+  <button type="button" class="zpet maly" onclick="document.getElementById('okno-databaze').close()">✕ Zavřít</button>
 </header>
 <input type="search" name="q" value="{{ q }}" placeholder="Filtr: SPZ, VIN, značka, model, zákazník…" autofocus autocomplete="off"
        hx-get="/vozidla/okno" hx-trigger="input changed delay:300ms, search" hx-include="this"

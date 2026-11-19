@@ -19,7 +19,7 @@
   {{ tlacitko_smazat('/zakaznici/%d/smazat' % zakaznik.id, 'Smazat zákazníka',
                      'Opravdu smazat zákazníka %s? Smazání nejde vrátit.' % zakaznik.nazev, nelze_smazat) }}
   <hr>
-  <a href="/zakaznici" role="button" class="secondary outline">Zpět</a>
+  <a href="/zakaznici" role="button" class="zpet">Zpět</a>
 {% endblock %}
 {% block content %}
 {% set k = zakaznik %}

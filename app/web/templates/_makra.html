@@ -38,9 +38,9 @@
    zakazano = důvod, proč uložit nejde (tlačítko je zašedlé a důvod je pod ním). #}
   <button type="submit" form="{{ id }}" {% if zakazano %}disabled title="{{ zakazano }}"{% endif %}>{{ ok }}</button>
   {% if okno %}
-  <button type="button" class="secondary outline" data-zavrit-okno>Zrušit</button>
+  <button type="button" class="zpet" data-zavrit-okno>Zrušit</button>
   {% else %}
-  <a href="{{ zpet }}" class="secondary outline" role="button">Zpět</a>
+  <a href="{{ zpet }}" class="zpet" role="button">Zpět</a>
   {% endif %}
   {% if zakazano %}<p class="poznamka chyba-text">{{ zakazano }}</p>{% endif %}
   <p class="tlumene poznamka">Enter = další pole · Ctrl+Enter = uložit · Esc = zrušit</p>
@@ -49,7 +49,7 @@
 {% macro tlacitka_karty_z_ceniku(id, z_ceniku, q) -%}
 {# Karta položky ceníku otevřená tlačítkem Upravit v okně Přidat z ceníku: Uložit a Zpět (do okna ceníku). #}
   <button type="submit" form="{{ id }}">Uložit</button>
-  <button type="button" class="secondary outline" hx-get="/zakazky/{{ z_ceniku }}/cenik" hx-target="#okno-formular-obsah"
+  <button type="button" class="zpet" hx-get="/zakazky/{{ z_ceniku }}/cenik" hx-target="#okno-formular-obsah"
           hx-vals='{{ {"okno": "1", "q": q or ""}|tojson }}'>Zpět</button>
   <p class="tlumene poznamka">Enter = další pole · Ctrl+Enter = uložit · Esc = zrušit</p>
 {%- endmacro %}

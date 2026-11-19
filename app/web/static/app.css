@@ -632,9 +632,14 @@ html[data-theme="light"] { background: var(--plocha); }
 
 /* tlačítka: zaoblená, polotučná */
 button, [role=button], input[type=submit] { border-radius: 8px; font-weight: 600; }
-button:not(.secondary):not(.outline):not(.nebezpecne):not(.odkaz):not(:disabled),
-[role=button]:not(.secondary):not(.outline), input[type=submit] { box-shadow: 0 1px 2px rgba(16,24,40,.12); }
+button:not(.secondary):not(.outline):not(.nebezpecne):not(.odkaz):not(.zpet):not(:disabled),
+[role=button]:not(.secondary):not(.outline):not(.zpet), input[type=submit] { box-shadow: 0 1px 2px rgba(16,24,40,.12); }
 .outline, [role=button].outline { --pico-color: var(--akcent-tmavy); border-color: var(--akcent); background: #fff; }
+/* Zpět / Zrušit / Storno / Zavřít – návrat bez uložení: všude červeně (rámeček a text, plná červená = Smazat) */
+button.zpet, [role=button].zpet { --pico-color: var(--c-chyba); background: #fff; color: var(--c-chyba);
+  border: 1px solid var(--c-chyba); box-shadow: none; }
+button.zpet:hover, [role=button].zpet:hover, button.zpet:focus-visible, [role=button].zpet:focus-visible {
+  background: #fef2f2; color: var(--c-chyba); border-color: var(--c-chyba); }
 button:disabled, [role=button][disabled] { background: #f3f4f6 !important; color: #6b7280 !important; border-color: #e5e7eb !important; box-shadow: none; }
 button.odkaz { border-radius: 0; box-shadow: none; }
 

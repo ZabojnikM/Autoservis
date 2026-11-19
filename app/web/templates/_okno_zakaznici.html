@@ -2,7 +2,7 @@
 {# Okno „Databáze zákazníků“ – stejný seznam jako /zakaznici, s filtrem a tlačítkem Vložit do výběru `pole`. #}
 <header class="okno-hlavicka">
   <h3>Databáze zákazníků</h3>
-  <button type="button" class="secondary outline maly" onclick="document.getElementById('okno-databaze').close()">✕ Zavřít</button>
+  <button type="button" class="zpet maly" onclick="document.getElementById('okno-databaze').close()">✕ Zavřít</button>
 </header>
 <input type="search" name="q" value="{{ q }}" placeholder="Filtr: jméno, telefon, e-mail, IČO, město…" autofocus autocomplete="off"
        hx-get="/zakaznici/okno" hx-trigger="input changed delay:300ms, search" hx-include="this"
