@@ -10,7 +10,7 @@ from sqlmodel import Session
 
 from app.db import get_session
 from app.models import FormaUhrady, StavZakazky, TypDokladu, TypPolozky, Uhrada
-from app.services import ares, prijem_vozidel
+from app.services import ares, import_lkq, prijem_vozidel
 from app.services import (
     ChybaValidace, cenik, cisty_text, faktury, hledani, nastaveni, polozky, registr_vozidel, vozidla, zakaznici,
     zakazky,
@@ -837,6 +837,57 @@ def cenik_seznam(request: Request, db: DB, q: str = "", typ: str = "", neaktivni
 def prace_seznam(request: Request, db: DB, q: str = "", neaktivni: str = "",
                  razeni: str = "", od: str = "", vse_radky: str = "", zvyraznit: str = ""):
     return _seznam_ceniku(request, db, TypPolozky.PRACE, q, neaktivni, razeni, od, vse_radky, zvyraznit)
+
+
+# ---------------------------------------------------------------- import dodacího listu LKQ (#8)
+
+def _okno_importu(request, db, okno=False, zakazka_id=None, dodaci_list=None, chyba=None):
+    """Okno importu: bez `dodaci_list` výběr souboru, s ním náhled spárovaný s ceníkem."""
+    zakazka = zakazky.ziskej(db, zakazka_id) if zakazka_id else None
+    return _stranka(request, "import_lkq.html", _status_formulare(okno, chyba), aktivni="zakazky" if zakazka else "cenik",
+                    okno=okno, zakazka=zakazka, dodaci_list=dodaci_list, chyba=chyba, nast=nastaveni.nacti(db),
+                    radky=import_lkq.nahled(db, dodaci_list) if dodaci_list else [],
+                    data_listu=import_lkq.do_json(dodaci_list) if dodaci_list else "")
+
+
+def _id_zakazky(hodnota) -> int | None:
+    hodnota = cisty_text(str(hodnota or ""))
+    return int(hodnota) if hodnota and hodnota.isdigit() else None
+
+
+@router.get("/cenik/import", response_class=HTMLResponse)
+def import_lkq_okno(request: Request, db: DB, okno: str = "", zakazka_id: str = ""):
+    return _okno_importu(request, db, bool(okno), _id_zakazky(zakazka_id))
+
+
+@router.post("/cenik/import/nahled", response_class=HTMLResponse)
+async def import_lkq_nahled(request: Request, db: DB):
+    form = await request.form()
+    okno, zakazka_id = bool(form.get("okno")), _id_zakazky(form.get("zakazka_id"))
+    soubor = form.get("soubor")
+    try:
+        dodaci_list = import_lkq.nacti_csv(await soubor.read() if hasattr(soubor, "read") else b"")
+    except ChybaValidace as e:
+        return _okno_importu(request, db, okno, zakazka_id, chyba=e)
+    return _okno_importu(request, db, okno, zakazka_id, dodaci_list)
+
+
+@router.post("/cenik/import", response_class=HTMLResponse)
+async def import_lkq_uloz(request: Request, db: DB):
+    form = await request.form()
+    okno, zakazka_id = bool(form.get("okno")), _id_zakazky(form.get("zakazka_id"))
+    try:
+        dodaci_list = import_lkq.z_json(str(form.get("data_listu") or ""))
+    except ChybaValidace as e:
+        return _okno_importu(request, db, okno, zakazka_id, chyba=e)
+    vybrane = [int(v) for v in form.getlist("vybrano") if str(v).isdigit()]
+    try:
+        souhrn = import_lkq.importuj(db, dodaci_list, vybrane, zakazka_id)
+    except ChybaValidace as e:
+        return _okno_importu(request, db, okno, zakazka_id, dodaci_list, chyba=e)
+    cil = f"/zakazky/{zakazka_id}" if zakazka_id else "/cenik"
+    # z okna: obnovit stránku pod oknem (zakázka / ceník) a ukázat souhrn
+    return _po_ulozeni(okno, cil, None, zprava=souhrn.text)
 
 
 @router.get("/cenik/vyber", response_class=HTMLResponse)

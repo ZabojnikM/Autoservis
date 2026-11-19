@@ -619,7 +619,8 @@ def test_detail_zakazky_mrizka_polozek():
     assert titulek.index('<h2 class="nadpis-oddilu">Práce</h2>') < titulek.index(">Ceník</a>")         < titulek.index(">Nový</a>") < titulek.index('class="tlumene souhrn-mrizky">1 položka')
     assert ">Import</button>" not in titulek and 'class="misto-tlacitka"' in titulek
     material = detail.split('id="polozky-material"')[1].split('id="polozky-prace"')[0]
-    assert '<h2 class="nadpis-oddilu">Materiál</h2>' in material and "disabled" in material.split(">Import</button>")[0][-200:]
+    assert '<h2 class="nadpis-oddilu">Materiál</h2>' in material  # #8: Import už funguje (dodací list LKQ)
+    assert 'href="/cenik/import?zakazka_id=' in material and ">Import</a>" in material
     # tlačítka přidání už nejsou v levém sloupci
     assert 'role="button" data-okno>Přidat z ceníku</a>' not in detail and ">Ruční položka</a>" not in detail
     # Upravit / Odebrat položku už nejsou v levém sloupci (jsou přímo v řádku, Upravit vlevo od Smazat)
