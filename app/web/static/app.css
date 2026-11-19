@@ -748,7 +748,8 @@ a:hover > .spz { border-color: var(--akcent); background: var(--akcent-svetly); 
   gap: var(--mezera); margin-bottom: var(--mezera); align-items: start; }
 /* #47: tři panely nahoře stejně vysoké (levý se natáhne na výšku pravého sloupce a naopak) */
 .karta-vozidla-panely { align-items: stretch !important; }
-.karta-vozidla .hlavni-vozidla { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 1.2rem; margin: .2rem 0 .5rem; }
+.karta-vozidla .hlavni-vozidla { font-size: 1.35rem; font-weight: 700; margin: .2rem 0 .5rem; }
+.nadpis-radek h1.nadpis-spz { letter-spacing: .06em; }
 .karta-vozidla .hlavni-vozidla .spz { font-size: 1.35rem; padding: 1px 10px; border-width: 2px; font-weight: 800; letter-spacing: .06em; }
 .karta-vozidla dl { grid-template-columns: max-content 1fr; }
 .karta-vozidla-panely .panel { background: #fff; border: 1px solid var(--ram); border-radius: 12px; box-shadow: var(--stin);
@@ -882,3 +883,6 @@ fieldset.panel > legend ~ * { clear: both; }
 
 /* #49: Zrušit / Zpět oddělené od ukládacích akcí (Uložit, Uložit a další) */
 .akce .zpet.oddelene { margin-top: 1rem; }
+
+/* detail zákazníka: v souhrnu Vozidla a Zakázky na jednom řádku */
+dd .vedle { margin-left: 1rem; margin-right: .35rem; }

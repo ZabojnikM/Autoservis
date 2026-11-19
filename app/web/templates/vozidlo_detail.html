@@ -18,10 +18,15 @@
    prázdné údaje se nezobrazují; vedle Majitel a Termíny a historie – tři panely v jedné řadě jako hlavička zakázky #}
 {% set motor = [v.kod_motoru or v.motor, v.objem, v.vykon]|select|join(' · ') %}
 {% set vyplneno = [v.vin, v.rok_vyroby, v.cislo_motoru, motor, v.palivo, v.olej, v.barva, v.datum_registrace, v.termin_stk]|select|list|length %}
+{# lišta s nadpisem jako u zákazníka: SPZ velkým písmem bez rámečku #}
+<div class="nadpis-radek">
+  <h1 class="nadpis-spz">{{ 'bez SPZ' if v.spz.startswith('BEZSPZ') else v.spz }}</h1>
+</div>
 <div class="karta-vozidla-panely">
   <section class="panel karta-vozidla">
     <h2 class="titulek-panelu">Vozidlo</h2>
-    <p class="hlavni-udaj hlavni-vozidla">{{ spz(v.spz) }} {% if v.znacka or v.model %}<span>{{ v.popis }}</span>{% endif %}</p>
+    {# značka a typ větším písmem (SPZ je v liště nahoře) #}
+    <p class="hlavni-udaj hlavni-vozidla">{{ v.popis if (v.znacka or v.model) else '(značka neuvedena)' }}</p>
     <dl>
       {% if v.vin %}<dt>VIN</dt><dd class="vin-zakazky"><span id="vin-vozidla">{{ v.vin }}</span>
         <button type="button" class="kopirovat maly neni-tisk" data-kopirovat="{{ v.vin }}" title="Zkopírovat VIN do schránky">Kopírovat</button></dd>{% endif %}

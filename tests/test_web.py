@@ -1112,3 +1112,17 @@ def test_detail_vozidla_bez_tlacitka_otevrit():
         text = client.get(f"/vozidla/{vid}", params={"zalozka": zalozka}).text
         assert "Otevřít zakázku<" not in text and 'data-radek="otevrit">' not in text, zalozka
     assert "klik-otevre" in client.get(f"/vozidla/{vid}").text
+
+
+def test_detail_vozidla_a_zakaznika_sjednocene():
+    """Vozidlo: lišta s nadpisem SPZ (bez rámečku), v panelu značka a typ; zákazník: bez panelu Poznámka,
+    poznámka v souhrnu, vozidla a zakázky na jednom řádku."""
+    loc = _prijem(spz="6S66666", k_poznamka="Platí hotově").headers["location"].split("?")[0]
+    detail = client.get(loc).text
+    vid = re.search(r'href="/vozidla/(\d+)"', detail).group(1)
+    kid = re.search(r'href="/zakaznici/(\d+)"', detail).group(1)
+    vozidlo = client.get(f"/vozidla/{vid}").text
+    assert '<h1 class="nadpis-spz">6S66666</h1>' in vozidlo
+    assert '<p class="hlavni-udaj hlavni-vozidla">Škoda Fabia</p>' in vozidlo
+    zakaznik = client.get(f"/zakaznici/{kid}").text
+    assert ">Poznámka</h2>" not in zakaznik and 'class="tlumene vedle">Zakázky</span>' in zakaznik

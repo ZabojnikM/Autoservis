@@ -38,18 +38,14 @@
     <h2 class="titulek-panelu">Souhrn</h2>
     {% set otevrene = zakazky|selectattr('je_otevrena')|list %}
     <dl>
-      <dt>Vozidla</dt><dd>{{ vozidla_zakaznika|length }}</dd>
-      <dt>Zakázky</dt><dd>{{ zakazky|length }}{% if otevrene %} · <strong>{{ otevrene|length }} otevřené</strong>{% endif %}</dd>
+      {# vozidla a zakázky vedle sebe na jednom řádku #}
+      <dt>Vozidla</dt><dd>{{ vozidla_zakaznika|length }} <span class="tlumene vedle">Zakázky</span> {{ zakazky|length }}{% if otevrene %} · <strong>{{ otevrene|length }} otevřené</strong>{% endif %}</dd>
       <dt>Naposledy</dt><dd>{{ zakazky[0].datum_prijeti|datum if zakazky else '—' }}</dd>
       <dt>Neuhrazeno</dt><dd {% if neuhrazeno %}class="po-terminu"{% endif %}>{{ neuhrazeno|penize }} {{ nast.mena }}</dd>
     </dl>
+    {# poznámka v souhrnu dole (jako u vozidla) – žádný čtvrtý panel #}
+    {% if k.poznamka %}<p class="tlumene zachovat-radky poznamka-vozidla">{{ k.poznamka }}</p>{% endif %}
   </section>
-  {% if k.poznamka %}
-  <section class="panel">
-    <h2 class="titulek-panelu">Poznámka</h2>
-    <p class="zachovat-radky">{{ k.poznamka }}</p>
-  </section>
-  {% endif %}
 </div>
 
 {# historie partnera: vozidla, zakázky, doklady #}
