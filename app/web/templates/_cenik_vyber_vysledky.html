@@ -16,7 +16,7 @@
   {% for p in nalezene %}
     {% set cena = p.cena %}
     {% set adresa_karty = ('/prace/%d/upravit' if p.typ == 'prace' else '/cenik/%d/upravit') % p.id %}
-    <tr data-pridat title="Dvojklik nebo Enter = přidat{% if okno %} do seznamu k vložení{% else %} do zakázky{% endif %}">
+    <tr data-pridat title="Dvojklik nebo Enter = vložit do zakázky">
       {% if ukaz_typ %}<td><span class="typ typ-{{ p.typ }}">{{ p.nazev_typu }}</span></td>{% endif %}
       {# kód je hlavní údaj – tučně, seznam je podle něj seřazený (#28) #}
       <td class="zkratit kod-polozky-okna" title="{{ p.kod or '' }}"><strong>{{ p.kod or '' }}</strong></td>
@@ -33,9 +33,9 @@
         <a href="{{ adresa_karty }}" role="button" class="maly secondary outline upravit-kartu"
            title="Upravit kartu položky ceníku">Upravit</a>
         {% endif %}
-        {# v okně Přidat jen vybere do seznamu vpravo (JS), do zakázky zapíše až Vložit #}
+        {# Vložit zapíše řádek rovnou do zakázky; v okně přes HTMX – okno se vrátí s potvrzením (#46) #}
         <form method="post" action="/zakazky/{{ zakazka_id }}/polozky" class="radek-pridat"
-              {% if okno %}data-kosik data-nazev="{{ p.nazev }}" data-jednotka="{{ p.jednotka }}" data-typ="{{ p.typ }}"{% endif %}>
+              {% if okno %}hx-post="/zakazky/{{ zakazka_id }}/polozky" hx-target="#okno-formular-obsah"{% endif %}>
           <input type="hidden" name="polozka_ceniku_id" value="{{ p.id }}">
           {% if okno %}<input type="hidden" name="okno" value="1"><input type="hidden" name="q" value="{{ q }}">{% endif %}
           {% if typ_okna %}<input type="hidden" name="typ_okna" value="{{ typ_okna }}">{% endif %}
@@ -45,7 +45,7 @@
                    class="vstup-mnozstvi" onfocus="this.select()">
             <button type="button" class="krok" data-krok="1" tabindex="-1" aria-label="Přidat 1">+</button>
           </span>
-          <button type="submit" class="maly">Přidat</button>
+          <button type="submit" class="maly vlozit-radek">Vložit</button>
         </form>
       </div></td>
     </tr>

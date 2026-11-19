@@ -219,7 +219,6 @@
       if (document.querySelector("#okno-formular-obsah [data-obnovit-po-zavreni]")) obnovitPoZavreni = true;
       const adresa = new URL(url, window.location.href);
       adresa.searchParams.set("okno", "1");
-      if (!oknoFormulare().open) kosik = [];  // nové okno Přidat z ceníku začíná s prázdným výběrem
       htmx.ajax("GET", adresa.pathname + adresa.search, {target: "#okno-formular-obsah", swap: "innerHTML"})
         .then(() => {
           const okno = oknoFormulare();
@@ -232,7 +231,7 @@
     const formularNaStrance = () =>
       [...document.querySelectorAll("form.prijem")].some((f) => !f.closest("#okno-formular"));
     async function zavriOkno() {
-      if ((oknoZmeneno || kosik.length) && !(await potvrd("Zavřít okno bez uložení změn?",
+      if (oknoZmeneno && !(await potvrd("Zavřít okno bez uložení změn?",
                                         {ano: "Zavřít bez uložení", ne: "Pokračovat v úpravách", nebezpecne: true}))) return;
       const obsah = document.getElementById("okno-formular-obsah");
       // okno, které už něco uložilo (např. přidání z ceníku), po zavření obnoví stránku pod sebou
@@ -246,11 +245,6 @@
       const spoustec = e.target.closest("a[data-okno]");
       if (spoustec && !formularNaStrance() && !e.ctrlKey && !e.shiftKey && !e.metaKey) {
         e.preventDefault();
-        // z okna Přidat z ceníku s vybranými položkami: jinam jen po potvrzení (výběr by se ztratil)
-        if (spoustec.closest("#okno-formular") && kosik.length &&
-            !(await potvrd(`Vybrané položky (${kosik.length}) se do zakázky nevloží. Pokračovat?`,
-                           {ano: "Pokračovat", ne: "Zůstat v okně", nebezpecne: true}))) return;
-        kosik = [];
         otevriOkno(spoustec.getAttribute("href"));
       }
       if (e.target.closest("[data-zavrit-okno]")) zavriOkno();
@@ -385,83 +379,13 @@
     });
     // Po přidání (okno se znovu vykreslí) kurzor zpět do hledání a okno nehlásí neuložené změny;
     // po uložení karty ceníku otevřené z tohoto okna se okno ceníku vrátí.
-    // Výběr v okně Přidat z ceníku („košík“): Přidat jen přidá řádek do seznamu vpravo, do zakázky ho
-    // zapíše až Vložit (všechny najednou). Storno okno zavře a zakázky se nedotkne. Výběr platí, dokud je
-    // okno otevřené (i přes odbočku na kartu položky ceníku); nové okno začíná prázdné (viz otevriOkno).
-    let kosik = [];  // [{id, nazev, jednotka, mnozstvi}]
+    // Okno Přidat z ceníku (#46): Vložit (tlačítko, Enter, dvojklik) zapíše řádek rovnou do zakázky (HTMX),
+    // okno zůstane otevřené s potvrzením a po zavření se detail zakázky obnoví.
     const hlaseniOkna = (text, chyba = false) => {
       const p = document.querySelector("#okno-formular-obsah .hlaseni-okna");
       if (p) { p.textContent = text; p.className = "hlaseni-okna " + (chyba ? "chyba" : "uspech"); }
     };
     const textMnozstvi = (c) => String(Math.round(c * 1000) / 1000).replace(".", ",");
-    function vykresliKosik() {
-      const panel = document.querySelector("#okno-formular-obsah [data-kosik-panel]");
-      if (!panel) return;
-      const seznam = panel.querySelector("[data-kosik-seznam]");
-      const n = kosik.length, polozek = n === 1 ? "položka" : n >= 2 && n <= 4 ? "položky" : "položek";
-      panel.querySelector("[data-kosik-pocet]").textContent = `${n} ${polozek}`;
-      // hlavní akce okna ukazuje, kolik zapíše do zakázky
-      const vlozit = document.querySelector("#okno-formular-obsah [data-vlozit-kosik]");
-      if (vlozit) vlozit.textContent = n ? `Vložit ${n} ${polozek}` : "Vložit";
-      seznam.replaceChildren();
-      if (!kosik.length) {
-        const p = document.createElement("p");
-        p.className = "tlumene"; p.textContent = "Zatím nic – vyberte položky vlevo.";
-        seznam.append(p);
-      }
-      kosik.forEach((k, i) => {
-        const radek = document.createElement("div");
-        radek.className = "na-zakazce-radek";
-        const popis = document.createElement("span");
-        const mn = document.createElement("span");
-        mn.className = "tlumene"; mn.textContent = ` ${textMnozstvi(k.mnozstvi)} ${k.jednotka}`;
-        popis.append(k.nazev, mn);
-        const x = document.createElement("button");
-        x.type = "button"; x.className = "odkaz"; x.title = "Odebrat z výběru"; x.textContent = "✕";
-        x.onclick = () => { kosik.splice(i, 1); vykresliKosik(); hlaseniOkna(`Odebráno z výběru: ${k.nazev}`); };
-        radek.append(popis, x);
-        seznam.append(radek);
-      });
-      oknoZmeneno = kosik.length > 0;  // zavření křížkem / Esc se pak zeptá
-    }
-    // Přidat (tlačítko, Enter v množství, dvojklik) v okně = do výběru, ne na server
-    document.addEventListener("submit", (e) => {
-      const form = e.target.closest("form.radek-pridat[data-kosik]");
-      if (!form) return;
-      e.preventDefault();
-      const pole = form.querySelector("[name=mnozstvi]");
-      const mnozstvi = cisloZPole(pole.value || "1");
-      if (mnozstvi === null || mnozstvi === 0) { hlaseniOkna("Zadejte množství (nesmí být 0).", true); pole.focus(); return; }
-      const id = form.querySelector("[name=polozka_ceniku_id]").value;
-      const stejna = kosik.find((k) => k.id === id);  // stejná položka znovu = sečíst množství
-      if (stejna) stejna.mnozstvi += mnozstvi;
-      else kosik.push({id, nazev: form.dataset.nazev, jednotka: form.dataset.jednotka, mnozstvi});
-      vykresliKosik();
-      hlaseniOkna(`Vybráno: ${form.dataset.nazev} (${textMnozstvi(mnozstvi)} ${form.dataset.jednotka})`);
-      pole.value = "1";
-      const hledani = document.querySelector("#okno-formular-obsah .okno-cenik input[type=search]");
-      if (hledani) { hledani.focus(); hledani.select(); }
-    });
-    async function vlozKosik(zakazkaId) {
-      if (!kosik.length) { oknoZmeneno = false; zavriOkno(); return; }
-      const data = new FormData();
-      kosik.forEach((k) => { data.append("polozka_ceniku_id", k.id); data.append("mnozstvi", String(k.mnozstvi)); });
-      try {
-        const odpoved = await fetch(`/zakazky/${zakazkaId}/polozky/vlozit`, {method: "POST", body: data});
-        if (!odpoved.ok) { hlaseniOkna(await odpoved.text() || `Vložení se nepovedlo (${odpoved.status}).`, true); return; }
-      } catch (chyba) {
-        hlaseniOkna("Vložení se nepovedlo (" + chyba.message + ").", true); return;
-      }
-      kosik = []; oknoZmeneno = false;
-      oknoFormulare().close();
-      window.location.reload();  // hláška „Vloženo položek…“ přijde v cookie
-    }
-    async function stornoOknaCeniku() {
-      if (kosik.length && !(await potvrd(`Zavřít okno? Vybrané položky (${kosik.length}) se do zakázky nevloží.`,
-                                         {ano: "Storno", ne: "Zůstat v okně", nebezpecne: true}))) return;
-      kosik = []; oknoZmeneno = false;
-      zavriOkno();
-    }
     // Tlačítka − / + u množství (okno ceníku, řádky zakázky). Minus nejde pod 1 (menší množství se píše ručně).
     // V řádku zakázky se uloží až chvíli po posledním kliknutí (víc kliknutí = jedno uložení).
     let casovacKroku = null;
@@ -498,8 +422,6 @@
       }
     });
     document.addEventListener("click", (e) => {
-      const b = e.target.closest("[data-vlozit-kosik]");
-      if (b) vlozKosik(b.dataset.vlozitKosik);
       // tlačítko Smazat přímo v řádku (položky zakázky) – maže hned, bez potvrzení
       const smazat = e.target.closest("[data-smazat-radek]");
       if (smazat) { e.stopPropagation(); odesliPost(smazat.dataset.smazatRadek); }
@@ -507,7 +429,6 @@
     document.addEventListener("htmx:afterSettle", (e) => {
       if (e.detail.target.id !== "okno-formular-obsah") return;
       if (e.detail.target.querySelector("[data-bez-potvrzeni]")) oknoZmeneno = false;
-      vykresliKosik();  // okno ceníku znovu vykreslené (např. návrat z karty položky) – výběr zůstane
       const hledani = e.detail.target.querySelector(".okno-cenik input[type=search]");
       if (hledani && document.activeElement === document.body) hledani.focus();
     });

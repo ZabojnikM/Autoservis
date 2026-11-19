@@ -631,12 +631,17 @@ def test_okno_cenik_pridava_a_zustava_otevrene():
     assert "Brzdová kapalina" in r.text and "Stěrač" in r.text  # bez hledání ukáže začátek ceníku
     assert 'data-obnovit-po-zavreni' not in r.text
     r = client.get("/cenik/vyber", params={"q": "brzd", "zakazka_id": zid, "okno": "1"})
-    # v okně Přidat jen vybírá do seznamu vpravo (prohlížeč) – na server nic nejde
-    assert "Brzdová kapalina" in r.text and "Stěrač" not in r.text and "data-kosik" in r.text
-    assert "hx-post" not in r.text
+    # #46: Vložit na řádku zapíše položku rovnou do zakázky (HTMX do okna), košík „K vložení“ už není
+    assert "Brzdová kapalina" in r.text and "Stěrač" not in r.text and "data-kosik" not in r.text
+    assert f'hx-post="/zakazky/{zid}/polozky"' in r.text and ">Vložit</button>" in r.text
     cid = re.search(r'name="polozka_ceniku_id" value="(\d+)"', r.text).group(1)
     okno = client.get(f"{loc}/cenik", params={"okno": "1"}).text
-    assert "K vložení" in okno and "Na zakázce" not in okno  # vpravo vždy prázdný výběr
+    assert "K vložení" not in okno and "Na zakázce" not in okno
+    r = client.post(f"{loc}/polozky", data={"polozka_ceniku_id": cid, "mnozstvi": "2", "okno": "1", "q": "brzd"})
+    assert r.status_code == 200 and "Přidáno: Brzdová kapalina (2 l)" in r.text and "data-obnovit-po-zavreni" in r.text
+    assert 'value="brzd"' in r.text  # hledání zůstane, jde vkládat dál
+    r = client.post(f"{loc}/polozky", data={"polozka_ceniku_id": cid, "mnozstvi": "0", "okno": "1"})
+    assert "větší než 0" in r.text
     # Vložit zapíše výběr najednou
     r = client.post(f"{loc}/polozky/vlozit", data={"polozka_ceniku_id": [cid], "mnozstvi": ["2"]})
     assert r.status_code == 204 and r.headers["HX-Refresh"] == "true"
@@ -847,10 +852,9 @@ def test_okno_cenik_storno_a_import():
     # položka přidaná dřív (mimo okno) – Storno se jí nesmí dotknout
     client.post(f"{loc}/polozky", data={"typ": "material", "nazev": "Starší díl", "cena": "50"})
     okno = client.get(f"{loc}/cenik", params={"okno": "1"}).text
-    # Import je skrytý, dokud není hotový (#8, #35)
-    assert "stornoOknaCeniku(" in okno and ">Import</button>" not in okno and ">Vložit</button>" in okno
-    assert okno.index(">Vložit</button>") < okno.index(">Storno</button>")
-    assert ">Storno</button>" not in client.get(f"{loc}/cenik").text  # celá stránka (ne okno) Storno nemá
+    # #46: nahoře Zavřít (jako Databáze zákazníků), bez Storna a hromadného Vložit; Import skrytý (#8, #35)
+    assert "data-zavrit-okno" in okno and "✕ Zavřít" in okno and "stornoOknaCeniku(" not in okno
+    assert ">Import</button>" not in okno and "data-vlozit-kosik" not in okno
     cid = re.search(r'name="polozka_ceniku_id" value="(\d+)"', okno).group(1)
     # Vložit je atomické: jedna chybná položka = nevloží se nic
     r = client.post(f"{loc}/polozky/vlozit", data={"polozka_ceniku_id": [cid, "999999"], "mnozstvi": ["1", "1"]})
@@ -936,10 +940,10 @@ def test_okno_ceniku_jen_pro_jeden_typ():
     assert "/polozky/nova" not in material and "Ruční položka" not in material
     # #3: tlačítka v liště nad seznamem, okno bez sloupce akcí vlevo (sloupec Kód je širší)
     assert '<aside class="akce"' not in material and 's-akcemi' not in material
-    # #27: lišta pod seznamem, tlačítka v řadě vlevo se Stornem na konci, nápověda až za nimi (vpravo dole)
-    assert material.index('id="cenik-vysledky"') < material.index('class="lista-okna')
-    lista = material.split('class="lista-okna')[1]
-    assert lista.index(">Vložit</button>") < lista.index("Nová položka ceníku")         < lista.index(">Storno</button>") < lista.index('class="tlumene napoveda-okna"')
+    # #46: tlačítka v titulku nahoře (Nová položka ceníku, Zavřít), nápověda dole vpravo
+    hlavicka = material.split('class="okno-hlavicka"')[1].split("</header>")[0]
+    assert hlavicka.index("Nová položka ceníku") < hlavicka.index("✕ Zavřít")
+    assert material.index('id="cenik-vysledky"') < material.index('class="tlumene napoveda-okna')
     prace = client.get(f"{loc}/cenik", params={"typ": "prace", "okno": "1"}).text
     assert "Přidat práci z ceníku" in prace and "Výměna filtru" in prace and "Filtr oleje" not in prace
     assert "Zaměnitelný díl" not in prace
