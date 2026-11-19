@@ -8,7 +8,7 @@
 {% set prace = typ == 'prace' %}
 {% set id_formulare = 'formular-polozky' %}
 {% set akce_url = '/polozky/%d/upravit' % radek.id if radek else '/zakazky/%d/polozky' % zakazka.id %}
-{% set nadpis = ('Upravit ' if radek else 'Ruční ') ~ ('práce' if prace else 'materiál') %}
+{% set nadpis = ('Upravit ' ~ ('práce' if prace else 'materiál')) if radek else ('Nová práce' if prace else 'Nový materiál') %}
 {% block title %}{{ nadpis }} – {{ zakazka.cislo }}{% endblock %}
 {% block akce %}
   {{ tlacitka_formulare(id_formulare, okno, '/zakazky/%d#polozky-%s' % (zakazka.id, typ),
