@@ -18,7 +18,7 @@
 {% endif %}
 
 <form method="post" action="/nastaveni" class="formular" id="formular-nastaveni">
-  <fieldset>
+  <fieldset class="panel">
     <legend>Údaje servisu (dodavatel)</legend>
     {{ p('nazev_servisu', 'Název / jméno podnikatele') }}
     <div class="mrizka">
@@ -38,7 +38,7 @@
     </div>
   </fieldset>
 
-  <fieldset>
+  <fieldset class="panel">
     <legend>Bankovní účet</legend>
     <div class="mrizka">
       {{ p('cislo_uctu', 'Číslo účtu', placeholder='např. 123456789/0800') }}
@@ -47,7 +47,7 @@
     <p class="tlumene">Z účtu se na fakturu tiskne <strong>QR platba</strong>. Bez čísla účtu jde fakturu vystavit jen s platbou hotově.</p>
   </fieldset>
 
-  <fieldset>
+  <fieldset class="panel">
     <legend>Ceny a DPH</legend>
     <div class="mrizka">
       <label>Výchozí sazba DPH %
@@ -60,7 +60,7 @@
     <p class="tlumene">Změna se projeví u nově přidaných položek. Řádky v zakázkách a vystavené doklady se nemění.</p>
   </fieldset>
 
-  <fieldset>
+  <fieldset class="panel">
     <legend>Doklady</legend>
     <div class="mrizka">
       {{ p('rada_faktura', 'Řada faktur', extra='required') }}
@@ -79,7 +79,7 @@
     </label>
   </fieldset>
 
-  <fieldset>
+  <fieldset class="panel">
     <legend>Registr vozidel</legend>
     {{ p('api_klic_registr', 'API klíč (dataovozidlech.cz)', extra='autocomplete="off" spellcheck="false"') }}
     <p class="tlumene">Tlačítko <strong>Načti</strong> u VIN doplní údaje vozidla z Registru silničních vozidel
