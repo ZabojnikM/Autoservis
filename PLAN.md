@@ -108,7 +108,8 @@ Slovenský desktopový program (jednorázová licence: 150 € jedno PC / 300 �
 > knihovna, 3 = nativní aplikace PySide6). PWA a klávesové zkratky odloženy (nízká priorita).
 
 **Platná pravidla vzhledu (dodržovat u každé nové obrazovky):**
-- **Lokální webová aplikace** v prohlížeči; cílové rozlišení **1366×768** – hlavní okna se vejdou bez posouvání.
+- **Lokální webová aplikace** v prohlížeči; **primární obrazovka 1920×1080** (rozhodnuto 19. 11. 2026, dřív 1366×768)
+  – hlavní okna se vejdou bez posouvání.
 - **Jen počítač – mobil se zatím neřeší** (rozhodnuto 19. 11. 2026). Mobilní zobrazení by byla úplně jiná větev
   vývoje (samostatné rozhraní), ne úprava tohoto desktopového. Chyby a návrhy jen pro telefon se do issues nezakládají.
 - **Hustý desktopový styl**: písmo 14 px, šedá plocha, bílé panely s šedým titulkem, tabulky jako mřížka. Vždy **světlý režim**.
