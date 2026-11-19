@@ -136,6 +136,7 @@
     {% if nast.platce_dph %}<th class="cislo sl-dph">DPH</th>{% endif %}
     <th class="cislo sl-celkem">Celkem bez DPH</th>
     {% if nast.platce_dph %}<th class="cislo sl-celkem">Celkem s DPH</th>{% endif %}
+    <th class="sl-vypln" aria-hidden="true"></th>
   </tr></thead>
   <tbody>
   {% for r in radky %}
@@ -162,6 +163,7 @@
       {% if nast.platce_dph %}<td class="cislo tlumene">{{ r.sazba_dph|mnozstvi }} %</td>{% endif %}
       <td class="cislo"><strong>{{ r.zaklad|penize }}</strong></td>
       {% if nast.platce_dph %}<td class="cislo">{{ (r.zaklad * (100 + r.sazba_dph) / 100)|penize }}</td>{% endif %}
+      <td class="sl-vypln" aria-hidden="true"></td>
     </tr>
   {% endfor %}
   </tbody>

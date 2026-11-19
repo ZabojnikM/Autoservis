@@ -266,7 +266,7 @@ table.polozky td, table.polozky th { padding: .2rem .5rem; }
 .stavovy-radek { display: flex; justify-content: space-between; gap: 1rem; border: 1px solid var(--ram); border-top: 0; margin-top: -.75rem; }
 
 /* příjem zakázky: celé okno na jednu obrazovku – drobné popisky, nízká pole */
-.formular.prijem { max-width: 1400px; }
+.formular.prijem { max-width: 1600px; }
 .prijem-panely { gap: .6rem; }
 
 .prijem .panel label { color: #4b5563; }
@@ -280,7 +280,7 @@ table.polozky td, table.polozky th { padding: .2rem .5rem; }
 .prijem textarea { resize: vertical; }
 .oznaceni { font-size: .9rem; font-weight: 400; margin-left: .4rem; }
 /* okno formuláře (nová zakázka, úprava) nad stránkou */
-#okno-formular-obsah { width: min(1500px, 97vw); max-height: 94vh; overflow: auto; background: var(--plocha, #e4e7eb); box-shadow: 0 10px 40px rgba(0,0,0,.35); }
+#okno-formular-obsah { width: min(1600px, 97vw); max-height: 94vh; overflow: auto; background: var(--plocha, #e4e7eb); box-shadow: 0 10px 40px rgba(0,0,0,.35); }
 #okno-formular-obsah:empty { display: none; }
 .okno-formular .rozvrzeni { min-height: 0; }
 .okno-formular .akce { position: static; }
@@ -428,8 +428,8 @@ th.razeni.cislo a { text-align: right; }
 .bunka-pridat .upravit-kartu { margin: 0 auto 0 0; width: auto; padding: 4px 10px !important; font-size: .8rem !important; }
 .okno-cenik .radek-pridat input.vstup-mnozstvi { text-align: right; flex: none; }
 .okno-cenik .vyber-cenik tbody tr[data-pridat] { cursor: pointer; }
-#okno-formular-obsah:has(.siroky) { width: min(1350px, 97vw); }
-.formular.prijem.siroky { max-width: 1350px; }
+#okno-formular-obsah:has(.siroky) { width: min(1600px, 97vw); }
+.formular.prijem.siroky { max-width: 1600px; }
 .okno-cenik .omezeni { padding: .3rem .6rem; margin: 0; }
 .hlaseni-okna { min-height: 2.1rem; margin: 0 0 .4rem; }
 .hlaseni-okna:empty { visibility: hidden; }
@@ -443,6 +443,13 @@ th.razeni.cislo a { text-align: right; }
 /* mřížka položek zakázky – pevné šířky sloupců, tabulka po změně neposkočí */
 table.mrizka-polozek { table-layout: fixed; width: 100%; }
 table.mrizka-polozek th.sl-kod { width: 9rem; }
+/* #36: na širokých obrazovkách Název omezit a čísla nechat u něj – zbytek šířky zabere prázdný sloupec vpravo */
+table.mrizka-polozek .sl-vypln { display: none; }
+@media (min-width: 1600px) {
+  table.mrizka-polozek th.sl-kod { width: 15rem; }
+  table.mrizka-polozek th.sl-nazev { width: 34rem; }
+  table.mrizka-polozek .sl-vypln { display: table-cell; }
+}
 table.mrizka-polozek th.sl-mnozstvi { width: 8.5rem; }
 table.mrizka-polozek th.sl-mj { width: 3.5rem; }
 table.mrizka-polozek th.sl-cena { width: 8.5rem; }
@@ -702,6 +709,17 @@ th.razeni { padding: 0; }
 th.razeni a { padding: var(--radek); }
 /* seznam zakázek zůstává vzdušný (≈ 46 px na řádek) */
 table.seznam-zakazek { --radek: 12px 16px; }
+/* #36: seznam zakázek – Požadavek (co se má dělat) širší, Přijato a Vozidlo užší */
+@media (min-width: 1600px) {
+  table.seznam-zakazek { table-layout: fixed; width: 100%; }
+  table.seznam-zakazek th:nth-child(1) { width: 10rem; }
+  table.seznam-zakazek th:nth-child(2) { width: 7.5rem; }
+  table.seznam-zakazek th:nth-child(3) { width: 20rem; }
+  table.seznam-zakazek th:nth-child(4) { width: 16rem; }
+  table.seznam-zakazek th:nth-child(6) { width: 9rem; }
+  table.seznam-zakazek td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  table.seznam-zakazek td.zkratit { max-width: none; }
+}
 thead th { font-size: .8rem; }
 .overflow-auto:has(> table) { margin-bottom: var(--mezera); border-radius: 12px; overflow: auto; }
 .stav, .stav-dokladu { padding: 2px 9px; font-size: .8rem; }
