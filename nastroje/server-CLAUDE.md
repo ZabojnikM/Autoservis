@@ -1,70 +1,71 @@
 # Testovací server Autoservisu (Linux) – pokyny pro agenta
 
-Tato složka je **testovací nasazení** aplikace Autoservis na Linuxu. Kód sem nahrává vývojový
-počítač (Windows) přes sdílený disk skriptem `nastroje/nasadit-na-server.ps1`, který zrcadlí
-poslední commit z gitu. Zdroj pravdy je GitHub repozitář `ZabojnikM/Autoservis`, ne tato složka.
+Tato složka je **git klon** repozitáře `ZabojnikM/Autoservis` (GitHub) a běží z ní testovací
+server aplikace jako služba systemd `autoservis`. Vývoj probíhá na jiném počítači. Nová verze se
+na server dostane **jen přes git**: vývojář pushne na GitHub a aktualizace se nainstaluje
+tlačítkem v aplikaci. Kód se na server nikdy nenahrává přímo (sdílený disk, kopírování, scp).
+
+Tento soubor je v repu jako `nastroje/server-CLAUDE.md`. `CLAUDE.md` v kořeni složky ho jen
+importuje (`@nastroje/server-CLAUDE.md`), takže se aktualizuje spolu s aplikací.
 
 ## Co tu nedělat
-- **Neupravuj kód** (`app/`, `UI/`, `tests/`, `*.md`…). Při dalším nasazení se všechny změny
-  přepíšou nebo smažou. Chyby a nápady zapisuj jako **GitHub Issue** do `ZabojnikM/Autoservis`
-  (popis, kroky k reprodukci, verze z `VERZE.txt`).
-- Necommituj, tady není `.git`.
-- Neukládej sem vlastní soubory mimo `data/`, `.venv/`, `.env`. Ostatní nasazení smaže.
+- **Neupravuj kód** (`app/`, `UI/`, `tests/`, `*.md`…) a necommituj ani nepushuj. Aktualizace
+  ručně upravené soubory odmítne přepsat a zablokuje se. Kdyby se to stalo:
+  `git status` ukáže co, `git checkout -- <soubor>` to vrátí.
+- Chyby a nápady zapisuj jako **GitHub Issue** do `ZabojnikM/Autoservis` (popis, kroky
+  k reprodukci a verze z Nastavení nebo `git describe --tags --always`). Pokud tu nemáš
+  přístup ke GitHubu, sepiš je uživateli.
+- Nekopíruj sem soubory z jiných míst (ani přes sdílený disk).
 
-## Co nasazení nikdy nepřepíše (patří serveru)
-- `data/` – databáze `autoservis.db` (všechna data i nastavení) a zálohy
-- `.venv/` – virtuální prostředí Pythonu (vytváří se na serveru, z Windows se nekopíruje)
+## Co není v gitu (patří serveru, aktualizace na to nesahá)
+- `data/` – databáze `autoservis.db` (všechna data i nastavení) a `data/backups/`
+- `.venv/` – virtuální prostředí Pythonu
 - `.env` – lokální nastavení (např. `AUTOSERVIS_DB` = cesta k jiné databázi)
+- `CLAUDE.md` – jen import tohoto návodu
 
 S databází zacházej opatrně. Před každým zásahem do ní (migrace, hromadné úpravy, import)
 udělej kopii do `data/backups/`. Testovací záznamy označuj (např. „TEST“) a po testu
 maž jen ty své.
 
-## Po nasazení nové verze
-1. Podívej se do `VERZE.txt` (commit, popis, čas nasazení a jestli se změnily závislosti).
-2. Pokud je v `VERZE.txt` u závislostí `ZMENENY` (nebo `.venv` ještě neexistuje):
-   `.venv/bin/python -m pip install -r requirements.txt`
-3. **Restartuj aplikaci:** `sudo systemctl restart autoservis`
-4. Ověř, že běží: `curl -s http://localhost:8000/api/zdravi` (vrátí `"stav":"ok"` a verzi).
-   Při problému: `journalctl -u autoservis -n 50`
+## Aktualizace
+**Nastavení → Aktualizace aplikace → Zkontrolovat aktualizace → Nainstalovat.**
+Služba má `AUTOSERVIS_AKTUALIZACE=main`, takže se instaluje poslední commit větve `main`.
+Instalace sama:
+1. stáhne změny (`git fetch`),
+2. zazálohuje databázi do `data/backups/pred-aktualizaci-*.db`,
+3. přepne kód (`git checkout --detach origin/main`),
+4. při změně `requirements.txt` spustí `pip install` (při chybě vrátí původní kód),
+5. ukončí aplikaci – systemd (`Restart=always`) ji spustí znovu a stránka se sama obnoví.
 
-## První zprovoznění
+**Vrátit předchozí verzi** vrátí kód. Databázi ne – záloha z doby před aktualizací je
+v `data/backups/` (záznam o poslední aktualizaci: `data/backups/aktualizace.json`).
+
+Totéž ručně z příkazové řádky (jako uživatel služby, ve složce aplikace):
 ```
-sudo apt install python3-venv          # pokud chybí
+git fetch --tags --prune origin
+cp data/autoservis.db data/backups/rucne-$(date +%Y%m%d-%H%M%S).db
+git checkout --detach origin/main
+.venv/bin/python -m pip install -r requirements.txt   # jen když se změnil requirements.txt
+sudo systemctl restart autoservis
+```
+
+## Kontrola, že aplikace běží
+- `curl -s http://localhost:8000/api/zdravi` → `"stav":"ok"` a verze
+- `systemctl status autoservis`, logy: `journalctl -u autoservis -n 50`
+- spuštěná verze: `git describe --tags --always`
+
+## Nové zprovoznění (kdyby bylo potřeba celé znovu)
+```
+sudo apt install git python3-venv
+git clone https://github.com/ZabojnikM/Autoservis.git /CESTA/K/AUTOSERVIS
+cd /CESTA/K/AUTOSERVIS
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
-.venv/bin/python -m pytest             # volitelně: testy
+echo '@nastroje/server-CLAUDE.md' > CLAUDE.md
 ```
-Služba systemd: šablona je v `nastroje/autoservis.service`. Doplň v ní uživatele a cestu
-k této složce, zkopíruj do `/etc/systemd/system/autoservis.service` a spusť:
-```
-sudo systemctl daemon-reload
-sudo systemctl enable --now autoservis
-```
-Služba poslouchá na `0.0.0.0:8000` (dostupné z ostatních počítačů v síti) a po pádu nebo
-ukončení se sama znovu spustí (`Restart=always`). Bez `--reload` – po nasazení se restartuje ručně (krok 3).
+Databázi (`data/autoservis.db`) a `.env` přenést ze zálohy. Služba systemd: šablona je
+v `nastroje/autoservis.service` (doplnit uživatele a cestu, `AUTOSERVIS_AKTUALIZACE=main`),
+zkopírovat do `/etc/systemd/system/` a `sudo systemctl daemon-reload && sudo systemctl enable --now autoservis`.
+Složka musí patřit uživateli služby (jinak git hlásí „dubious ownership“ a aktualizace selže).
 
 `spustit.bat` je jen pro vývoj na Windows, na serveru se nepoužívá.
-
-## Aktualizace tlačítkem z aplikace (git)
-V **Nastavení → Aktualizace aplikace** jde zkontrolovat a nainstalovat novou verzi z GitHubu.
-Funguje, jen když je složka aplikace **git klon** a služba má proměnnou `AUTOSERVIS_AKTUALIZACE`:
-- `vydani` – poslední vydání (tag `vX.Y.Z`), pro ostrý provoz
-- `main` – poslední commit větve `main`, pro testovací server
-
-Instalace sama: stáhne změny (`git fetch`), zazálohuje databázi do `data/backups/`,
-přepne kód (`git checkout --detach`), při změně `requirements.txt` spustí `pip install`
-a aplikaci ukončí – systemd (`Restart=always`) ji spustí znovu. Tlačítko **Vrátit předchozí verzi**
-vrátí kód (databázi ne – záloha je v `data/backups/pred-aktualizaci-*.db`).
-
-Převod na git klon (místo nahrávání přes sdílený disk):
-```
-git clone https://github.com/ZabojnikM/Autoservis.git /CESTA/K/AUTOSERVIS
-# přenést data/ (databázi) a .env ze staré složky, vytvořit .venv (viz výše)
-```
-- Složka musí patřit uživateli služby (jinak git hlásí „dubious ownership“).
-- Do git klonu už **nenahrávat** skriptem `nasadit-na-server.ps1` – ručně změněné soubory
-  aktualizace odmítne přepsat. Jedno nebo druhé.
-
-## Hlášení zpět
-Výsledky testování (co funguje / nefunguje) zapisuj do GitHub Issues, ne do souborů v této složce.

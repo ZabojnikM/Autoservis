@@ -13,7 +13,7 @@ ExecStart=/CESTA/K/AUTOSERVIS/.venv/bin/python -m uvicorn app.main:app --host 0.
 EnvironmentFile=-/CESTA/K/AUTOSERVIS/.env
 # Aktualizace tlačítkem v Nastavení (jen když složka je git klon):
 #   vydani = poslední vydání vX.Y.Z (ostrý provoz), main = poslední commit (testovací server)
-# Environment=AUTOSERVIS_AKTUALIZACE=vydani
+Environment=AUTOSERVIS_AKTUALIZACE=main
 # Po instalaci se aplikace ukončí a Restart=always ji spustí znovu s novým kódem.
 Restart=always
 RestartSec=3
