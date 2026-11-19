@@ -874,7 +874,10 @@ def test_uprava_radku_na_karte_ceniku_a_mnozstvi_v_radku():
     # ruční položka (bez ceníku) má dál vlastní formulář
     client.post(f"{loc}/polozky", data={"typ": "material", "nazev": "Drobný materiál", "cena": "20"})
     rucni = re.findall(r'action="/polozky/(\d+)/mnozstvi"', client.get(loc).text)[-1]
-    assert "Upravit položku" in client.get(f"/polozky/{rucni}/upravit").text
+    # ruční řádek (bez ceníku) se upravuje ve stejném okně jako karta Materiál, volba „do ceníku“ nezaškrtnutá
+    uprava = client.get(f"/polozky/{rucni}/upravit").text
+    assert "Upravit materiál" in uprava and "ruční položka" in uprava and "Zaměnitelný díl" in uprava
+    assert re.search(r'name="ulozit_do_ceniku" value="1"\s*>', uprava)
 
 
 def test_hledani_vin_prijme_vozidlo_s_vin():
@@ -926,3 +929,40 @@ def test_okno_ceniku_jen_pro_jeden_typ():
     # bez typu (starší odkazy) oba ceníky se sloupcem Typ
     oba = client.get(f"{loc}/cenik", params={"okno": "1"}).text
     assert "Filtr oleje" in oba and "Výměna filtru" in oba and "<th>Typ</th>" in oba
+
+
+def test_rucni_polozka_jako_karta_ceniku():
+    loc = _prijem().headers["location"].split("?")[0]
+    zid = loc.rsplit("/", 1)[1]
+    okno = client.get(f"{loc}/polozky/nova", params={"typ": "material", "okno": "1"}).text
+    assert "Ruční materiál" in okno and "Zaměnitelný díl" in okno and "Nákupní cena" in okno
+    assert re.search(r'name="ulozit_do_ceniku" value="1"\s*checked', okno)  # předem zaškrtnuté
+    prace = client.get(f"{loc}/polozky/nova", params={"typ": "prace"}).text
+    assert "Ruční práce" in prace and "Název práce" in prace and "Zaměnitelný díl" not in prace
+    # uložení i do ceníku: položka ceníku se založí se všemi poli a řádek je s ní propojený
+    r = client.post(f"{loc}/polozky", data={"typ": "material", "kod": "ATE 03.9901", "nazev": "Brzdová kapalina",
+                                            "zamenitelny_dil": "TRW PFB", "jednotka": "l", "mnozstvi": "2",
+                                            "cena": "200", "nakupni_cena": "120", "ulozit_do_ceniku": "1",
+                                            "okno": "1"})
+    assert r.status_code == 204  # okno se zavře a detail zakázky se obnoví
+    cenik_text = client.get("/cenik", params={"q": "ATE"}).text
+    assert "Brzdová kapalina" in cenik_text and "TRW PFB" in cenik_text
+    detail = client.get(loc).text
+    pid = re.findall(r'data-upravit="/polozky/(\d+)/upravit"', detail)[-1]
+    assert "Upravit materiál" in client.get(f"/polozky/{pid}/upravit").text  # karta ceníku (propojeno)
+    assert "ruční položka" not in client.get(f"/polozky/{pid}/upravit").text
+    # stejný kód podruhé: nezaloží se, okno nabídne existující položku ceníku
+    r = client.post(f"{loc}/polozky", data={"typ": "material", "kod": "ATE 03.9901", "nazev": "Jiná kapalina",
+                                            "mnozstvi": "3", "cena": "10", "ulozit_do_ceniku": "1", "okno": "1"})
+    assert r.status_code == 200 and "Použít z ceníku" in r.text and 'name="z_rucni" value="1"' in r.text
+    cid = re.search(r'name="polozka_ceniku_id" value="(\d+)"', r.text).group(1)
+    r = client.post(f"{loc}/polozky", data={"polozka_ceniku_id": cid, "mnozstvi": "3", "z_rucni": "1", "okno": "1"})
+    assert r.status_code == 204 and "Přidat materiál z ceníku" not in r.text  # zpět na zakázku, ne do okna ceníku
+    assert client.get(loc).text.count("<td>Brzdová kapalina</td>") == 2
+    assert "Jiná kapalina" not in client.get("/cenik", params={"q": "kapalina"}).text
+    # bez uložení do ceníku: jen řádek, cena zadaná s DPH se přepočte (zdroj „s“)
+    client.post(f"{loc}/polozky", data={"typ": "prace", "nazev": "Odtah", "mnozstvi": "1", "cena_s": "1210",
+                                        "cena": "", "cena_zdroj": "s", "sazba_dph": "21"})
+    detail = client.get(loc).text
+    assert "Odtah" in detail and "1 000,00" in detail
+    assert "Nic nenalezeno" in client.get("/prace", params={"q": "Odtah"}).text  # do ceníku se neuložila

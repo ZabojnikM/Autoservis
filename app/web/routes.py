@@ -300,15 +300,20 @@ async def zakazka_vloz_polozky(request: Request, db: DB, zakazka_id: int):
     return _po_ulozeni_okna(zprava=f"Vloženo položek: {len(radky)}.")
 
 
-def _formular_polozky(request, db, zakazka_id, hodnoty, okno=False, chyba=None):
-    return _stranka(request, "polozka_nova.html", _status_formulare(okno, chyba), aktivni="zakazky",
+def _formular_polozky(request, db, zakazka_id, hodnoty, okno=False, chyba=None, radek=None):
+    """Okno ruční položky – stejná pole jako karta Materiál / Práce + množství (polozka_form.html).
+    `radek` = úprava ručního řádku zakázky; chyba KodUzVCeniku nabídne existující položku ceníku."""
+    return _stranka(request, "polozka_form.html", _status_formulare(okno, chyba), aktivni="zakazky",
                     zakazka=zakazky.ziskej(db, zakazka_id), hodnoty=hodnoty, nast=nastaveni.nacti(db),
-                    okno=okno, chyba=chyba)
+                    okno=okno, chyba=chyba, radek=radek,
+                    existujici=chyba.polozka if isinstance(chyba, polozky.KodUzVCeniku) else None)
 
 
 @router.get("/zakazky/{zakazka_id}/polozky/nova", response_class=HTMLResponse)
-def zakazka_nova_polozka(request: Request, db: DB, zakazka_id: int, okno: str = ""):
-    return _formular_polozky(request, db, zakazka_id, {}, okno=bool(okno))
+def zakazka_nova_polozka(request: Request, db: DB, zakazka_id: int, okno: str = "", typ: str = ""):
+    typ = typ if typ in TypPolozky.VSECHNY else TypPolozky.MATERIAL
+    hodnoty = _nova_polozka_ceniku(db, typ) | {"mnozstvi": "1", "ulozit_do_ceniku": "1"}
+    return _formular_polozky(request, db, zakazka_id, hodnoty, okno=bool(okno))
 
 
 @router.get("/zakazky/{zakazka_id}/tisk", response_class=HTMLResponse)
@@ -340,7 +345,7 @@ async def zakazka_pridej_polozku(request: Request, db: DB, zakazka_id: int):
             return _okno_ceniku(request, db, zakazka_id, data.get("q", ""), okno, chyba=str(e),
                                 typ=data.get("typ_okna"))
         return _formular_polozky(request, db, zakazka_id, data, okno, e)
-    if z_ceniku and okno:
+    if z_ceniku and okno and not data.get("z_rucni"):  # z okna ruční položky („Použít z ceníku“) zpět na zakázku
         return _okno_ceniku(request, db, zakazka_id, data.get("q", ""), okno, pridano=True, typ=data.get("typ_okna"),
                             zprava=f"Přidáno: {radek.nazev} ({_mnozstvi(radek.mnozstvi)} {radek.jednotka})")
     return _po_ulozeni(okno, f"/zakazky/{zakazka_id}#polozky", zprava="Položka přidána.")
@@ -357,9 +362,8 @@ def polozka_upravit(request: Request, db: DB, polozka_id: int, okno: str = ""):
     nast = nastaveni.nacti(db)
     hodnoty = {"nazev": radek.nazev, "kod": radek.kod or "", "jednotka": radek.jednotka, "typ": radek.typ,
                "mnozstvi": _mnozstvi(radek.mnozstvi), "sazba_dph": _mnozstvi(radek.sazba_dph)} \
-        | cenik.hodnoty_ceny_pro_formular(radek.cena, radek.sazba_dph, nast.platce_dph)
-    return _stranka(request, "polozka_upravit.html", aktivni="zakazky", radek=radek, hodnoty=hodnoty,
-                    zakazka=radek.zakazka, nast=nast, okno=bool(okno))
+        | cenik.hodnoty_dvojice_cen("cena", radek.cena, radek.sazba_dph if nast.platce_dph else 0)
+    return _formular_polozky(request, db, radek.zakazka_id, hodnoty, okno=bool(okno), radek=radek)
 
 
 @router.post("/polozky/{polozka_id}/upravit", response_class=HTMLResponse)
@@ -372,9 +376,7 @@ async def polozka_upravit_uloz(request: Request, db: DB, polozka_id: int):
     except ChybaValidace as e:
         db.rollback()
         radek = polozky.ziskej(db, polozka_id)
-        return _stranka(request, "polozka_upravit.html", _status_formulare(okno, e), aktivni="zakazky",
-                        radek=radek, zakazka=radek.zakazka, hodnoty=data, nast=nastaveni.nacti(db), okno=okno,
-                        chyba=e)
+        return _formular_polozky(request, db, radek.zakazka_id, data, okno, e, radek=radek)
     return _po_ulozeni(okno, f"/zakazky/{radek.zakazka_id}#polozky", zprava=f"Položka „{radek.nazev}“ uložena.")
 
 

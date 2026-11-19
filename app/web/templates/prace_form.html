@@ -29,48 +29,7 @@
   <input type="hidden" name="typ" value="prace">
   {{ skryta_pole_z_ceniku(z_ceniku, q_ceniku) }}
   {{ radek_zakazky_pole(radek_zakazky) }}
-  <fieldset class="panel">
-    <legend>Práce</legend>
-    <div class="mrizka">
-      {{ pole('kod', 'Kód', hodnoty, placeholder='nepovinný', extra='autofocus') }}
-      {% set jednotka = hodnoty.get('jednotka') or 'hod' %}
-      {% set jednotky = ['hod', 'úkon'] %}
-      <label>Jednotka
-        <select name="jednotka">
-          {% for j in jednotky %}<option {% if jednotka == j %}selected{% endif %}>{{ j }}</option>{% endfor %}
-          {% if jednotka not in jednotky %}<option selected>{{ jednotka }}</option>{% endif %}
-        </select>
-      </label>
-    </div>
-    {{ pole('nazev', 'Název práce', hodnoty, povinne=True) }}
-  </fieldset>
-
-  <fieldset class="panel">
-    <legend>Cena</legend>
-    {% if nast.platce_dph %}
-    <div class="mrizka">
-      {{ pole('sazba_dph', 'Sazba DPH %', hodnoty, extra='inputmode="decimal" list="sazby" data-sazba-dph') }}
-    </div>
-    {% endif %}
-    <div class="mrizka dvojice-cen" data-dvojice="cena">
-      {% if nast.platce_dph %}
-        {{ pole('cena', 'Cena bez DPH', hodnoty, extra='inputmode="decimal" data-cena="bez"') }}
-        {{ pole('cena_s', 'Cena s DPH', hodnoty, extra='inputmode="decimal" data-cena="s"') }}
-        <input type="hidden" name="cena_zdroj" value="{{ hodnoty.get('cena_zdroj') or '' }}" data-cena="zdroj">
-      {% else %}
-        {{ pole('cena', 'Cena', hodnoty, extra='inputmode="decimal"') }}
-      {% endif %}
-    </div>
-  </fieldset>
-
-  <fieldset class="panel">
-    <legend>Ostatní</legend>
-    {{ textove_pole('poznamka', 'Poznámka', hodnoty, radky=2) }}
-    {% if polozka %}
-    <label class="volba"><input type="checkbox" name="aktivni" value="1" {% if hodnoty.get('aktivni') %}checked{% endif %}>
-      aktivní (vyřazená práce se nenabízí do zakázek)</label>
-    {% endif %}
-  </fieldset>
+  {% include "_pole_prace.html" %}
 
   <datalist id="sazby"><option value="21"><option value="12"><option value="0"></datalist>
 </form>

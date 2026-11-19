@@ -17,7 +17,7 @@ def cena_bez_dph(cena: Decimal, sazba_dph: Decimal, je_s_dph: bool) -> Decimal:
     return (cena * 100 / (100 + sazba_dph)).quantize(Decimal("0.0001"))
 
 
-def _cena_z_dvojice(data: dict, klic: str, nazev: str, sazba_dph: Decimal) -> tuple[bool, Decimal | None]:
+def cena_z_dvojice(data: dict, klic: str, nazev: str, sazba_dph: Decimal) -> tuple[bool, Decimal | None]:
     """Cena z dvojice polí formuláře: `klic` (bez DPH) a `klic_s` (s DPH).
 
     `klic_zdroj` = „s“ říká, že uživatel naposledy psal do pole s DPH – pak se cena bez DPH
@@ -48,7 +48,7 @@ def _nastav(session: Session, polozka: PolozkaCeniku, data: dict) -> None:
         polozka.sazba_dph = sazba if sazba is not None else nastaveni_sluzba.nacti(session).vychozi_dph
     if not 0 <= polozka.sazba_dph < 100:
         raise ChybaValidace("Sazba DPH musí být 0–99 %.", "sazba_dph")
-    zadano, cena = _cena_z_dvojice(data, "cena", "Cena", polozka.sazba_dph)
+    zadano, cena = cena_z_dvojice(data, "cena", "Cena", polozka.sazba_dph)
     if zadano:
         if cena is None:
             raise ChybaValidace("Vyplňte cenu.", "cena")
@@ -57,7 +57,7 @@ def _nastav(session: Session, polozka: PolozkaCeniku, data: dict) -> None:
         polozka.cena = cena_bez_dph(cena, polozka.sazba_dph, je_s_dph)
     if polozka.cena < 0:
         raise ChybaValidace("Cena nemůže být záporná.", "cena")
-    zadano, nakupni = _cena_z_dvojice(data, "nakupni_cena", "Nákupní cena", polozka.sazba_dph)
+    zadano, nakupni = cena_z_dvojice(data, "nakupni_cena", "Nákupní cena", polozka.sazba_dph)
     if zadano:
         if nakupni is not None and nakupni < 0:
             raise ChybaValidace("Nákupní cena nemůže být záporná.", "nakupni_cena")
@@ -100,6 +100,13 @@ def uprav(session: Session, polozka_id: int, data: dict) -> PolozkaCeniku:
     session.commit()
     session.refresh(polozka)
     return polozka
+
+
+def najdi_podle_kodu(session: Session, kod: str | None) -> PolozkaCeniku | None:
+    kod = cisty_text(kod)
+    if not kod:
+        return None
+    return session.exec(select(PolozkaCeniku).where(PolozkaCeniku.kod == kod)).first()
 
 
 def ziskej(session: Session, polozka_id: int) -> PolozkaCeniku:

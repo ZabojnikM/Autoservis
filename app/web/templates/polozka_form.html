@@ -1,0 +1,54 @@
+{% extends "_okno.html" if okno else "base.html" %}
+{% from "_makra.html" import pole, zacatek_formulare, tlacitka_formulare %}
+{# Ruční položka zakázky – stejné okno jako karta Materiál / Práce (sdílená pole _pole_materialu / _pole_prace)
+   a navíc Množství a volba „uložit i do ceníku“ (u nové položky zaškrtnutá). Údaje jen pro ceník
+   (zaměnitelný díl, nákupní cena, poznámka) jsou vidět, jen když se ukládá do ceníku.
+   `radek` = úprava ručního řádku (bez ceníku), jinak nová položka. `existujici` = položka ceníku se stejným kódem. #}
+{% set typ = hodnoty.get('typ') or 'material' %}
+{% set prace = typ == 'prace' %}
+{% set id_formulare = 'formular-polozky' %}
+{% set akce_url = '/polozky/%d/upravit' % radek.id if radek else '/zakazky/%d/polozky' % zakazka.id %}
+{% set nadpis = ('Upravit ' if radek else 'Ruční ') ~ ('práce' if prace else 'materiál') %}
+{% block title %}{{ nadpis }} – {{ zakazka.cislo }}{% endblock %}
+{% block akce %}
+  {{ tlacitka_formulare(id_formulare, okno, '/zakazky/%d#polozky-%s' % (zakazka.id, typ),
+                        ok='Uložit' if radek else 'Přidat do zakázky') }}
+{% endblock %}
+{% block content %}
+<div class="nadpis-radek">
+  <h1>{{ nadpis }} <span class="oznaceni">{% if radek %}ruční položka · {% endif %}zakázka
+    <a href="/zakazky/{{ zakazka.id }}">{{ zakazka.cislo }}</a></span></h1>
+</div>
+
+{% if existujici %}
+{# kód už v ceníku je: nabídnout tu položku (přidá se z ceníku se zadaným množstvím) #}
+<div class="upozorneni-ram">
+  V ceníku už je <strong>{{ existujici.nazev }}</strong>{% if existujici.kod %} (kód {{ existujici.kod }}){% endif %}.
+  <button type="submit" form="pouzit-z-ceniku" class="maly">Použít z ceníku</button>
+</div>
+<form method="post" action="/zakazky/{{ zakazka.id }}/polozky" id="pouzit-z-ceniku" hidden
+      {% if okno %}hx-post="/zakazky/{{ zakazka.id }}/polozky" hx-target="#okno-formular-obsah"{% endif %}>
+  <input type="hidden" name="polozka_ceniku_id" value="{{ existujici.id }}">
+  <input type="hidden" name="mnozstvi" value="{{ hodnoty.get('mnozstvi') or '1' }}">
+  <input type="hidden" name="z_rucni" value="1">
+  {% if okno %}<input type="hidden" name="okno" value="1">{% endif %}
+</form>
+{% endif %}
+
+{{ zacatek_formulare(akce_url, id_formulare, okno, 'uzky polozka-rucni') }}
+  <input type="hidden" name="typ" value="{{ typ }}">
+  <fieldset class="panel">
+    <legend>Do zakázky</legend>
+    <div class="mrizka">
+      {{ pole('mnozstvi', 'Množství', hodnoty, povinne=True,
+              extra='inputmode="decimal" pattern="[-+]?[0-9  ]*([.,][0-9]+)?" title="Číslo, např. 1,5"') }}
+      {% if not radek or not radek.polozka_ceniku_id %}
+      <label class="volba volba-do-ceniku"><input type="checkbox" name="ulozit_do_ceniku" value="1"
+        {% if hodnoty.get('ulozit_do_ceniku') %}checked{% endif %}> uložit i do ceníku {{ 'prací' if prace else 'materiálu' }}</label>
+      {% endif %}
+    </div>
+  </fieldset>
+  {% include "_pole_prace.html" if prace else "_pole_materialu.html" %}
+  <datalist id="sazby"><option value="21"><option value="12"><option value="0"></datalist>
+</form>
+{% endblock %}

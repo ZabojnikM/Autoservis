@@ -529,6 +529,10 @@ table.mrizka-polozek th.sl-celkem { width: 8.5rem; }
 .tlacitka-mrizky { display: inline-flex; gap: 6px; }
 .tlacitka-mrizky [role=button] { width: auto; margin: 0; padding: 2px 10px; font-size: .8rem; }
 #polozky .soucty { margin-top: 0; border-top: 1px solid var(--ram); border-radius: 12px; }
+/* ruční položka: údaje jen pro ceník (zaměnitelný díl, nákupní cena, poznámka) jen při „uložit i do ceníku“ */
+form.polozka-rucni:has(input[name=ulozit_do_ceniku]:not(:checked)) [data-jen-cenik],
+form.polozka-rucni:not(:has(input[name=ulozit_do_ceniku])) [data-jen-cenik] { display: none; }
+.volba-do-ceniku { align-self: end; padding-bottom: .55rem; }
 table.mrizka-polozek td { overflow: hidden; text-overflow: ellipsis; }
 table.mrizka-ceniku { table-layout: fixed; width: 100%; }
 table.mrizka-ceniku th:nth-child(1) { width: 12rem; }

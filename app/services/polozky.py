@@ -75,19 +75,37 @@ def vloz_z_ceniku(session: Session, zakazka_id: int, vyber: list[tuple]) -> list
     return radky
 
 
+class KodUzVCeniku(ChybaValidace):
+    """Ruční položka se má uložit do ceníku, ale její kód už v ceníku je – nabídne se použít existující."""
+
+    def __init__(self, polozka):
+        super().__init__(f"Kód {polozka.kod} už v ceníku má „{polozka.nazev}“ – použijte ji z ceníku, "
+                         "nebo zrušte „uložit i do ceníku“.", "kod")
+        self.polozka = polozka
+
+
+def _do_ceniku(session: Session, data: dict, typ: str):
+    """Založí položku ceníku z polí ruční položky (stejná pole jako karta Materiál / Práce)."""
+    existujici = cenik_sluzba.najdi_podle_kodu(session, data.get("kod"))
+    if existujici:
+        raise KodUzVCeniku(existujici)
+    pole = {k: v for k, v in data.items() if k not in ("mnozstvi", "ulozit_do_ceniku", "okno", "cena_s_dph")}
+    return cenik_sluzba.vytvor(session, pole | {"typ": typ}, commit=False)
+
+
 def pridej_rucne(session: Session, zakazka_id: int, data: dict) -> PolozkaZakazky:
-    """Ruční položka. `ulozit_do_ceniku` ji zároveň založí v ceníku."""
+    """Ruční položka (pole jako karta Materiál / Práce + množství).
+
+    `ulozit_do_ceniku` ji nejdřív založí v ceníku a řádek pak vznikne z ní (jako z okna Přidat z ceníku),
+    takže úprava řádku z detailu zakázky pak upraví i ceník. Kód, který už v ceníku je → KodUzVCeniku."""
     zakazka = _otevrena_zakazka(session, zakazka_id)
     nast = nastaveni_sluzba.nacti(session)
     radek = PolozkaZakazky(zakazka_id=zakazka.id, nazev="")
     try:
-        _nastav_radek(radek, data, nast, novy=True)
+        _nastav_radek(radek, data, nast, novy=True)  # kontrola polí a množství i při ukládání do ceníku
         if _je(data.get("ulozit_do_ceniku")):
-            v_ceniku = cenik_sluzba.vytvor(session, {
-                "nazev": radek.nazev, "kod": radek.kod, "typ": radek.typ, "jednotka": radek.jednotka,
-                "cena": radek.cena, "sazba_dph": radek.sazba_dph if nast.platce_dph else nast.vychozi_dph,
-            }, commit=False)
-            radek.polozka_ceniku_id = v_ceniku.id
+            v_ceniku = _do_ceniku(session, data, radek.typ)
+            radek = pridej_z_ceniku(session, zakazka.id, v_ceniku.id, mnozstvi=data.get("mnozstvi"), commit=False)
         session.add(radek)
         session.commit()
     except Exception:
@@ -120,19 +138,30 @@ def _nastav_radek(radek: PolozkaZakazky, data: dict, nast, novy: bool = False) -
         radek.sazba_dph = nast.vychozi_dph if sazba is None else sazba
         if not 0 <= radek.sazba_dph < 100:
             raise ChybaValidace("Sazba DPH musí být 0–99 %.", "sazba_dph")
-    if "cena" in data or novy:
-        cena = desetinne_nebo_none(data.get("cena"), "Cena", "cena")
+    # cena jako na kartě ceníku: dvojice bez DPH / s DPH (cena, cena_s, cena_zdroj), starší tvar zaškrtnutím
+    zadano, cena = cenik_sluzba.cena_z_dvojice(data, "cena", "Cena", radek.sazba_dph)
+    if zadano or novy:
         if cena is None:
             raise ChybaValidace("Vyplňte cenu za jednotku.", "cena")
-        radek.cena = cenik_sluzba.cena_bez_dph(cena, radek.sazba_dph, _je(data.get("cena_s_dph")))
+        s_dph = data.get("cena_zdroj") != "s" and _je(data.get("cena_s_dph"))
+        radek.cena = cenik_sluzba.cena_bez_dph(cena, radek.sazba_dph, s_dph)
+        if radek.cena < 0:
+            raise ChybaValidace("Cena nemůže být záporná.", "cena")
 
 
 def uprav(session: Session, polozka_id: int, data: dict) -> PolozkaZakazky:
+    """Úprava řádku. Ruční řádek (bez ceníku) s `ulozit_do_ceniku` se zároveň založí v ceníku a propojí."""
     radek = ziskej(session, polozka_id)
     _otevrena_zakazka(session, radek.zakazka_id)
-    _nastav_radek(radek, data, nastaveni_sluzba.nacti(session))
-    session.add(radek)
-    session.commit()
+    try:
+        _nastav_radek(radek, data, nastaveni_sluzba.nacti(session))
+        if _je(data.get("ulozit_do_ceniku")) and radek.polozka_ceniku_id is None:
+            radek.polozka_ceniku_id = _do_ceniku(session, data, radek.typ).id
+        session.add(radek)
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
     session.refresh(radek)
     return radek
 
