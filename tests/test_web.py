@@ -605,10 +605,12 @@ def test_detail_zakazky_mrizka_polozek():
     assert "Zatím žádný materiál." in detail and "Zatím žádná práce." not in detail
     # #26: v titulku název, pak tlačítka, souhrn (počet a částka) až na konci vpravo
     titulek = detail.split('id="polozky-prace"')[1].split("</div>")[0]
-    # #41: bez nadpisu, tlačítka „Práce ceník / Nová práce“, souhrn vpravo
-    assert "<strong>Práce</strong>" not in titulek
-    assert titulek.index(">Práce ceník</a>") < titulek.index(">Nová práce</a>")         < titulek.index('class="tlumene souhrn-mrizky">1 položka')
-    assert ">Materiál ceník</a>" in detail and ">Nový materiál</a>" in detail
+    # #41: velký nadpis oddílu, krátká tlačítka Ceník · Nový (· Import zašedlý jen u materiálu), souhrn vpravo
+    assert '<h2 class="nadpis-oddilu">Práce</h2>' in titulek
+    assert titulek.index('<h2 class="nadpis-oddilu">Práce</h2>') < titulek.index(">Ceník</a>")         < titulek.index(">Nový</a>") < titulek.index('class="tlumene souhrn-mrizky">1 položka')
+    assert ">Import</button>" not in titulek and 'class="misto-tlacitka"' in titulek
+    material = detail.split('id="polozky-material"')[1].split('id="polozky-prace"')[0]
+    assert '<h2 class="nadpis-oddilu">Materiál</h2>' in material and "disabled" in material.split(">Import</button>")[0][-200:]
     # tlačítka přidání už nejsou v levém sloupci
     assert 'role="button" data-okno>Přidat z ceníku</a>' not in detail and ">Ruční položka</a>" not in detail
     # Upravit / Odebrat položku už nejsou v levém sloupci (jsou přímo v řádku, Upravit vlevo od Smazat)

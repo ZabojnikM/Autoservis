@@ -114,15 +114,21 @@
    Upravit a Smazat jsou vlevo v řádku (tlačítka mřížky vlevo v titulku), dvojklik = upravit, Delete = odebrat vybraný řádek. #}
 {% macro mrizka_polozek(typ, radky, nazev, prazdne) %}
 <section class="sekce-polozek" id="polozky-{{ typ }}">
-{# titulek bez nadpisu (#41): vlevo „Materiál ceník / Nový materiál“ (u práce „Práce ceník / Nová práce“),
-   tlačítka stejně široká, aby v obou řádcích seděla pod sebou; vpravo počet položek a částka (#26) #}
-<div class="titulek-mrizky tlacitka-vlevo" aria-label="{{ nazev }}">
+{# titulek (#41): velký nadpis oddílu (pevná šířka, aby tlačítka v obou oddílech začínala pod sebou),
+   krátká stejně široká tlačítka Ceník · Nový · Import (Import jen u materiálu, u práce je místo volné),
+   vpravo počet položek a částka (#26) #}
+<div class="titulek-mrizky tlacitka-vlevo">
+  <h2 class="nadpis-oddilu">{{ nazev }}</h2>
   {% if lze_menit %}<span class="tlacitka-mrizky neni-tisk">
     <a href="/zakazky/{{ zakazka.id }}/cenik?typ={{ typ }}" role="button" data-okno
-       title="{{ nazev }} z ceníku">{{ nazev }} ceník</a>
+       title="{{ nazev }} z ceníku">Ceník</a>
     <a href="/zakazky/{{ zakazka.id }}/polozky/nova?typ={{ typ }}" role="button" class="secondary outline" data-okno
-       title="{{ nazev }} mimo ceník – zadat ručně">{{ 'Nová práce' if typ == 'prace' else 'Nový materiál' }}</a>
-  </span>{% else %}<strong>{{ nazev }}</strong>{% endif %}
+       title="{{ 'Nová práce' if typ == 'prace' else 'Nový materiál' }} – jen do zakázky, nebo i do ceníku">Nový</a>
+    {% if typ == 'material' %}
+    {# TODO: import materiálu do zakázky (dodací list dodavatele) – #8; zatím zašedlé #}
+    <button type="button" class="secondary outline" disabled title="Import materiálu z dodacího listu – připravuje se (#8)">Import</button>
+    {% else %}<span class="misto-tlacitka" aria-hidden="true"></span>{% endif %}
+  </span>{% endif %}
   {% set n = radky|length %}
   <span class="tlumene souhrn-mrizky">{{ n|polozek }}{% if radky %} · {{ (rek.material if typ == 'material' else rek.prace)|penize }} {{ nast.mena }} bez DPH{% endif %}</span>
 </div>

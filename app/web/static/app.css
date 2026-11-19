@@ -449,8 +449,11 @@ table.mrizka-polozek th.sl-celkem { width: 8.5rem; }
 .tlacitka-mrizky { display: inline-flex; gap: 6px; }
 /* detail zakázky: tlačítka mřížky hned za názvem vlevo (ne u pravého okraje) */
 .titulek-mrizky.tlacitka-vlevo { justify-content: flex-start; gap: 16px; }
-/* + Z ceníku / + Ruční o ~50 % větší než malá tlačítka v řádcích (#29) */
-.tlacitka-mrizky [role=button] { width: 10.5rem; margin: 0; padding: 7px 12px; font-size: 1rem; line-height: 1.3;
+/* #41: velký nadpis oddílu jako nadpis Zakázka, pevná šířka; krátká tlačítka Ceník · Nový · Import stejně široká */
+.titulek-mrizky .nadpis-oddilu { margin: 0; width: 8.5rem; flex: none; font-size: 1.6rem; font-weight: 700; letter-spacing: -.01em;
+  color: var(--text, #111827); text-transform: none; }
+.tlacitka-mrizky .misto-tlacitka { display: inline-block; width: 7rem; }
+.tlacitka-mrizky [role=button], .tlacitka-mrizky button { width: 7rem; margin: 0; padding: 7px 12px; font-size: 1rem; line-height: 1.3;
   text-align: center; white-space: nowrap; }
 .titulek-mrizky .souhrn-mrizky { margin-left: auto; text-align: right; }
 #polozky .soucty { margin-top: 0; border-top: 1px solid var(--ram); border-radius: 12px; }
