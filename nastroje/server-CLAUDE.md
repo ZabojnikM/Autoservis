@@ -46,5 +46,25 @@ ukončení se sama znovu spustí (`Restart=always`). Bez `--reload` – po nasaz
 
 `spustit.bat` je jen pro vývoj na Windows, na serveru se nepoužívá.
 
+## Aktualizace tlačítkem z aplikace (git)
+V **Nastavení → Aktualizace aplikace** jde zkontrolovat a nainstalovat novou verzi z GitHubu.
+Funguje, jen když je složka aplikace **git klon** a služba má proměnnou `AUTOSERVIS_AKTUALIZACE`:
+- `vydani` – poslední vydání (tag `vX.Y.Z`), pro ostrý provoz
+- `main` – poslední commit větve `main`, pro testovací server
+
+Instalace sama: stáhne změny (`git fetch`), zazálohuje databázi do `data/backups/`,
+přepne kód (`git checkout --detach`), při změně `requirements.txt` spustí `pip install`
+a aplikaci ukončí – systemd (`Restart=always`) ji spustí znovu. Tlačítko **Vrátit předchozí verzi**
+vrátí kód (databázi ne – záloha je v `data/backups/pred-aktualizaci-*.db`).
+
+Převod na git klon (místo nahrávání přes sdílený disk):
+```
+git clone https://github.com/ZabojnikM/Autoservis.git /CESTA/K/AUTOSERVIS
+# přenést data/ (databázi) a .env ze staré složky, vytvořit .venv (viz výše)
+```
+- Složka musí patřit uživateli služby (jinak git hlásí „dubious ownership“).
+- Do git klonu už **nenahrávat** skriptem `nasadit-na-server.ps1` – ručně změněné soubory
+  aktualizace odmítne přepsat. Jedno nebo druhé.
+
 ## Hlášení zpět
 Výsledky testování (co funguje / nefunguje) zapisuj do GitHub Issues, ne do souborů v této složce.

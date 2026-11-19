@@ -7,6 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from app import config
 from app.db import init_db
 from app.services import ChybaValidace, NenalezenoError
+from app.web.aktualizace import router as aktualizace_router
 from app.web.routes import router as web_router
 from app.web.sablony import templates
 
@@ -20,6 +21,7 @@ async def lifespan(_app: FastAPI):
 app = FastAPI(title=config.APP_NAME, version=config.APP_VERSION, lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=config.STATIC_DIR), name="static")
 app.include_router(web_router)
+app.include_router(aktualizace_router)
 
 
 @app.exception_handler(NenalezenoError)

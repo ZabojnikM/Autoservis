@@ -88,4 +88,7 @@
       přijde e-mailem. Limit 27 dotazů za minutu.</p>
   </fieldset>
 </form>
+
+{# verze a aktualizace z gitu – načte se zvlášť, aby git nezdržoval stránku #}
+<div hx-get="/nastaveni/aktualizace" hx-trigger="load" hx-swap="outerHTML"></div>
 {% endblock %}

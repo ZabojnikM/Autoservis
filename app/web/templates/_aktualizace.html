@@ -1,0 +1,58 @@
+<section id="aktualizace" class="formular">
+<fieldset>
+  <legend>Aktualizace aplikace</legend>
+  {% if chyba %}<p class="upozorneni-ram" role="alert">{{ chyba }}</p>{% endif %}
+  {% if hlaseni %}<p class="uspech" role="status">{{ hlaseni }}</p>{% endif %}
+  <p>Verze {{ APP_VERSION }}{% if s.git %} · <code>{{ s.popis }}</code>{% endif %}</p>
+
+  {% if ceka_na %}
+  <p class="tlumene">Stránka se po restartu sama obnoví.</p>
+  <script>
+    (() => {
+      const cil = "{{ ceka_na }}";
+      const t = setInterval(async () => {
+        try {
+          const r = await fetch("/nastaveni/aktualizace/spusteno", {cache: "no-store"});
+          if (r.ok && (await r.json()).commit === cil) { clearInterval(t); location.reload(); }
+        } catch (e) { /* aplikace se právě restartuje */ }
+      }, 2000);
+    })();
+  </script>
+  {% elif not s.git %}
+  <p class="tlumene">Aplikace neběží z git klonu – aktualizace z aplikace není k dispozici, novou verzi je potřeba nahrát ručně.</p>
+  {% elif not s.kanal %}
+  <p class="tlumene">Instalace z aplikace je tady vypnutá. Zapíná se na serveru proměnnou prostředí
+    <code>AUTOSERVIS_AKTUALIZACE</code> = <code>vydani</code> (ostrý provoz) nebo <code>main</code> (testovací server).</p>
+  {% else %}
+  <p class="tlumene">Zdroj: {{ kanaly[s.kanal] }} z GitHubu.</p>
+  {% if spusteny and spusteny != s.commit %}
+  <p class="upozorneni-ram">Nová verze ({{ s.commit }}) je nainstalovaná, ale běží ještě předchozí ({{ spusteny }}) – restartujte aplikaci.</p>
+  {% endif %}
+
+  {% if s.zkontrolovano %}
+    {% if s.nove_commity %}
+    <p>K dispozici je <strong>{{ s.cil }}</strong> ({{ s.cil_commit }}), změny:</p>
+    <ul class="tlumene">
+      {% for hash, popis in s.nove_commity %}<li><code>{{ hash }}</code> {{ popis }}</li>{% endfor %}
+    </ul>
+    <button type="button" hx-post="/nastaveni/aktualizace/instalovat" hx-target="#aktualizace" hx-swap="outerHTML"
+            hx-disabled-elt="this"
+            hx-confirm="Nainstalovat {{ s.cil }}? Databáze se před instalací zazálohuje a aplikace se restartuje.">Nainstalovat</button>
+    {% else %}
+    <p class="uspech" role="status">Aplikace je aktuální.</p>
+    {% endif %}
+  {% endif %}
+
+  <button type="button" class="secondary" hx-post="/nastaveni/aktualizace/zkontrolovat" hx-target="#aktualizace"
+          hx-swap="outerHTML" hx-disabled-elt="this">Zkontrolovat aktualizace</button>
+
+  {% if s.predchozi %}
+  <p class="tlumene">Poslední aktualizace {{ s.predchozi.cas|replace('T', ' ') }}: {{ s.predchozi.predchozi[:7] }} → {{ s.predchozi.nova[:7] }}.
+    {% if s.predchozi.zaloha_db %}Záloha databáze před aktualizací: <code>{{ s.predchozi.zaloha_db }}</code>{% endif %}</p>
+  <button type="button" class="secondary" hx-post="/nastaveni/aktualizace/vratit" hx-target="#aktualizace"
+          hx-swap="outerHTML" hx-disabled-elt="this"
+          hx-confirm="Vrátit kód na verzi {{ s.predchozi.predchozi[:7] }}? Data v databázi zůstanou, jak jsou.">Vrátit předchozí verzi</button>
+  {% endif %}
+  {% endif %}
+</fieldset>
+</section>
