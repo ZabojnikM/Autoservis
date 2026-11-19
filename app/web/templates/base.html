@@ -198,6 +198,14 @@
       tr.classList.add("vybrany");
       vybranyRadek = tr;
       obnovTlacitkaRadku();
+      // seznamy (#39): jeden klik na řádek otevře (odkazy a tlačítka v řádku fungují samy, Ctrl+klik = nová karta)
+      if (tr.closest("table.klik-otevre") && !e.target.closest("a, button, input, select, textarea, label")) {
+        const cil = cilRadku(tr, "otevrit");
+        if (!cil) return;
+        if (e.ctrlKey || e.metaKey) window.open(cil, "_blank");
+        else if (tr.hasAttribute("data-okno") && !formularNaStrance()) otevriOkno(cil);
+        else window.location.href = cil;
+      }
     });
     document.addEventListener("dblclick", (e) => {
       const tr = e.target.closest(".obsah tbody tr");

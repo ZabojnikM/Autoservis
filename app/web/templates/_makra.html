@@ -155,13 +155,13 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
 {% macro tabulka_zakazek(zakazky, ukaz_vozidlo=True, ukaz_zakaznika=True, stranka=None) -%}
 {% if zakazky %}
 <div class="overflow-auto">
-<table class="striped{% if stranka %} seznam-zakazek{% endif %}">
+<table class="striped{% if stranka %} seznam-zakazek klik-otevre{% endif %}">
   <thead><tr>
     {% if stranka %}
     {{ zahlavi('cislo', 'Číslo', stranka) }}{{ zahlavi('prijato', 'Přijato', stranka) }}
     {% if ukaz_vozidlo %}{{ zahlavi('vozidlo', 'Vozidlo', stranka) }}{% endif %}
     {% if ukaz_zakaznika %}{{ zahlavi('zakaznik', 'Zákazník', stranka) }}{% endif %}
-    {{ zahlavi('pozadavek', 'Požadavek', stranka) }}{{ zahlavi('stav', 'Stav', stranka) }}
+    {{ zahlavi('pozadavek', 'Požadavek', stranka) }}{{ zahlavi('stav', 'Stav', stranka) }}<th class="akce-radku neni-tisk"></th>
     {% else %}
     <th>Číslo</th><th>Přijato</th>
     {% if ukaz_vozidlo %}<th>Vozidlo</th>{% endif %}
@@ -179,6 +179,7 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
       {% if ukaz_zakaznika %}<td>{{ z.zakaznik.nazev if z.zakaznik else '' }}</td>{% endif %}
       <td class="zkratit">{{ z.pozadavek }}</td>
       <td>{{ stav(z) }}</td>
+      {% if stranka %}<td class="akce-radku neni-tisk">{% if z.je_otevrena %}<a href="/zakazky/{{ z.id }}/upravit" role="button" class="maly upravit-radek" data-okno title="Upravit">Upravit</a>{% endif %}</td>{% endif %}
     </tr>
   {% endfor %}
   </tbody>

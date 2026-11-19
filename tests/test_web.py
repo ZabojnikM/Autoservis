@@ -1063,3 +1063,16 @@ def test_karta_vozidla_udaje_jako_v_zakazce():
     assert [karta.index(t) for t in poradi] == sorted(karta.index(t) for t in poradi)
     assert "CRKB · 1968 · 110 kW" in karta and 'class="po-terminu"' in karta
     assert "<dt>Olej</dt>" not in karta and "Doplnit údaje vozidla" not in karta
+
+
+def test_seznamy_jeden_klik_a_upravit_v_radku():
+    """#39: seznamy otevírají řádek jedním klikem, Upravit je v řádku, vlevo zůstává jen „Nový …“."""
+    loc = _prijem(spz="8S88888").headers["location"].split("?")[0]
+    zid = loc.rsplit("/", 1)[1]
+    for url in ["/zakazky", "/vozidla", "/zakaznici", "/cenik", "/prace", "/faktury"]:
+        text = client.get(url).text
+        akce = text.split('<aside class="akce')[1].split("</aside>")[0] if '<aside class="akce' in text else ""
+        assert 'data-radek="otevrit"' not in akce and 'data-radek="upravit"' not in akce, url
+    zakazky = client.get("/zakazky").text
+    assert "klik-otevre" in zakazky and f'href="/zakazky/{zid}/upravit" role="button" class="maly upravit-radek"' in zakazky
+    assert "klik-otevre" in client.get("/vozidla").text and 'class="maly upravit-radek"' in client.get("/vozidla").text

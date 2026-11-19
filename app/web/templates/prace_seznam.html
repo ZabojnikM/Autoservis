@@ -4,8 +4,7 @@
 {% block title %}Ceník prací{% endblock %}
 {% block akce %}
   <a href="/prace/nova" role="button" data-okno>Nová práce</a>
-  <button type="button" class="secondary outline" data-radek="upravit" data-okno>Upravit</button>
-  <p class="tlumene poznamka">Vyberte řádek kliknutím, dvojklik = upravit.</p>
+  <p class="tlumene poznamka">Klik na řádek otevře kartu položky.</p>
 {% endblock %}
 {% block content %}
 <form method="get" class="filtr">
@@ -17,7 +16,7 @@
 <div id="seznam">
 {% if polozky %}
 <div class="overflow-auto">
-<table class="striped seznam-praci">
+<table class="striped seznam-praci klik-otevre">
   <thead><tr>
     {{ zahlavi('kod', 'Kód', stranka) }}{{ zahlavi('nazev', 'Název práce', stranka) }}
     {{ zahlavi('jednotka', 'MJ', stranka) }}

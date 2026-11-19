@@ -3,9 +3,7 @@
 {% block title %}Vozidla{% endblock %}
 {% block akce %}
   <a href="/vozidla/nove" role="button" data-okno>Nové vozidlo</a>
-  <button type="button" class="secondary" data-radek="otevrit">Otevřít</button>
-  <button type="button" class="secondary outline" data-radek="upravit" data-okno>Upravit</button>
-  <p class="tlumene poznamka">Vyberte řádek kliknutím.</p>
+  <p class="tlumene poznamka">Klik na řádek otevře, Upravit je v řádku.</p>
 {% endblock %}
 {% block content %}
 <form method="get" class="filtr">
@@ -15,8 +13,8 @@
 <div id="seznam">
 {% if vozidla %}
 <div class="overflow-auto">
-<table class="striped seznam-vozidel">
-  <thead><tr>{{ zahlavi('spz', 'SPZ', stranka) }}{{ zahlavi('znacka', 'Značka', stranka) }}{{ zahlavi('model', 'Model', stranka) }}{{ zahlavi('typ_vozidla', 'Typ vozidla', stranka) }}{{ zahlavi('kod_motoru', 'Kód motoru', stranka) }}{{ zahlavi('rok', 'Rok výroby', stranka) }}{{ zahlavi('vin', 'VIN', stranka) }}{{ zahlavi('zakaznik', 'Majitel', stranka) }}</tr></thead>
+<table class="striped seznam-vozidel klik-otevre">
+  <thead><tr>{{ zahlavi('spz', 'SPZ', stranka) }}{{ zahlavi('znacka', 'Značka', stranka) }}{{ zahlavi('model', 'Model', stranka) }}{{ zahlavi('typ_vozidla', 'Typ vozidla', stranka) }}{{ zahlavi('kod_motoru', 'Kód motoru', stranka) }}{{ zahlavi('rok', 'Rok výroby', stranka) }}{{ zahlavi('vin', 'VIN', stranka) }}{{ zahlavi('zakaznik', 'Majitel', stranka) }}<th class="akce-radku neni-tisk"></th></tr></thead>
   <tbody>
   {% for v in vozidla %}
     <tr data-otevrit="/vozidla/{{ v.id }}" data-upravit="/vozidla/{{ v.id }}/upravit">
@@ -28,6 +26,7 @@
       <td>{{ v.rok_vyroby or '' }}</td>
       <td class="vin">{{ v.vin or '' }}</td>
       <td{% if v.zakaznik %} title="{{ v.zakaznik.nazev }}"{% endif %}>{% if v.zakaznik %}<a href="/zakaznici/{{ v.zakaznik.id }}">{{ v.zakaznik.nazev }}</a>{% endif %}</td>
+      <td class="akce-radku neni-tisk"><a href="/vozidla/{{ v.id }}/upravit" role="button" class="maly upravit-radek" data-okno title="Upravit">Upravit</a></td>
     </tr>
   {% endfor %}
   </tbody>

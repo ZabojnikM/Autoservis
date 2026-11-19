@@ -4,8 +4,7 @@
 {% block title %}Materiál{% endblock %}
 {% block akce %}
   <a href="/cenik/nova" role="button" data-okno>Nový materiál</a>
-  <button type="button" class="secondary outline" data-radek="upravit" data-okno>Upravit</button>
-  <p class="tlumene poznamka">Vyberte řádek kliknutím, dvojklik = upravit.</p>
+  <p class="tlumene poznamka">Klik na řádek otevře kartu položky.</p>
 {% endblock %}
 {% block content %}
 <form method="get" class="filtr">
@@ -17,7 +16,7 @@
 <div id="seznam">
 {% if polozky %}
 <div class="overflow-auto">
-<table class="striped seznam-materialu">
+<table class="striped seznam-materialu klik-otevre">
   <thead><tr>
     {{ zahlavi('kod', 'Kód / číslo dílu', stranka) }}{{ zahlavi('nazev', 'Název', stranka) }}
     {{ zahlavi('zamenitelny', 'Zaměnitelný díl', stranka) }}{{ zahlavi('jednotka', 'MJ', stranka) }}

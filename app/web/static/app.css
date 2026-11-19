@@ -859,3 +859,12 @@ button.smazat-akce:hover { background: #991b1b; border-color: #991b1b; }
 button.vlozit-radek { background: var(--akcent-tmavy, #3730a3) !important; border-color: var(--akcent-tmavy, #3730a3) !important;
   color: #fff !important; }
 button.vlozit-radek:hover { filter: brightness(1.15); }
+
+/* seznamy (#39): klik na řádek otevře; Upravit v řádku se ukáže při najetí myší / na vybraném řádku */
+table.klik-otevre tbody tr[data-otevrit] { cursor: pointer; }
+table.klik-otevre th.akce-radku { width: 6.5rem; }
+table.klik-otevre td.akce-radku { text-align: right; white-space: nowrap; }
+table.klik-otevre td.akce-radku [role=button] { visibility: hidden; margin: 0; width: auto; }
+table.klik-otevre tbody tr:hover td.akce-radku [role=button],
+table.klik-otevre tbody tr.vybrany td.akce-radku [role=button],
+table.klik-otevre td.akce-radku [role=button]:focus-visible { visibility: visible; }

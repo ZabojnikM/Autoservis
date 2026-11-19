@@ -2,8 +2,7 @@
 {% from "_makra.html" import spz, zahlavi, hledani_seznamu, stavovy_radek with context %}
 {% block title %}Faktury{% endblock %}
 {% block akce %}
-  <button type="button" data-radek="otevrit">Otevřít doklad</button>
-  <p class="tlumene poznamka">Vyberte řádek kliknutím. Nový doklad se vystavuje ze zakázky.</p>
+  <p class="tlumene poznamka">Klik na řádek otevře doklad. Nový doklad se vystavuje ze zakázky.</p>
 {% endblock %}
 {% block content %}
 <nav class="filtr-stavu">
@@ -24,7 +23,7 @@
 <div id="seznam">
 {% if faktury %}
 <div class="overflow-auto">
-<table class="striped">
+<table class="striped klik-otevre">
   <thead><tr>
     {{ zahlavi('cislo', 'Číslo', stranka) }}{{ zahlavi('vystaveno', 'Vystaveno', stranka) }}{{ zahlavi('splatnost', 'Splatnost', stranka) }}
     {{ zahlavi('odberatel', 'Odběratel', stranka) }}{{ zahlavi('vozidlo', 'Vozidlo', stranka) }}
