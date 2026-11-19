@@ -7,29 +7,29 @@
 {% set nadpis_okna = {'material': 'Přidat materiál z ceníku', 'prace': 'Přidat práci z ceníku'}.get(typ_okna, 'Přidat z ceníku') %}
 {% set typ_param = ('?typ=' ~ typ_okna) if typ_okna else '' %}
 {% block title %}{{ nadpis_okna }} – {{ zakazka.cislo }}{% endblock %}
-{% block akce %}
-  {% if okno %}
-  <button type="button" data-vlozit-kosik="{{ zakazka.id }}" title="Vložit vybrané položky do zakázky a zavřít okno">Vložit</button>
-  {% else %}
-  <a href="/zakazky/{{ zakazka.id }}#polozky" role="button" class="zpet">Zpět</a>
-  {% endif %}
-  <a href="/cenik/nova{{ typ_param }}" role="button" class="secondary outline" target="_blank">Nová položka ceníku</a>
-  {# TODO: import položek do zakázky – zatím jen tlačítko (viz PLAN.md) #}
-  <button type="button" class="secondary outline"
-          onclick="upozorni('Import položek zatím není hotový – připravuje se.')">Import</button>
-  {% if okno %}
-  <button type="button" class="zpet" onclick="stornoOknaCeniku()"
-          title="Zavřít okno – vybrané položky se do zakázky nevloží">Storno</button>
-  {% endif %}
-  <p class="tlumene poznamka">Dvojklik na řádek nebo Enter přidá 1 kus (jiné množství přepište v řádku).
-    Šipky ↓ ↑ vybírají řádek. Upravit = karta položky ceníku.
-    {% if okno %}Vložit = vybrané položky se zapíšou do zakázky, Storno = zakázka zůstane beze změny.{% endif %}</p>
-{% endblock %}
+{# tlačítka nejsou ve sloupci vlevo, ale v liště nad seznamem – seznam má celou šířku okna (#3) #}
 {% block content %}
 <div class="okno-cenik formular prijem siroky" data-bez-potvrzeni>
   {% if pridano %}<span data-obnovit-po-zavreni hidden></span>{% endif %}
   <div class="nadpis-radek">
     <h1>{{ nadpis_okna }} <span class="oznaceni">zakázka {{ zakazka.cislo }} · {{ spz(zakazka.vozidlo.spz) }}</span></h1>
+  </div>
+  <div class="lista-okna neni-tisk">
+    {% if okno %}
+    <button type="button" data-vlozit-kosik="{{ zakazka.id }}" title="Vložit vybrané položky do zakázky a zavřít okno">Vložit</button>
+    {% else %}
+    <a href="/zakazky/{{ zakazka.id }}#polozky" role="button" class="zpet">Zpět</a>
+    {% endif %}
+    <a href="/cenik/nova{{ typ_param }}" role="button" class="secondary outline" target="_blank">Nová položka ceníku</a>
+    {# TODO: import položek do zakázky – zatím jen tlačítko (#8) #}
+    <button type="button" class="secondary outline"
+            onclick="upozorni('Import položek zatím není hotový – připravuje se.')">Import</button>
+    <span class="tlumene napoveda-okna">Dvojklik / Enter přidá řádek · šipky ↓ ↑ vybírají · Upravit = karta položky ceníku
+      {%- if okno %} · Vložit zapíše vybrané do zakázky, Storno ji nechá beze změny{% endif %}</span>
+    {% if okno %}
+    <button type="button" class="zpet" onclick="stornoOknaCeniku()"
+            title="Zavřít okno – vybrané položky se do zakázky nevloží">Storno</button>
+    {% endif %}
   </div>
   {# pevný řádek pro hlášku – okno se po přidání neposune #}
   <p class="hlaseni-okna {% if hlaseni_chyba %}chyba{% elif hlaseni %}uspech{% endif %}" role="status">

@@ -927,6 +927,10 @@ def test_okno_ceniku_jen_pro_jeden_typ():
     assert '"typ": "material"' in material and "Nová položka ceníku" in material
     # ruční položka se do okna ceníku nedává – je jen tlačítkem + Ruční v mřížce zakázky (#25)
     assert "/polozky/nova" not in material and "Ruční položka" not in material
+    # #3: tlačítka v liště nad seznamem, okno bez sloupce akcí vlevo (sloupec Kód je širší)
+    assert '<aside class="akce"' not in material and 's-akcemi' not in material
+    lista = material.split('class="lista-okna')[1].split('id="cenik-vysledky"')[0]
+    assert lista.index(">Vložit</button>") < lista.index("Nová položka ceníku") < lista.index(">Storno</button>")
     prace = client.get(f"{loc}/cenik", params={"typ": "prace", "okno": "1"}).text
     assert "Přidat práci z ceníku" in prace and "Výměna filtru" in prace and "Filtr oleje" not in prace
     assert "Zaměnitelný díl" not in prace

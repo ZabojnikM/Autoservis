@@ -4,9 +4,12 @@
 <div class="okno-formular">
   {% if chyba %}<p class="chyba" role="alert" {% if chyba.pole is defined and chyba.pole %}data-pole="{{ chyba.pole }}"{% endif %}>{{ chyba }}</p>{% endif %}
   {% if zprava %}<p class="uspech" role="status">{{ zprava }}</p>{% endif %}
-  <div class="rozvrzeni s-akcemi">
+  {# prázdný blok akce = bez sloupce vlevo (např. okno ceníku má tlačítka v liště nad seznamem) #}
+  {% if false %}{% block akce %}{% endblock %}{% endif %}
+  {% set akce = self.akce()|trim %}
+  <div class="rozvrzeni{% if akce %} s-akcemi{% endif %}">
     <main class="obsah">{% block content %}{% endblock %}</main>
-    <aside class="akce" aria-label="Akce">{% block akce %}{% endblock %}</aside>
+    {% if akce %}<aside class="akce" aria-label="Akce">{{ akce|safe }}</aside>{% endif %}
   </div>
 </div>
 {# title v okně nezobrazujeme – nadpis je v obsahu #}
