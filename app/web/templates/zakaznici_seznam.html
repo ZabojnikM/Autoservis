@@ -3,7 +3,7 @@
 {% block title %}Zákazníci{% endblock %}
 {% block akce %}
   <a href="/zakaznici/novy" role="button" data-okno>Nový zákazník</a>
-  <p class="tlumene poznamka">Klik na řádek otevře, Upravit je v řádku.</p>
+  <p class="tlumene poznamka">Klik na řádek otevře zákazníka.</p>
 {% endblock %}
 {% block content %}
 <form method="get" class="filtr">
@@ -14,7 +14,7 @@
 {% if zakaznici %}
 <div class="overflow-auto">
 <table class="striped seznam-zakazniku klik-otevre">
-  <thead><tr>{{ zahlavi('nazev', 'Jméno / firma', stranka) }}{{ zahlavi('telefon', 'Telefon', stranka) }}{{ zahlavi('adresa', 'Adresa', stranka) }}{{ zahlavi('ico', 'IČO', stranka) }}<th>Vozidla</th><th class="akce-radku neni-tisk"></th></tr></thead>
+  <thead><tr>{{ zahlavi('nazev', 'Jméno / firma', stranka) }}{{ zahlavi('telefon', 'Telefon', stranka) }}{{ zahlavi('adresa', 'Adresa', stranka) }}{{ zahlavi('ico', 'IČO', stranka) }}<th>Vozidla</th></tr></thead>
   <tbody>
   {% for k in zakaznici %}
     <tr data-otevrit="/zakaznici/{{ k.id }}" data-upravit="/zakaznici/{{ k.id }}/upravit">
@@ -24,13 +24,12 @@
       <td title="{{ adr }}">{{ adr }}</td>
       <td>{{ k.ico or '' }}</td>
       <td>{% for v in k.vozidla %}<a href="/vozidla/{{ v.id }}">{{ spz(v.spz) }}</a> {% endfor %}</td>
-      <td class="akce-radku neni-tisk"><a href="/zakaznici/{{ k.id }}/upravit" role="button" class="maly upravit-radek" data-okno title="Upravit">Upravit</a></td>
     </tr>
   {% endfor %}
   </tbody>
 </table>
 </div>
-{{ stavovy_radek(stranka, 'Klik na řádek otevře zákazníka · Upravit je v řádku') }}
+{{ stavovy_radek(stranka, 'Klik na řádek otevře zákazníka') }}
 {% else %}
 <p class="tlumene prazdna-mrizka">{% if q %}Nic nenalezeno.{% else %}Zatím žádní zákazníci.{% endif %}</p>
 {% endif %}

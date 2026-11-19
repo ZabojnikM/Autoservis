@@ -1079,7 +1079,10 @@ def test_seznamy_jeden_klik_a_upravit_v_radku():
         assert 'data-radek="otevrit"' not in akce and 'data-radek="upravit"' not in akce, url
     zakazky = client.get("/zakazky").text
     assert "klik-otevre" in zakazky and f'href="/zakazky/{zid}/upravit" role="button" class="maly upravit-radek"' in zakazky
-    assert "klik-otevre" in client.get("/vozidla").text and 'class="maly upravit-radek"' in client.get("/vozidla").text
+    # vozidla a zákazníci: Upravit v řádku není (upravuje se z detailu)
+    for url in ["/vozidla", "/zakaznici"]:
+        text = client.get(url).text
+        assert "klik-otevre" in text and "upravit-radek" not in text, url
 
 
 def test_audit_49_popisky_a_tlacitka():
