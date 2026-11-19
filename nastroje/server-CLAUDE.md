@@ -1,8 +1,8 @@
-# Testovací server Autoservisu – pokyny pro agenta
+# Testovací server Autoservisu (Linux) – pokyny pro agenta
 
-Tato složka je **testovací nasazení** aplikace Autoservis. Kód sem nahrává vývojový počítač
-skriptem `nastroje/nasadit-na-server.ps1` (zrcadlí poslední commit z gitu). Zdroj pravdy je
-GitHub repozitář `ZabojnikM/Autoservis`, ne tato složka.
+Tato složka je **testovací nasazení** aplikace Autoservis na Linuxu. Kód sem nahrává vývojový
+počítač (Windows) přes sdílený disk skriptem `nastroje/nasadit-na-server.ps1`, který zrcadlí
+poslední commit z gitu. Zdroj pravdy je GitHub repozitář `ZabojnikM/Autoservis`, ne tato složka.
 
 ## Co tu nedělat
 - **Neupravuj kód** (`app/`, `UI/`, `tests/`, `*.md`…). Při dalším nasazení se všechny změny
@@ -12,8 +12,8 @@ GitHub repozitář `ZabojnikM/Autoservis`, ne tato složka.
 - Neukládej sem vlastní soubory mimo `data/`, `.venv/`, `.env`. Ostatní nasazení smaže.
 
 ## Co nasazení nikdy nepřepíše (patří serveru)
-- `data/` – databáze `autoservis.db` a zálohy
-- `.venv/` – virtuální prostředí Pythonu
+- `data/` – databáze `autoservis.db` (všechna data i nastavení) a zálohy
+- `.venv/` – virtuální prostředí Pythonu (vytváří se na serveru, z Windows se nekopíruje)
 - `.env` – lokální nastavení (např. `AUTOSERVIS_DB` = cesta k jiné databázi)
 
 S databází zacházej opatrně. Před každým zásahem do ní (migrace, hromadné úpravy, import)
@@ -23,19 +23,28 @@ maž jen ty své.
 ## Po nasazení nové verze
 1. Podívej se do `VERZE.txt` (commit, popis, čas nasazení a jestli se změnily závislosti).
 2. Pokud je v `VERZE.txt` u závislostí `ZMENENY` (nebo `.venv` ještě neexistuje):
-   `.venv\Scripts\python -m pip install -r requirements.txt`
-3. **Restartuj aplikaci.** Automatický reload (`--reload`) na Windows zamrzá, server proto
-   pouštěj bez něj.
+   `.venv/bin/python -m pip install -r requirements.txt`
+3. **Restartuj aplikaci:** `sudo systemctl restart autoservis`
+4. Ověř, že běží: `curl -s http://localhost:8000/api/zdravi` (vrátí `"stav":"ok"` a verzi).
+   Při problému: `journalctl -u autoservis -n 50`
 
-## První zprovoznění / spuštění
+## První zprovoznění
 ```
-python -m venv .venv
-.venv\Scripts\python -m pip install -r requirements.txt
-.venv\Scripts\python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
+sudo apt install python3-venv          # pokud chybí
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pytest             # volitelně: testy
 ```
-- `--host 0.0.0.0`, aby šla aplikace otevřít i z ostatních počítačů v síti
-  (`spustit.bat` je pro vývoj: poslouchá jen na localhostu a používá `--reload`).
-- Testy: `.venv\Scripts\python -m pytest`
+Služba systemd: šablona je v `nastroje/autoservis.service`. Doplň v ní uživatele a cestu
+k této složce, zkopíruj do `/etc/systemd/system/autoservis.service` a spusť:
+```
+sudo systemctl daemon-reload
+sudo systemctl enable --now autoservis
+```
+Služba poslouchá na `0.0.0.0:8000` (dostupné z ostatních počítačů v síti) a po pádu nebo
+ukončení se sama znovu spustí (`Restart=always`). Bez `--reload` – po nasazení se restartuje ručně (krok 3).
+
+`spustit.bat` je jen pro vývoj na Windows, na serveru se nepoužívá.
 
 ## Hlášení zpět
 Výsledky testování (co funguje / nefunguje) zapisuj do GitHub Issues, ne do souborů v této složce.

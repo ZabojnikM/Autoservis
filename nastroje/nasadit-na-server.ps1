@@ -21,8 +21,9 @@ $tmp = Join-Path $env:TEMP "autoservis-nasazeni"
 if (Test-Path $tmp) { Remove-Item $tmp -Recurse -Force }
 New-Item -ItemType Directory $tmp | Out-Null
 
-# Export čistého obsahu commitu (bez .git, .venv, databází)
-git archive --format=zip -o "$tmp.zip" HEAD
+# Export čistého obsahu commitu (bez .git, .venv, databází).
+# autocrlf=false: soubory s linuxovými konci řádků (LF), jak jsou v repu – server běží na Linuxu.
+git -c core.autocrlf=false archive --format=zip -o "$tmp.zip" HEAD
 Expand-Archive "$tmp.zip" $tmp -Force
 Remove-Item "$tmp.zip"
 
@@ -47,9 +48,9 @@ $zavislosti = if ($zmenaZavislosti) { "ZMENENY - spust pip install -r requiremen
     "$commit  $(git log -1 --format='%ci  %s')"
     "Nasazeno: $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
     "Zavislosti (requirements.txt): $zavislosti"
-) | Set-Content (Join-Path $Cil "VERZE.txt") -Encoding utf8
+) -join "`n" | ForEach-Object { [IO.File]::WriteAllText((Join-Path $Cil "VERZE.txt"), "$_`n") }
 Remove-Item $tmp -Recurse -Force
 
 Write-Host "Nasazeno: $commit -> $Cil" -ForegroundColor Green
 if ($zmenaZavislosti) { Write-Host "Závislosti se změnily - na serveru je potřeba pip install." -ForegroundColor Yellow }
-Write-Host "Na serveru restartuj aplikaci." -ForegroundColor Yellow
+Write-Host "Na serveru restartuj aplikaci: sudo systemctl restart autoservis" -ForegroundColor Yellow
