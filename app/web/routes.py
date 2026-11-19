@@ -10,7 +10,7 @@ from sqlmodel import Session
 
 from app.db import get_session
 from app.models import FormaUhrady, StavZakazky, TypDokladu, TypPolozky, Uhrada
-from app.services import ares
+from app.services import ares, prijem_vozidel
 from app.services import (
     ChybaValidace, cenik, cisty_text, faktury, hledani, nastaveni, polozky, registr_vozidel, vozidla, zakaznici,
     zakazky,
@@ -634,6 +634,30 @@ def vozidlo_smazat(request: Request, db: DB, vozidlo_id: int):
 
 
 # ---------------------------------------------------------------- zákazníci
+
+# ---------------------------------------------------------------- příjem vozidel (#51, jen čtení)
+
+def _prijmy():
+    """Návštěvy z OpenBotu, nebo None, když soubor nejde přečíst (stránka ukáže „dočasně nedostupný“)."""
+    try:
+        return prijem_vozidel.nacti()
+    except prijem_vozidel.PrijemNedostupny:
+        return None
+
+
+@router.get("/prijem", response_class=HTMLResponse)
+def prijem_seznam(request: Request):
+    return _stranka(request, "prijem_seznam.html", aktivni="prijem", prijmy=_prijmy())
+
+
+@router.get("/prijem/{navsteva_id}", response_class=HTMLResponse)
+def prijem_detail(request: Request, navsteva_id: str):
+    prijmy = _prijmy()
+    navsteva = next((n for n in prijmy.navstevy if n.id == navsteva_id), None) if prijmy else None
+    if prijmy is not None and navsteva is None:
+        return _stranka(request, "prijem_detail.html", 404, aktivni="prijem", prijmy=prijmy, navsteva=None)
+    return _stranka(request, "prijem_detail.html", aktivni="prijem", prijmy=prijmy, navsteva=navsteva)
+
 
 @router.get("/zakaznici", response_class=HTMLResponse)
 def zakaznici_seznam(request: Request, db: DB, q: str = "", razeni: str = "", od: str = "", vse_radky: str = ""):

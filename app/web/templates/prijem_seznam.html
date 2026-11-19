@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% from "_makra.html" import spz %}
+{# Příjem vozidel (#51): návštěvy, které zpracoval Přijímací technik (OpenBot) – jen čtení, od nejnovější. #}
+{% block title %}Příjem vozidel{% endblock %}
+{% block akce %}
+  <a href="/prijem" role="button" class="secondary">Obnovit</a>
+  <p class="tlumene poznamka">Návštěvy zapsané Přijímacím technikem. Jen pro čtení – klik na řádek otevře detail.</p>
+{% endblock %}
+{% block content %}
+{% if prijmy is none %}
+<p class="prazdna-mrizka chyba-text">Příjem vozidel je dočasně nedostupný</p>
+{% elif not prijmy.navstevy %}
+<p class="prazdna-mrizka tlumene">Zatím žádné příjmy</p>
+{% else %}
+<div class="overflow-auto">
+<table class="striped klik-otevre">
+  <thead><tr><th>Přijato</th><th>SPZ</th><th>Značka a model</th><th>VIN</th><th class="cislo">Km</th></tr></thead>
+  <tbody>
+  {% for n in prijmy.navstevy %}
+    <tr data-otevrit="/prijem/{{ n.id|urlencode }}" title="Klik otevře detail příjmu">
+      <td><a href="/prijem/{{ n.id|urlencode }}">{{ n.created_at|datumcas if n.created_at else 'Neuvedeno' }}</a></td>
+      <td>{% if n.spz %}{{ spz(n.spz) }}{% if n.je_nejiste('spz') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}<span class="tlumene">Neuvedeno</span>{% endif %}</td>
+      <td>{{ n.popis or '' }}{% if not n.popis %}<span class="tlumene">Neuvedeno</span>{% endif %}</td>
+      <td class="vin">{% if n.vin %}{{ n.vin }}{% if n.je_nejiste('vin') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}<span class="tlumene">Neuvedeno</span>{% endif %}</td>
+      <td class="cislo">{% if n.km is not none %}{{ n.km|cislo }}{% if n.je_nejiste('odometer_km') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}<span class="tlumene">Neuvedeno</span>{% endif %}</td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<div class="stavovy-radek"><span>Příjmů: {{ prijmy.navstevy|length }}{% if prijmy.updated_at %} · aktualizováno {{ prijmy.updated_at|datumcas }}{% endif %}</span>
+  <span>Klik na řádek otevře detail</span></div>
+{% endif %}
+{% endblock %}

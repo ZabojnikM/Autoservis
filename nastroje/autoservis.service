@@ -14,6 +14,8 @@ EnvironmentFile=-/CESTA/K/AUTOSERVIS/.env
 # Aktualizace tlačítkem v Nastavení (jen když složka je git klon):
 #   vydani = jen vydané verze vX.Y.Z (výchozí, ostrý provoz), main = každý commit (jen pro zkoušení)
 Environment=AUTOSERVIS_AKTUALIZACE=vydani
+# Záložka Příjem vozidel (#51): JSON s návštěvami z OpenBotu (jen čtení, účet služby ho musí umět přečíst)
+Environment=AUTOSERVIS_PRIJEM_JSON=/var/lib/openbot/OpenBot/Shared/autoservis-prototype/json-data/visits.json
 # Po instalaci se aplikace ukončí a Restart=always ji spustí znovu s novým kódem.
 Restart=always
 RestartSec=3

@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% from "_makra.html" import spz %}
+{# Detail příjmu (#51) – jen čtení; nejisté hodnoty označené, chybějící „Neuvedeno“. #}
+{% block title %}Příjem {{ navsteva.spz if navsteva and navsteva.spz else 'vozidla' }}{% endblock %}
+{% block akce %}
+  <a href="/prijem" role="button" class="zpet">Zpět</a>
+{% endblock %}
+{% macro hodnota(text, nejiste=False) -%}
+{% if text %}{{ text }}{% if nejiste %} <span class="nejiste" title="Hodnota není potvrzená – ověřte ji">nejisté</span>{% endif %}{% else %}<span class="tlumene">Neuvedeno</span>{% endif %}
+{%- endmacro %}
+{% block content %}
+{% if prijmy is none %}
+<p class="prazdna-mrizka chyba-text">Příjem vozidel je dočasně nedostupný</p>
+{% elif navsteva is none %}
+<p class="prazdna-mrizka tlumene">Tento příjem už v seznamu není (zdroj uchovává posledních 30 návštěv). <a href="/prijem">Seznam příjmů</a></p>
+{% else %}
+{% set n = navsteva %}
+<div class="nadpis-radek">
+  <h1 class="nadpis-spz">{{ n.spz or 'SPZ neuvedena' }}{% if n.je_nejiste('spz') %} <span class="nejiste">nejisté</span>{% endif %}</h1>
+</div>
+<div class="karta-vozidla-panely">
+  <section class="panel karta-vozidla">
+    <h2 class="titulek-panelu">Vozidlo</h2>
+    <p class="hlavni-udaj hlavni-vozidla">{{ n.popis or 'Značka neuvedena' }}</p>
+    <dl>
+      <dt>SPZ</dt><dd>{{ hodnota(n.spz, n.je_nejiste('spz')) }}</dd>
+      <dt>VIN</dt><dd class="vin-zakazky">{{ hodnota(n.vin, n.je_nejiste('vin')) }}</dd>
+      <dt>Stav km</dt><dd>{{ hodnota(n.km|cislo ~ ' km' if n.km is not none else None, n.je_nejiste('odometer_km')) }}</dd>
+    </dl>
+  </section>
+  <section class="panel">
+    <h2 class="titulek-panelu">Příjem</h2>
+    <dl>
+      <dt>Přijato</dt><dd>{{ hodnota(n.created_at|datumcas if n.created_at else None) }}</dd>
+      <dt>Změněno</dt><dd>{{ hodnota(n.updated_at|datumcas if n.updated_at else None) }}</dd>
+      <dt>Revize</dt><dd>{{ hodnota(n.revision) }}</dd>
+    </dl>
+  </section>
+  <section class="panel">
+    <h2 class="titulek-panelu">Technické údaje z registru</h2>
+    {% if n.technicke %}
+    <dl>
+      {% for nazev, text in n.technicke %}<dt>{{ nazev }}</dt><dd>{{ hodnota(text, n.je_nejiste(nazev)) }}</dd>{% endfor %}
+    </dl>
+    {% else %}<p class="prazdny-udaj">Neuvedeno</p>{% endif %}
+  </section>
+</div>
+{% endif %}
+{% endblock %}

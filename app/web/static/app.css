@@ -906,3 +906,7 @@ dd .vedle { margin-left: 1rem; margin-right: .35rem; }
 @media (max-width: 1400px) { .jedna-lista .hledani input { width: 320px; } .jedna-lista .firma { font-size: 1.15rem; } }
 .radek-loga { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .nahled-loga { height: 48px; width: auto; max-width: 200px; object-fit: contain; border: 1px solid var(--ram); border-radius: 8px; padding: 4px; background: #fff; }
+
+/* příjem vozidel (#51): nepotvrzená hodnota (např. nejistý VIN) */
+.nejiste { display: inline-block; margin-left: 4px; padding: 0 6px; border-radius: 999px; font-size: .75rem; font-weight: 600;
+  background: #fef3c7; color: #92400e; border: 1px solid #fcd34d; vertical-align: middle; letter-spacing: 0; }

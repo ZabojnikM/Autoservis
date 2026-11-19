@@ -22,6 +22,7 @@
         <li><a href="/cenik" {% if aktivni == 'cenik' %}aria-current="page"{% endif %} title="Ceník materiálu">Materiál</a></li>
         <li><a href="/prace" {% if aktivni == 'prace' %}aria-current="page"{% endif %} title="Ceník prací">Práce</a></li>
         <li><a href="/faktury" {% if aktivni == 'faktury' %}aria-current="page"{% endif %}>Faktury</a></li>
+        <li><a href="/prijem" {% if aktivni == 'prijem' %}aria-current="page"{% endif %} title="Návštěvy zpracované Přijímacím technikem">Příjem vozidel</a></li>
       </ul>
     </nav>
     <a href="/" class="firma" title="{{ lista.nazev }} · verze {{ APP_VERSION }}">

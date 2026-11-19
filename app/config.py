@@ -12,5 +12,10 @@ WEB_DIR = Path(__file__).resolve().parent / "web"
 TEMPLATES_DIR = WEB_DIR / "templates"
 STATIC_DIR = WEB_DIR / "static"
 
+# Příjem vozidel (#51): JSON s návštěvami, které zpracoval Přijímací technik (OpenBot) – jen čtení.
+# Na serveru se cesta nastavuje ve službě (AUTOSERVIS_PRIJEM_JSON), výchozí je umístění OpenBotu.
+PRIJEM_JSON = os.environ.get(
+    "AUTOSERVIS_PRIJEM_JSON", "/var/lib/openbot/OpenBot/Shared/autoservis-prototype/json-data/visits.json")
+
 APP_NAME = "Autoservis"
 APP_VERSION = "0.3.0"
