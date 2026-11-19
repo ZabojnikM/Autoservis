@@ -8,7 +8,7 @@
 {% block content %}
 <nav class="filtr-stavu">
   {% for klic, nazev in filtry.items() %}
-  <a href="/faktury?filtr={{ klic }}&rok={{ rok }}&typ={{ typ }}&q={{ q|urlencode }}" {% if filtr == klic %}aria-current="page"{% endif %}>{{ nazev }}</a>
+  <a href="/faktury?filtr={{ klic }}&rok={{ rok }}&q={{ q|urlencode }}" {% if filtr == klic %}aria-current="page"{% endif %}>{{ nazev }}</a>
   {% endfor %}
 </nav>
 
@@ -18,10 +18,6 @@
   <select name="rok" onchange="this.form.submit()" aria-label="Rok">
     <option value="">všechny roky</option>
     {% for r in roky %}<option value="{{ r }}" {% if rok == r|string %}selected{% endif %}>{{ r }}</option>{% endfor %}
-  </select>
-  <select name="typ" onchange="this.form.submit()" aria-label="Typ dokladu">
-    <option value="">faktury i vyúčtování</option>
-    {% for t in TypDokladu.VSECHNY %}<option value="{{ t }}" {% if typ == t %}selected{% endif %}>{{ TypDokladu.NAZVY[t] }}</option>{% endfor %}
   </select>
 </form>
 
@@ -60,7 +56,7 @@
 {{ stavovy_radek(stranka) }}
 {% else %}
 <div class="prazdna-mrizka">
-<p class="tlumene">{% if filtr == 'neuhrazene' and not q %}Žádné neuhrazené doklady. 👍{% else %}Nic nenalezeno.{% endif %}</p>
+<p class="tlumene">{% if q %}Nic nenalezeno.{% else %}Žádné doklady.{% endif %}</p>
 <p class="tlumene">Doklad se vystavuje z hotové zakázky tlačítkem <strong>Vystavit fakturu</strong> nebo <strong>Vyúčtování</strong>.</p>
 </div>
 {% endif %}

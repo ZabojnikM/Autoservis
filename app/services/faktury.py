@@ -257,17 +257,18 @@ smaz_uhradu = zrus_uhradu  # starší název
 
 # ---------------------------------------------------------------- přehled
 
+# záložky přehledu dokladů; Vyúčtování a Faktury jsou bez stornovaných (ty mají vlastní záložku)
 FILTRY = {
-    "neuhrazene": "Neuhrazené",
-    "po_splatnosti": "Po splatnosti",
-    "uhrazene": "Uhrazené",
+    "vyuctovani": "Vyúčtování",
+    "faktury": "Faktury",
     "stornovane": "Stornované",
     "vse": "Všechny",
 }
+VYCHOZI_FILTR = "vse"
 
 
 def seznam(
-    session: Session, filtr: str = "neuhrazene", hledat: str | None = None,
+    session: Session, filtr: str = VYCHOZI_FILTR, hledat: str | None = None,
     rok: int | None = None, typ: str | None = None, limit: int | None = None,
 ) -> list[Faktura]:
     """Doklady podle filtru (bez limitu všechny – mřížka je pak zobrazuje po dávkách přes `stranka`)."""
@@ -287,7 +288,12 @@ def seznam(
     if limit:
         dotaz = dotaz.limit(limit)
     vysledek = list(session.exec(dotaz))
-    if filtr == "neuhrazene":
+    if filtr == "vyuctovani":
+        vysledek = [f for f in vysledek if f.typ == TypDokladu.VYUCTOVANI and not f.stornovano]
+    elif filtr == "faktury":
+        vysledek = [f for f in vysledek if f.typ == TypDokladu.FAKTURA and not f.stornovano]
+    # starší filtry (už nejsou v záložkách, staré odkazy dál fungují)
+    elif filtr == "neuhrazene":
         vysledek = [f for f in vysledek if f.zbyva > 0]
     elif filtr == "po_splatnosti":
         vysledek = [f for f in vysledek if f.stav == "po_splatnosti"]

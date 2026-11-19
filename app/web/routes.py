@@ -932,12 +932,12 @@ async def faktura_vystavit_uloz(request: Request, db: DB, zakazka_id: int):
 
 
 def _seznam_faktur(db, filtr, q, rok, typ):
-    return faktury.seznam(db, filtr or "neuhrazene", hledat=q, rok=int(rok) if rok.isdigit() else None,
+    return faktury.seznam(db, filtr or faktury.VYCHOZI_FILTR, hledat=q, rok=int(rok) if rok.isdigit() else None,
                           typ=typ or None)
 
 
 @router.get("/faktury", response_class=HTMLResponse)
-def faktury_seznam(request: Request, db: DB, filtr: str = "neuhrazene", q: str = "", rok: str = "", typ: str = "",
+def faktury_seznam(request: Request, db: DB, filtr: str = faktury.VYCHOZI_FILTR, q: str = "", rok: str = "", typ: str = "",
                    razeni: str = "", od: str = "", vse_radky: str = ""):
     seznam = _seznam_faktur(db, filtr, q, rok, typ)
     st = faktury.stranka(seznam, razeni=razeni, od=od, limit=_davka(vse_radky))

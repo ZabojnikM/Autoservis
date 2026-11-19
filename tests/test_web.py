@@ -209,7 +209,9 @@ def test_faktura_cely_tok():
     assert r.status_code == 422 and "vyšší" in r.text
     r = client.post(f"/faktury/{fid}/uhrady", data={"castka": "1210", "zpusob": "prevod"}, follow_redirects=True)
     assert "Uhrazeno" in r.text
-    assert f"/faktury/{fid}" not in client.get("/faktury").text  # uhrazená už není v neuhrazených
+    assert f"/faktury/{fid}" in client.get("/faktury").text  # výchozí záložka Všechny ukazuje i uhrazené
+    assert f"/faktury/{fid}" in client.get("/faktury", params={"filtr": "faktury"}).text
+    assert f"/faktury/{fid}" not in client.get("/faktury", params={"filtr": "vyuctovani"}).text
 
     # zrušená úhrada zůstane v historii přeškrtnutá
     uid = re.search(r"/uhrady/(\d+)/smazat", client.get(f"/faktury/{fid}").text).group(1)
@@ -254,8 +256,14 @@ def test_filtry_a_odebrane_doklady():
     assert "Další doklad" not in client.get(loc).text
     client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "odb_nazev": "Jana", "forma_uhrady": "hotove",
                                          "uhrazeno_ihned": "1"})
-    for filtr in ["neuhrazene", "po_splatnosti", "uhrazene", "vse"]:
+    for filtr in ["vyuctovani", "faktury", "stornovane", "vse", "neuhrazene"]:  # neuhrazene = starý odkaz
         assert client.get("/faktury", params={"filtr": filtr, "rok": "2026"}).status_code == 200
+    # záložky Vyúčtování / Faktury / Stornované / Všechny, bez výběru typu dokladu
+    prehled = client.get("/faktury").text
+    zalozky = re.findall(r'href="/faktury\?filtr=(\w+)&', prehled)
+    assert zalozky == ["vyuctovani", "faktury", "stornovane", "vse"]
+    assert 'name="typ"' not in prehled and "faktury i vyúčtování" not in prehled
+    assert "Neuhrazené" not in prehled and "Po splatnosti</a>" not in prehled
     assert "Export CSV" not in client.get("/faktury").text
     assert client.get("/faktury/export.csv").status_code in (404, 422)
     assert client.get("/dodaci-listy/fakturovat").status_code == 404
