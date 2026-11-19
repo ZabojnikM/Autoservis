@@ -2,19 +2,10 @@
 {% from "_makra.html" import spz, stav, tlacitko_smazat, adresa %}
 {% block title %}{{ zakaznik.nazev }}{% endblock %}
 {% block akce %}
+  {# nová zakázka na zákazníka bez výběru vozidla – vozidlo jde v okně vybrat (Vybrat nabídne jeho vozidla), nebo nechat prázdné #}
+  <a href="/zakazky/nova?zakaznik_id={{ zakaznik.id }}" role="button" data-okno>Nová zakázka</a>
   <a href="/zakaznici/{{ zakaznik.id }}/upravit" role="button" class="secondary" data-okno>Upravit zákazníka</a>
   <a href="/vozidla/nove?zakaznik_id={{ zakaznik.id }}" role="button" class="secondary outline" data-okno>Přidat vozidlo</a>
-  {% if zalozka == 'vozidla' and vozidla_zakaznika %}
-  <hr>
-  <button type="button" class="secondary outline" data-radek="otevrit">Otevřít vozidlo</button>
-  <button type="button" data-radek="zakazka" data-okno>Nová zakázka</button>
-  {% elif zalozka == 'zakazky' and zakazky %}
-  <hr>
-  <button type="button" class="secondary outline" data-radek="otevrit">Otevřít zakázku</button>
-  {% elif zalozka == 'doklady' and doklady %}
-  <hr>
-  <button type="button" class="secondary outline" data-radek="otevrit">Otevřít doklad</button>
-  {% endif %}
   <hr>
   {{ tlacitko_smazat('/zakaznici/%d/smazat' % zakaznik.id, 'Smazat zákazníka',
                      'Opravdu smazat zákazníka %s? Smazání nejde vrátit.' % zakaznik.nazev, nelze_smazat) }}
@@ -71,12 +62,12 @@
 {% if zalozka == 'vozidla' %}
   {% if vozidla_zakaznika %}
   <div class="overflow-auto">
-  <table class="striped">
+  <table class="striped klik-otevre">
     <thead><tr><th>SPZ</th><th>Vozidlo</th><th>Rok</th><th>VIN</th><th>STK</th><th>Poslední zakázka</th><th></th></tr></thead>
     <tbody>
     {% for v in vozidla_zakaznika %}
       {% set posledni = v.zakazky|sort(attribute='datum_prijeti', reverse=True)|first %}
-      <tr data-otevrit="/vozidla/{{ v.id }}" data-zakazka="/zakazky/nova?vozidlo_id={{ v.id }}" title="Dvojklik otevře vozidlo">
+      <tr data-otevrit="/vozidla/{{ v.id }}" title="Klik otevře vozidlo">
         <td><a href="/vozidla/{{ v.id }}">{{ spz(v.spz) }}</a></td>
         <td>{% if v.znacka or v.model %}{{ v.popis }}{% endif %}</td>
         <td>{{ v.rok_vyroby or '' }}</td>
@@ -89,7 +80,7 @@
     </tbody>
   </table>
   </div>
-  <div class="stavovy-radek"><span>Vozidel: {{ vozidla_zakaznika|length }}</span><span>Klik = výběr řádku · dvojklik = otevřít vozidlo</span></div>
+  <div class="stavovy-radek"><span>Vozidel: {{ vozidla_zakaznika|length }}</span><span>Klik na řádek otevře vozidlo</span></div>
   {% else %}
   <p class="prazdna-mrizka tlumene">Žádná vozidla. <a href="/vozidla/nove?zakaznik_id={{ k.id }}" data-okno>Přidat vozidlo</a></p>
   {% endif %}
@@ -97,11 +88,11 @@
 {% elif zalozka == 'zakazky' %}
   {% if zakazky %}
   <div class="overflow-auto">
-  <table class="striped">
+  <table class="striped klik-otevre">
     <thead><tr><th>Číslo</th><th>Přijato</th><th>Vozidlo</th><th>Požadavek</th><th class="cislo">Celkem</th><th>Doklad</th><th>Stav</th></tr></thead>
     <tbody>
     {% for z in zakazky %}
-      <tr data-otevrit="/zakazky/{{ z.id }}" title="Dvojklik otevře zakázku">
+      <tr data-otevrit="/zakazky/{{ z.id }}" title="Klik otevře zakázku">
         <td><a href="/zakazky/{{ z.id }}"><strong>{{ z.cislo }}</strong></a></td>
         <td>{{ z.datum_prijeti|datum }}</td>
         <td>{% if z.vozidlo %}{{ spz(z.vozidlo.spz) }} <span class="tlumene">{% if z.vozidlo.znacka or z.vozidlo.model %}{{ z.vozidlo.popis }}{% endif %}</span>{% else %}<span class="tlumene">bez vozidla</span>{% endif %}</td>
@@ -114,7 +105,7 @@
     </tbody>
   </table>
   </div>
-  <div class="stavovy-radek"><span>Zakázek: {{ zakazky|length }}</span><span>Klik = výběr řádku · dvojklik = otevřít zakázku</span></div>
+  <div class="stavovy-radek"><span>Zakázek: {{ zakazky|length }}</span><span>Klik na řádek otevře zakázku</span></div>
   {% else %}
   <p class="prazdna-mrizka tlumene">Žádné zakázky.</p>
   {% endif %}
@@ -122,12 +113,12 @@
 {% else %}
   {% if doklady %}
   <div class="overflow-auto">
-  <table class="striped">
+  <table class="striped klik-otevre">
     <thead><tr><th>Číslo</th><th>Vystaveno</th><th>Splatnost</th><th>Zakázka</th><th>Vozidlo</th>
       <th class="cislo">Celkem</th><th class="cislo">Zbývá</th><th>Stav</th></tr></thead>
     <tbody>
     {% for f in doklady %}
-      <tr class="doklad-{{ f.stav }}" data-otevrit="/faktury/{{ f.id }}" title="Dvojklik otevře doklad">
+      <tr class="doklad-{{ f.stav }}" data-otevrit="/faktury/{{ f.id }}" title="Klik otevře doklad">
         <td><a href="/faktury/{{ f.id }}"><strong>{{ f.cislo }}</strong></a>
           {% if f.typ == 'vyuctovani' %}<span class="tlumene">vyúčt.</span>{% endif %}</td>
         <td>{{ f.datum_vystaveni|datum }}</td>
@@ -143,7 +134,7 @@
   </table>
   </div>
   <div class="stavovy-radek"><span>Dokladů: {{ doklady|length }} · neuhrazeno {{ neuhrazeno|penize }} {{ nast.mena }}</span>
-    <span>Dvojklik = otevřít doklad</span></div>
+    <span>Klik na řádek otevře doklad</span></div>
   {% else %}
   <p class="prazdna-mrizka tlumene">Žádné doklady.</p>
   {% endif %}

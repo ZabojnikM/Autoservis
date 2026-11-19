@@ -4,7 +4,6 @@
 {% block akce %}
   <a href="/zakazky/nova?vozidlo_id={{ vozidlo.id }}" role="button" data-okno>Nová zakázka</a>
   <a href="/vozidla/{{ vozidlo.id }}/upravit" role="button" class="secondary" data-okno>Upravit vozidlo</a>
-  <button type="button" class="secondary outline" data-radek="otevrit">Otevřít zakázku</button>
   <button type="button" class="secondary outline" onclick="window.print()">Tisk</button>
   <hr>
   {{ tlacitko_smazat('/vozidla/%d/smazat' % vozidlo.id, 'Smazat vozidlo',
@@ -76,12 +75,12 @@
 {% if zalozka == 'zakazky' %}
   {% if historie %}
   <div class="overflow-auto">
-  <table class="striped">
+  <table class="striped klik-otevre">
     <thead><tr><th>Číslo</th><th>Přijato</th><th>Zákazník</th><th>Požadavek</th><th class="cislo">Km</th>
       <th class="cislo" title="Hodnota položek zakázky">Částka zakázky</th><th>Doklad</th><th>Stav</th></tr></thead>
     <tbody>
     {% for z in historie %}
-      <tr data-otevrit="/zakazky/{{ z.id }}" title="Dvojklik otevře zakázku">
+      <tr data-otevrit="/zakazky/{{ z.id }}" title="Klik otevře zakázku">
         <td><a href="/zakazky/{{ z.id }}"><strong>{{ z.cislo }}</strong></a></td>
         <td>{{ z.datum_prijeti|datum }}</td>
         <td>{{ z.zakaznik.nazev if z.zakaznik else '' }}</td>
@@ -96,7 +95,7 @@
   </table>
   </div>
   <div class="stavovy-radek"><span>Zakázek: {{ historie|length }} · vyfakturováno {{ vyfakturovano|penize }} {{ nast.mena }}</span>
-    <span>Klik = výběr řádku · dvojklik = otevřít zakázku</span></div>
+    <span>Klik na řádek otevře zakázku</span></div>
   {% else %}
   <p class="prazdna-mrizka tlumene">Vozidlo zatím nemá žádnou zakázku.
     <a href="/zakazky/nova?vozidlo_id={{ v.id }}" data-okno>Přijmout vozidlo</a></p>
@@ -104,12 +103,12 @@
 {% else %}
   {% if radky %}
   <div class="overflow-auto">
-  <table class="striped polozky">
+  <table class="striped polozky klik-otevre">
     <thead><tr><th>Datum</th><th>Zakázka</th><th class="cislo">Km</th><th>Kód</th><th>Název</th>
       <th class="cislo">Množství</th><th>MJ</th><th class="cislo">Cena/j. bez DPH</th><th class="cislo">Celkem bez DPH</th></tr></thead>
     <tbody>
     {% for r in radky %}
-      <tr data-otevrit="/zakazky/{{ r.zakazka_id }}" title="Dvojklik otevře zakázku">
+      <tr data-otevrit="/zakazky/{{ r.zakazka_id }}" title="Klik otevře zakázku">
         <td>{{ r.zakazka.datum_prijeti|datum }}</td>
         <td><a href="/zakazky/{{ r.zakazka_id }}">{{ r.zakazka.cislo }}</a></td>
         <td class="cislo">{{ r.zakazka.tachometr|cislo }}</td>
@@ -125,7 +124,7 @@
   </table>
   </div>
   <div class="stavovy-radek"><span>Řádků: {{ radky|length }} · celkem bez DPH {{ radky|sum(attribute='zaklad')|penize }} {{ nast.mena }}</span>
-    <span>Dvojklik = otevřít zakázku</span></div>
+    <span>Klik na řádek otevře zakázku</span></div>
   {% else %}
   <p class="prazdna-mrizka tlumene">{{ 'Žádná práce.' if zalozka == 'prace' else 'Žádný materiál.' }}</p>
   {% endif %}

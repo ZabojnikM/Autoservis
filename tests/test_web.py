@@ -727,8 +727,11 @@ def test_detail_zakaznika_zalozky_historie():
     zid = re.search(r'href="/zakaznici/(\d+)"', client.get(loc).text).group(1)
     r = client.get(f"/zakaznici/{zid}")
     assert "Vozidla (1)" in r.text and "Zakázky (1)" in r.text and "Doklady (0)" in r.text
-    assert "1AB2345" in r.text and 'data-zakazka="/zakazky/nova?vozidlo_id=' in r.text
-    assert 'data-radek="zakazka" data-okno' in r.text
+    # Nová zakázka na zákazníka bez výběru vozidla, bez tlačítek „Otevřít …“, tabulky otevírají jedním klikem
+    assert "1AB2345" in r.text and f'href="/zakazky/nova?zakaznik_id={zid}" role="button" data-okno>Nová zakázka</a>' in r.text
+    assert 'data-radek="otevrit">' not in r.text and 'class="striped klik-otevre"' in r.text
+    okno = client.get("/zakazky/nova", params={"zakaznik_id": zid, "okno": "1"}).text
+    assert 'value="Jana Dvořáková"' in okno and re.search(r'name="spz" value=""', okno)
     zakazky_text = client.get(f"/zakaznici/{zid}", params={"zalozka": "zakazky"}).text
     assert "Nejde startovat" in zakazky_text and re.search(r"1\s(000|210),00", zakazky_text)  # podle plátcovství DPH
     client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "odb_nazev": "Jana Dvořáková", "forma_uhrady": "prevod"})
@@ -1099,3 +1102,13 @@ def test_audit_49_popisky_a_tlacitka():
     assert "dvojklik" not in client.get("/zakazky").text.split('id="stav-seznamu"')[-1][:600]
     client.post("/cenik/nova", data={"typ": "material", "nazev": "Filtr 49", "cena": "10"})
     assert "klik na řádek otevře kartu materiálu" in client.get("/cenik").text
+
+
+def test_detail_vozidla_bez_tlacitka_otevrit():
+    """Historie vozidla se otevírá jedním klikem, tlačítko Otevřít zakázku vlevo už není."""
+    _zakazka_s_polozkou()
+    vid = re.search(r'href="/vozidla/(\d+)"', client.get("/vozidla").text).group(1)
+    for zalozka in ["zakazky", "prace", "material"]:
+        text = client.get(f"/vozidla/{vid}", params={"zalozka": zalozka}).text
+        assert "Otevřít zakázku<" not in text and 'data-radek="otevrit">' not in text, zalozka
+    assert "klik-otevre" in client.get(f"/vozidla/{vid}").text
