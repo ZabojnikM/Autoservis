@@ -359,8 +359,13 @@ button.smazat-radek:hover { background: var(--c-chyba) !important; color: #fff !
 [role=button].upravit-radek:hover { background: var(--akcent); color: #fff; }
 
 /* krátká hláška po uložení – vpravo nahoře, sama zmizí */
-.zprava { position: fixed; bottom: 1rem; right: 1rem; z-index: 100; max-width: min(420px, 90vw); background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; border-left: 4px solid var(--c-hotovo); padding: .45rem .9rem; font-size: .9rem; box-shadow: 0 3px 12px rgba(0,0,0,.15); transition: opacity .4s; }
+.zprava { position: fixed; top: 6.25rem; left: 50%; transform: translateX(-50%); z-index: 100; max-width: min(560px, 90vw);
+  display: flex; align-items: center; gap: .75rem; background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; border-left: 4px solid var(--c-hotovo); padding: .45rem .9rem; font-size: .9rem; box-shadow: 0 3px 12px rgba(0,0,0,.15); transition: opacity .4s; }
 .zprava.mizi { opacity: 0; }
+.zprava[hidden] { display: none; }
+.zprava button.zavrit-zpravu { width: auto; margin: 0; padding: 0 .35rem; background: none; border: 0; box-shadow: none;
+  color: inherit; font-size: 1rem; line-height: 1; opacity: .7; cursor: pointer; }
+.zprava button.zavrit-zpravu:hover { opacity: 1; }
 .zprava.zprava-chyba { background: #fdecea; color: var(--c-chyba); border-color: #f5b7b1; border-left-color: var(--c-chyba); }
 
 /* zápisky v prázdných polích (placeholder) nesmí vypadat jako vyplněná hodnota */

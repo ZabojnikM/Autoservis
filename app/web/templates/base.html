@@ -77,7 +77,8 @@
     function ukazZpravu(text) {
       const z = document.getElementById("zprava");
       const chyba = text.startsWith("!");
-      z.textContent = chyba ? text.slice(1) : text; z.hidden = false; z.classList.remove("mizi");
+      z.querySelector(".zprava-text").textContent = chyba ? text.slice(1) : text;
+      z.hidden = false; z.classList.remove("mizi");
       z.classList.toggle("zprava-chyba", chyba);
       z.setAttribute("role", chyba ? "alert" : "status");
       clearTimeout(z._casovac);
@@ -514,6 +515,9 @@
       </div>
     </article>
   </dialog>
-  <div id="zprava" class="zprava" role="status" aria-live="polite" hidden></div>
+  {# krátká hláška nahoře uprostřed pod menu (nezakrývá tabulky, #39), jde zavřít křížkem #}
+  <div id="zprava" class="zprava" role="status" aria-live="polite" hidden><span class="zprava-text"></span>
+    <button type="button" class="zavrit-zpravu" aria-label="Zavřít hlášku" title="Zavřít"
+            onclick="const z = this.parentElement; clearTimeout(z._casovac); z.hidden = true;">✕</button></div>
 </body>
 </html>
