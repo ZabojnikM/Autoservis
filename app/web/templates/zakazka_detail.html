@@ -34,7 +34,7 @@
 {% block content %}
 
 {# nástrojová lišta: číslo, stav a přepínání stavu #}
-<div class="nadpis-radek">
+<div class="nadpis-radek nadpis-na-stred">
   {# stav jen jednou: u vyúčtované zakázky štítek, jinak přepínač (aktuální stav zvýrazněný) #}
   <h1>Zakázka {{ zakazka.cislo }}{% if doklad %} {{ stav(zakazka) }}{% endif %}</h1>
   {% if doklad %}
