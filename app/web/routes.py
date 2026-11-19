@@ -452,9 +452,15 @@ async def zakazka_upravit_uloz(request: Request, db: DB, zakazka_id: int):
 @router.post("/zakazky/{zakazka_id}/stav")
 async def zakazka_stav(request: Request, db: DB, zakazka_id: int):
     data = await _formular(request)
-    zakazka = zakazky.zmen_stav(db, zakazka_id, data.get("stav", ""))
-    zprava = f"Stav zakázky: {zakazka.nazev_stavu}." if zakazka is not None else None
-    return _presmeruj(data.get("zpet") or f"/zakazky/{zakazka_id}", zprava)
+    zpet = data.get("zpet") or f"/zakazky/{zakazka_id}"
+    try:
+        zakazka = zakazky.zmen_stav(db, zakazka_id, data.get("stav", ""), bez_dokladu=bool(data.get("bez_dokladu")))
+    except ChybaValidace as e:
+        return _presmeruj_s_chybou(zpet, e)
+    zprava = f"Stav zakázky: {zakazka.nazev_stavu}."
+    if zakazka.uzavrena_bez_dokladu:
+        zprava = "Zakázka uzavřena bez dokladu."
+    return _presmeruj(zpet, zprava)
 
 
 @router.post("/zakazky/{zakazka_id}/smazat")

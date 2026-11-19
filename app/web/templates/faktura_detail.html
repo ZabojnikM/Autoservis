@@ -36,7 +36,7 @@
       {% if f.odb_ico %}<dt>IČO</dt><dd>{{ f.odb_ico }}</dd>{% endif %}
       {% if f.odb_dic %}<dt>DIČ</dt><dd>{{ f.odb_dic }}</dd>{% endif %}
       {% if f.cislo_zakazky %}<dt>Zakázka</dt><dd>{% if f.zakazka_id %}<a href="/zakazky/{{ f.zakazka_id }}">{{ f.cislo_zakazky }}</a>{% else %}{{ f.cislo_zakazky }} <span class="tlumene">(smazaná)</span>{% endif %}</dd>{% endif %}
-      {% if f.spz %}<dt>Vozidlo</dt><dd>{{ spz(f.spz) }} {{ f.vozidlo_popis or '' }}</dd>{% endif %}
+      {% if f.spz %}<dt>Vozidlo</dt><dd>{{ spz(f.spz) }} {{ f.vozidlo_popis if f.vozidlo_popis and f.vozidlo_popis != '—' else '' }}</dd>{% endif %}
     </dl>
   </article>
   <article>

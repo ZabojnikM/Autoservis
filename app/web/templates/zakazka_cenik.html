@@ -35,7 +35,7 @@
     </aside>
     {% else %}
     <aside class="na-zakazce" aria-label="Položky zakázky">
-      <div class="titulek-mrizky"><strong>Na zakázce</strong><span class="tlumene">{{ zakazka.polozky|length }} položek</span></div>
+      <div class="titulek-mrizky"><strong>Na zakázce</strong><span class="tlumene">{{ zakazka.polozky|length|polozek }}</span></div>
       <div class="na-zakazce-seznam">
       {% for r in zakazka.polozky|reverse %}
         <div class="na-zakazce-radek">
@@ -56,9 +56,7 @@
     <a href="/zakazky/{{ zakazka.id }}#polozky" role="button" class="zpet">Zpět</a>
     {% endif %}
     <a href="/cenik/nova{{ typ_param }}" role="button" class="secondary outline" target="_blank">Nová položka ceníku</a>
-    {# TODO: import položek do zakázky – zatím jen tlačítko (#8) #}
-    <button type="button" class="secondary outline"
-            onclick="upozorni('Import položek zatím není hotový – připravuje se.')">Import</button>
+    {# TODO: tlačítko Import položek do zakázky se vrátí, až bude import hotový (#8) #}
     {% if okno %}
     <button type="button" class="zpet" onclick="stornoOknaCeniku()"
             title="Zavřít okno – vybrané položky se do zakázky nevloží">Storno</button>

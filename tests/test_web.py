@@ -92,7 +92,7 @@ def test_druha_zakazka_na_zname_vozidlo():
 
 def test_zmena_stavu():
     loc = _prijem().headers["location"].split("?")[0]
-    r = client.post(f"{loc}/stav", data={"stav": "predano"}, follow_redirects=True)
+    r = client.post(f"{loc}/stav", data={"stav": "predano", "bez_dokladu": "1"}, follow_redirects=True)
     assert "Uzavřeno" in r.text
     assert "1AB2345" not in client.get("/").text  # uzavřená není mezi otevřenými zakázkami
 
@@ -182,7 +182,7 @@ def _zakazka_s_polozkou():
 
 
 def test_faktura_cely_tok():
-    client.post("/nastaveni", data={"nazev_servisu": "Autoservis Test", "ico": "12345678", "mesto": "Brno",
+    client.post("/nastaveni", data={"nazev_servisu": "Autoservis Test", "ico": "12345678", "dic": "CZ12345678", "mesto": "Brno",
                                     "cislo_uctu": "19-2000145399/0800", "platce_dph": "1",
                                     "vychozi_dph": "21",
                                     "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
@@ -728,7 +728,7 @@ def test_detail_zakaznika_zalozky_historie():
 # ---------------------------------------------------------------- zakázkový list A4
 
 def test_zakazkovy_list_a4():
-    client.post("/nastaveni", data={"nazev_servisu": "Autoservis Test", "ico": "12345678", "mesto": "Brno",
+    client.post("/nastaveni", data={"nazev_servisu": "Autoservis Test", "ico": "12345678", "dic": "CZ12345678", "mesto": "Brno",
                                     "platce_dph": "1", "vychozi_dph": "21",
                                     "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
     loc = _prijem(poznamka="Tajná interní poznámka").headers["location"].split("?")[0]
@@ -844,8 +844,9 @@ def test_okno_cenik_storno_a_import():
     # položka přidaná dřív (mimo okno) – Storno se jí nesmí dotknout
     client.post(f"{loc}/polozky", data={"typ": "material", "nazev": "Starší díl", "cena": "50"})
     okno = client.get(f"{loc}/cenik", params={"okno": "1"}).text
-    assert "stornoOknaCeniku(" in okno and ">Import</button>" in okno and ">Vložit</button>" in okno
-    assert okno.index(">Vložit</button>") < okno.index(">Import</button>") < okno.index(">Storno</button>")
+    # Import je skrytý, dokud není hotový (#8, #35)
+    assert "stornoOknaCeniku(" in okno and ">Import</button>" not in okno and ">Vložit</button>" in okno
+    assert okno.index(">Vložit</button>") < okno.index(">Storno</button>")
     assert ">Storno</button>" not in client.get(f"{loc}/cenik").text  # celá stránka (ne okno) Storno nemá
     cid = re.search(r'name="polozka_ceniku_id" value="(\d+)"', okno).group(1)
     # Vložit je atomické: jedna chybná položka = nevloží se nic
@@ -935,7 +936,7 @@ def test_okno_ceniku_jen_pro_jeden_typ():
     # #27: lišta pod seznamem, tlačítka v řadě vlevo se Stornem na konci, nápověda až za nimi (vpravo dole)
     assert material.index('id="cenik-vysledky"') < material.index('class="lista-okna')
     lista = material.split('class="lista-okna')[1]
-    assert lista.index(">Vložit</button>") < lista.index("Nová položka ceníku") < lista.index(">Import</button>")         < lista.index(">Storno</button>") < lista.index('class="tlumene napoveda-okna"')
+    assert lista.index(">Vložit</button>") < lista.index("Nová položka ceníku")         < lista.index(">Storno</button>") < lista.index('class="tlumene napoveda-okna"')
     prace = client.get(f"{loc}/cenik", params={"typ": "prace", "okno": "1"}).text
     assert "Přidat práci z ceníku" in prace and "Výměna filtru" in prace and "Filtr oleje" not in prace
     assert "Zaměnitelný díl" not in prace

@@ -257,7 +257,8 @@ def uprav_z_formulare(session: Session, zakazka_id: int, zakazka: dict, vozidlo:
     return zaznam
 
 
-def zmen_stav(session: Session, zakazka_id: int, stav: str) -> Zakazka:
+def zmen_stav(session: Session, zakazka_id: int, stav: str, bez_dokladu: bool = False) -> Zakazka:
+    """Změna stavu. Uzavřít bez dokladu (např. záruka) jde jen s potvrzením `bez_dokladu`."""
     if stav not in StavZakazky.VSECHNY:
         raise ChybaValidace(f"Neznámý stav zakázky: {stav}")
     zakazka = ziskej(session, zakazka_id)
@@ -266,6 +267,9 @@ def zmen_stav(session: Session, zakazka_id: int, stav: str) -> Zakazka:
             f"Zakázka je vyúčtovaná dokladem {zakazka.platna_faktura.cislo} – "
             "pro úpravy nejdřív doklad stornujte."
         )
+    if stav == StavZakazky.PREDANO and not zakazka.platna_faktura and not bez_dokladu:
+        raise ChybaValidace("Zakázka nemá doklad – uzavřít ji bez dokladu (např. záruka) je potřeba potvrdit, "
+                            "jinak vystavte fakturu nebo vyúčtování.")
     zakazka.stav = stav
     zakazka.uzavreno = datetime.now() if stav == StavZakazky.PREDANO else None
     session.add(zakazka)

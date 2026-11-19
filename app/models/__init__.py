@@ -134,6 +134,11 @@ class Zakazka(SQLModel, table=True):
         return next((f for f in self.faktury if not f.stornovano), None)
 
     @property
+    def uzavrena_bez_dokladu(self) -> bool:
+        """Uzavřená ručně bez faktury / vyúčtování (např. záruka) – v seznamech se označí."""
+        return self.stav == StavZakazky.PREDANO and self.platna_faktura is None
+
+    @property
     def nazev_stavu(self) -> str:
         return StavZakazky.NAZVY.get(self.stav, self.stav)
 
@@ -252,6 +257,8 @@ class Faktura(SQLModel, table=True):
     vozidlo_popis: Optional[str] = None
     tachometr: Optional[int] = None
     cislo_zakazky: Optional[str] = None
+    stav_zakazky_pred: Optional[str] = Field(
+        default=None, description="Stav zakázky před vystavením dokladu – storno ho vrátí")
     poznamka: Optional[str] = None
     zaokrouhleni: Decimal = Field(default=Decimal("0"), sa_type=DesetinneCislo)
     celkem: Decimal = Field(default=Decimal("0"), sa_type=DesetinneCislo, description="K úhradě vč. DPH a zaokrouhlení")

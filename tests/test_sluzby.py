@@ -117,7 +117,7 @@ def test_uprava_vozidla_na_obsazenou_spz(session):
 
 def test_zmena_stavu_a_uzavreni(session):
     z = _prijmi_nove(session)
-    z = zakazky.zmen_stav(session, z.id, StavZakazky.PREDANO)
+    z = zakazky.zmen_stav(session, z.id, StavZakazky.PREDANO, bez_dokladu=True)
     assert z.uzavreno is not None and not z.je_otevrena
     z = zakazky.zmen_stav(session, z.id, StavZakazky.V_OPRAVE)
     assert z.uzavreno is None
@@ -128,7 +128,7 @@ def test_zmena_stavu_a_uzavreni(session):
 def test_seznam_a_pocty(session):
     a = _prijmi_nove(session)
     _prijmi_nove(session, spz="5EE5555", nazev="Petr Malý")
-    zakazky.zmen_stav(session, a.id, StavZakazky.PREDANO)
+    zakazky.zmen_stav(session, a.id, StavZakazky.PREDANO, bez_dokladu=True)
     assert len(zakazky.seznam(session, jen_otevrene=True)) == 1
     assert len(zakazky.seznam(session, hledat="5ee 5555")) == 1
     assert len(zakazky.seznam(session, hledat="malý")) == 1

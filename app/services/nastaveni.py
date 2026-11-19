@@ -47,7 +47,26 @@ class NastaveniServisu:
 
     @property
     def udaje_vyplneny(self) -> bool:
-        return bool(self.nazev_servisu and self.ico and (self.ulice or self.mesto))
+        return not self.chybejici_udaje
+
+    @property
+    def chybejici_udaje(self) -> list[str]:
+        """Pole (název pole formuláře, popisek) údajů servisu, bez kterých nejde vystavit fakturu.
+        Plátce DPH musí mít na daňovém dokladu i DIČ."""
+        chybi = []
+        if not self.nazev_servisu:
+            chybi.append(("nazev_servisu", "název"))
+        if not self.ico:
+            chybi.append(("ico", "IČO"))
+        if not (self.ulice or self.mesto):
+            chybi.append(("ulice", "adresa"))
+        if self.platce_dph and not self.dic:
+            chybi.append(("dic", "DIČ (plátce DPH)"))
+        return chybi
+
+    @property
+    def chybejici_udaje_text(self) -> str:
+        return ", ".join(popisek for _, popisek in self.chybejici_udaje)
 
 
 def nacti(session: Session) -> NastaveniServisu:

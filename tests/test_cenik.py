@@ -105,7 +105,7 @@ def test_neplatce_dph(session, zakazka):
 def test_predanou_zakazku_nelze_menit(session, zakazka):
     p = cenik.vytvor(session, {"nazev": "Filtr", "cena": "100"})
     r = polozky.pridej_z_ceniku(session, zakazka.id, p.id)
-    zakazky.zmen_stav(session, zakazka.id, "predano")
+    zakazky.zmen_stav(session, zakazka.id, "predano", bez_dokladu=True)
     with pytest.raises(ChybaValidace):
         polozky.pridej_z_ceniku(session, zakazka.id, p.id)
     with pytest.raises(ChybaValidace):
@@ -144,7 +144,7 @@ def test_vloz_z_ceniku_vse_nebo_nic(session):
             polozky.vloz_z_ceniku(session, z.id, chybny)
     session.refresh(z)
     assert len(z.polozky) == 2  # chybný výběr nevložil nic
-    zakazky.zmen_stav(session, z.id, "predano")
+    zakazky.zmen_stav(session, z.id, "predano", bez_dokladu=True)
     with pytest.raises(ChybaValidace):
         polozky.vloz_z_ceniku(session, z.id, [(a.id, "1")])
 

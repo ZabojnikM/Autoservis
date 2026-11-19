@@ -13,16 +13,16 @@
 <div class="nadpis-radek">
   <h1>Vystavit {{ nazev }}
     <span class="oznaceni">zakázka <a href="/zakazky/{{ zakazka.id }}">{{ zakazka.cislo }}</a> · {{ spz(zakazka.vozidlo.spz) }}
-      <span class="tlumene">{% if zakazka.vozidlo.znacka or zakazka.vozidlo.model %}{{ zakazka.vozidlo.popis }} {% endif %}· {{ zakazka.polozky|length }} položek ·</span>
+      <span class="tlumene">{% if zakazka.vozidlo.znacka or zakazka.vozidlo.model %}{{ zakazka.vozidlo.popis }} {% endif %}· {{ zakazka.polozky|length|polozek }} ·</span>
       <strong>{{ rek.celkem|penize }} {{ nast.mena }}</strong></span></h1>
 </div>
 
 {% if chybi_udaje %}
-<p class="chyba">Fakturu nejde vystavit – v Nastavení chybí údaje servisu (název, IČO, adresa).
-  Bez dodavatele by nebyla platným daňovým dokladem.
+<p class="chyba">Fakturu nejde vystavit – v Nastavení chybí údaje servisu: <strong>{{ nast.chybejici_udaje_text }}</strong>.
+  Bez nich by nebyla platným daňovým dokladem.
   <a href="/nastaveni" target="_blank">Doplnit v Nastavení</a> (otevře se v nové kartě), pak okno zavřete a otevřete znovu.</p>
 {% elif not nast.udaje_vyplneny %}
-<p class="upozorneni-ram">Nejsou vyplněné údaje servisu (název, IČO, adresa). Na vyúčtování bude chybět dodavatel –
+<p class="upozorneni-ram">Chybí údaje servisu: {{ nast.chybejici_udaje_text }}. Na vyúčtování budou chybět –
   <a href="/nastaveni" target="_blank">doplnit v Nastavení</a>.</p>
 {% endif %}
 {% if typ == 'faktura' and not (nast.cislo_uctu or nast.iban) %}
@@ -54,7 +54,11 @@
         <label>Splatnost <input type="date" name="datum_splatnosti" value="{{ hodnoty.get('datum_splatnosti')|iso }}" required></label>
       </div>
       <label>Forma úhrady
-        <select name="forma_uhrady">
+        {# hotově = splatnost v den vystavení, převodem = + splatnost z Nastavení #}
+        <select name="forma_uhrady" data-splatnost-dni="{{ nast.splatnost_dni }}" onchange="
+          const f = this.form, v = f.datum_vystaveni.value;
+          if (v) { const d = new Date(v + 'T12:00'); if (this.value === 'prevod') d.setDate(d.getDate() + +this.dataset.splatnostDni);
+                   f.datum_splatnosti.value = d.toISOString().slice(0, 10); }">
           {% for fu in FormaUhrady.VSECHNY %}
           <option value="{{ fu }}" {% if hodnoty.get('forma_uhrady') == fu %}selected{% endif %}>{{ FormaUhrady.NAZVY[fu] }}</option>
           {% endfor %}

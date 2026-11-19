@@ -95,6 +95,15 @@ templates.env.filters["iso"] = _iso
 templates.env.filters["penize"] = _penize
 templates.env.filters["mnozstvi"] = _mnozstvi
 templates.env.filters["psc"] = _psc
+
+
+def _polozek(pocet) -> str:
+    """3 → '3 položky' (1 položka, 2–4 položky, 0 a 5+ položek)."""
+    n = int(pocet or 0)
+    return f"{n} " + ("položka" if n == 1 else "položky" if 2 <= n <= 4 else "položek")
+
+
+templates.env.filters["polozek"] = _polozek
 templates.env.globals["StavZakazky"] = StavZakazky
 templates.env.globals["TypPolozky"] = TypPolozky
 templates.env.globals["TypDokladu"] = TypDokladu

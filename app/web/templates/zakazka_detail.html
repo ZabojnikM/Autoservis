@@ -35,18 +35,28 @@
 
 {# nástrojová lišta: číslo, stav a přepínání stavu #}
 <div class="nadpis-radek">
-  <h1>Zakázka {{ zakazka.cislo }} {{ stav(zakazka) }}</h1>
+  {# stav jen jednou: u vyúčtované zakázky štítek, jinak přepínač (aktuální stav zvýrazněný) #}
+  <h1>Zakázka {{ zakazka.cislo }}{% if doklad %} {{ stav(zakazka) }}{% endif %}</h1>
   {% if doklad %}
   <span class="tlumene neni-tisk">Zakázka je vyúčtovaná – pro změny nejdřív stornujte doklad.</span>
   {% else %}
-  <form method="post" action="/zakazky/{{ zakazka.id }}/stav" class="zmena-stavu neni-tisk">
+  <div class="zmena-stavu neni-tisk">
     <span class="tlumene">Stav:</span>
-    {% for s in StavZakazky.VSECHNY %}
-      <button type="submit" name="stav" value="{{ s }}"
-              class="stav-tlacitko {% if s == zakazka.stav %}aktivni{% else %}outline{% endif %}"
-              {% if s == zakazka.stav %}disabled{% endif %}>{{ StavZakazky.NAZVY[s] }}</button>
-    {% endfor %}
-  </form>
+    <form method="post" action="/zakazky/{{ zakazka.id }}/stav" class="prepinac-stavu">
+      {% for s in StavZakazky.OTEVRENE %}
+        <button type="submit" name="stav" value="{{ s }}" class="stav-tlacitko{% if s == zakazka.stav %} aktivni{% endif %}"
+                {% if s == zakazka.stav %}aria-pressed="true" disabled{% endif %}>{{ StavZakazky.NAZVY[s] }}</button>
+      {% endfor %}
+    </form>
+    {# Uzavřeno bez dokladu (např. záruka) jen s potvrzením #}
+    <form method="post" action="/zakazky/{{ zakazka.id }}/stav" class="prepinac-stavu"
+          {% if not zakazka.uzavrena_bez_dokladu %}data-potvrdit="Uzavřít zakázku {{ zakazka.cislo }} bez dokladu (např. záruka)?&#10;&#10;Nebude vyúčtovaná a přesune se mezi uzavřené zakázky s označením „bez dokladu“." data-potvrdit-ano="Uzavřít bez dokladu"{% endif %}>
+      <input type="hidden" name="stav" value="predano"><input type="hidden" name="bez_dokladu" value="1">
+      <button type="submit" class="stav-tlacitko{% if zakazka.uzavrena_bez_dokladu %} aktivni{% endif %}"
+              {% if zakazka.uzavrena_bez_dokladu %}aria-pressed="true" disabled{% endif %}
+              title="Uzavřít bez faktury / vyúčtování">{{ StavZakazky.NAZVY['predano'] }}{% if zakazka.uzavrena_bez_dokladu %} bez dokladu{% endif %}</button>
+    </form>
+  </div>
   {% endif %}
 </div>
 
@@ -110,7 +120,7 @@
        title="{{ nazev }} mimo ceník (zadat ručně)">+ Ruční</a>
   </span>{% endif %}
   {% set n = radky|length %}
-  <span class="tlumene souhrn-mrizky">{{ n }} {{ 'položka' if n == 1 else 'položky' if 2 <= n <= 4 else 'položek' }}{% if radky %} · {{ (rek.material if typ == 'material' else rek.prace)|penize }} {{ nast.mena }} bez DPH{% endif %}</span>
+  <span class="tlumene souhrn-mrizky">{{ n|polozek }}{% if radky %} · {{ (rek.material if typ == 'material' else rek.prace)|penize }} {{ nast.mena }} bez DPH{% endif %}</span>
 </div>
 {% if radky %}
 <div class="overflow-auto">
@@ -137,7 +147,8 @@
       <td class="cislo">{% if lze_menit %}
         {# množství se mění přímo tady: Enter nebo opuštění pole uloží #}
         <form method="post" action="/polozky/{{ r.id }}/mnozstvi" class="mnozstvi-radku krokovac">
-          <button type="button" class="krok" data-krok="-1" tabindex="-1" aria-label="Ubrat 1">−</button>
+          <button type="button" class="krok" data-krok="-1" tabindex="-1" aria-label="Ubrat 1"
+                  {% if r.mnozstvi <= 1 %}disabled title="Méně než 1 zadejte do pole; položku odeberete tlačítkem Smazat"{% endif %}>−</button>
           <input type="text" name="mnozstvi" value="{{ r.mnozstvi|mnozstvi }}" inputmode="decimal"
                  aria-label="Množství – {{ r.nazev }}" onfocus="this.select()" onchange="this.form.requestSubmit()">
           <button type="button" class="krok" data-krok="1" tabindex="-1" aria-label="Přidat 1">+</button>

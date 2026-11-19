@@ -76,13 +76,15 @@ def vychozi_udaje(session: Session, zakazka_id: int, typ: str = TypDokladu.FAKTU
     dnes = date.today()
     k = zakazka.zakaznik
     je_faktura = typ == TypDokladu.FAKTURA
+    # převodem jen když je kam platit (číslo účtu v Nastavení)
+    forma = FormaUhrady.PREVOD if je_faktura and iban_servisu(nast) else FormaUhrady.HOTOVE
     return {
         "typ": typ,
         "datum_vystaveni": dnes,
         "duzp": dnes,
-        "datum_splatnosti": dnes + timedelta(days=nast.splatnost_dni) if je_faktura else dnes,
-        # převodem jen když je kam platit (číslo účtu v Nastavení)
-        "forma_uhrady": FormaUhrady.PREVOD if je_faktura and iban_servisu(nast) else FormaUhrady.HOTOVE,
+        # hotovost se platí hned → splatnost = den vystavení
+        "datum_splatnosti": dnes + timedelta(days=nast.splatnost_dni) if forma == FormaUhrady.PREVOD else dnes,
+        "forma_uhrady": forma,
         "odb_nazev": k.nazev if k else "",
         "odb_ulice": (k.ulice or "") if k else "",
         "odb_mesto": (k.mesto or "") if k else "",
@@ -122,8 +124,8 @@ def vystav(session: Session, zakazka_id: int, data: dict) -> Faktura:
         if not odb_nazev:
             raise ChybaValidace("Vyplňte odběratele.", "odb_nazev")
         if not nast.udaje_vyplneny:
-            raise ChybaValidace("Fakturu nejde vystavit – v Nastavení chybí údaje servisu (název, IČO, adresa). "
-                                "Bez dodavatele by nebyla platným daňovým dokladem.")
+            raise ChybaValidace(f"Fakturu nejde vystavit – v Nastavení chybí údaje servisu: {nast.chybejici_udaje_text}. "
+                                "Bez nich by nebyla platným daňovým dokladem.")
     if forma == FormaUhrady.PREVOD and typ == TypDokladu.FAKTURA and not iban_servisu(nast):
         raise ChybaValidace("Pro platbu převodem vyplňte v Nastavení číslo účtu (tiskne se na fakturu i do QR), "
                             "nebo zvolte platbu hotově.", "forma_uhrady")
@@ -136,7 +138,7 @@ def vystav(session: Session, zakazka_id: int, data: dict) -> Faktura:
         **{p: cisty_text(data.get(p)) for p in POLE_ODBERATELE if p != "odb_nazev"},
         datum_vystaveni=vystaveni, duzp=duzp, datum_splatnosti=splatnost, forma_uhrady=forma,
         variabilni_symbol=_jedinecny_vs(session, variabilni_symbol(cislo, typ)), platce_dph=nast.platce_dph, mena=nast.mena,
-        spz=vuz.spz if vuz else None, vozidlo_popis=vuz.popis if vuz else None,
+        spz=vuz.spz if vuz else None, vozidlo_popis=vuz.popis if vuz and (vuz.znacka or vuz.model) else None,
         tachometr=zakazka.tachometr, cislo_zakazky=zakazka.cislo, poznamka=cisty_text(data.get("poznamka")),
     )
     for r in zakazka.polozky:
@@ -154,6 +156,7 @@ def vystav(session: Session, zakazka_id: int, data: dict) -> Faktura:
     if _ano(data.get("uhrazeno_ihned")):
         faktura.uhrady.append(Uhrada(datum=vystaveni, castka=faktura.celkem, zpusob=forma,
                                      poznamka="Uhrazeno při vystavení"))
+    faktura.stav_zakazky_pred = zakazka.stav  # storno ho vrátí
     zakazka.stav = StavZakazky.PREDANO
     zakazka.uzavreno = zakazka.uzavreno or datetime.now()
     session.add(faktura)
@@ -194,7 +197,9 @@ def storno(session: Session, faktura_id: int) -> Faktura:
         session.add(uhrada)
     faktura.stornovano = True
     if faktura.zakazka and faktura.zakazka.stav == StavZakazky.PREDANO:
-        faktura.zakazka.stav = StavZakazky.HOTOVO
+        # zpět do stavu před vystavením (Přijato / V opravě / Předáno); starší doklady stav neznají → V opravě
+        pred = faktura.stav_zakazky_pred
+        faktura.zakazka.stav = pred if pred in StavZakazky.OTEVRENE else StavZakazky.V_OPRAVE
         faktura.zakazka.uzavreno = None
         session.add(faktura.zakazka)
     session.add(faktura)

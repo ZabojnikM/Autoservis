@@ -2,7 +2,8 @@
 {% block title %}Nastavení{% endblock %}
 {% macro p(nazev, popisek, extra='', placeholder='') -%}
 <label>{{ popisek }}
-  <input type="text" name="{{ nazev }}" value="{{ nast[nazev] }}" placeholder="{{ placeholder }}" {{ extra|safe }}>
+  <input type="text" name="{{ nazev }}" value="{{ nast[nazev] }}" placeholder="{{ placeholder }}" {{ extra|safe }}
+         {% if nazev in nast.chybejici_udaje|map(attribute=0)|list %}aria-invalid="true" title="Potřeba pro vystavení faktury"{% endif %}>
 </label>
 {%- endmacro %}
 {% block akce %}
@@ -12,8 +13,8 @@
 {% block content %}
 {% if ulozeno %}<p class="uspech" role="status">Nastavení uloženo.</p>{% endif %}
 {% if not nast.udaje_vyplneny %}
-<p class="upozorneni-ram">Vyplňte údaje servisu (název, IČO, adresa) – tisknou se na fakturu a zakázkový list.
-  Bez nich nejde vystavit fakturu.</p>
+<p class="upozorneni-ram">Pro vystavení faktury chybí: <strong>{{ nast.chybejici_udaje_text }}</strong>
+  (pole jsou označená červeně). Údaje servisu se tisknou na fakturu a zakázkový list.</p>
 {% endif %}
 
 <form method="post" action="/nastaveni" class="formular" id="formular-nastaveni">

@@ -10,7 +10,7 @@ from app.services import ChybaValidace, cenik, faktury, nastaveni, polozky, zaka
 @pytest.fixture
 def zakazka(session):
     # bez údajů servisu a účtu fakturu vystavit nejde
-    nastaveni.uloz(session, {"nazev_servisu": "Servis Test", "ico": "12345678", "mesto": "Brno",
+    nastaveni.uloz(session, {"nazev_servisu": "Servis Test", "ico": "12345678", "dic": "CZ12345678", "mesto": "Brno",
                              "cislo_uctu": "19-2000145399/0800"})
     z = zakazky.prijem(
         session, zakazka={"pozadavek": "Servis", "tachometr": "120000"},
@@ -115,7 +115,7 @@ def test_storno_otevre_zakazku(session, zakazka):
     assert len(f.uhrady) == 1 and f.uhrady[0].zruseno and f.uhrazeno == 0
     assert "zrušeno stornem" in f.uhrady[0].poznamka
     session.refresh(zakazka)
-    assert zakazka.stav == StavZakazky.HOTOVO and zakazka.platna_faktura is None
+    assert zakazka.stav == StavZakazky.PRIJATO and zakazka.platna_faktura is None
     nova = _vystav(session, zakazka)
     assert nova.cislo.endswith("0002")  # číslo stornovaného zůstává obsazené
     with pytest.raises(ChybaValidace):
@@ -206,3 +206,35 @@ def test_faktura_vyzaduje_zakaznika_vyuctovani_ne(session):
         _vystav(session, z, typ=TypDokladu.FAKTURA, odb_nazev="Někdo")
     v = _vystav(session, z, typ=TypDokladu.VYUCTOVANI)
     assert v.odb_nazev == "" and v.zakaznik_id is None and v.celkem == Decimal("121")
+
+
+def test_platce_dph_potrebuje_dic_a_hotove_splatnost_dnes(session, zakazka):
+    nastaveni.uloz(session, {"dic": ""})
+    nast = nastaveni.nacti(session)
+    assert not nast.udaje_vyplneny and "DIČ" in nast.chybejici_udaje_text
+    with pytest.raises(ChybaValidace, match="DIČ"):
+        _vystav(session, zakazka)
+    nastaveni.uloz(session, {"platce_dph": "0"})  # neplátce DIČ nepotřebuje
+    assert nastaveni.nacti(session).udaje_vyplneny
+    nastaveni.uloz(session, {"platce_dph": "1", "dic": "CZ12345678", "cislo_uctu": ""})
+    vychozi = faktury.vychozi_udaje(session, zakazka.id)
+    assert vychozi["forma_uhrady"] == "hotove" and vychozi["datum_splatnosti"] == date.today()
+
+
+def test_storno_vrati_stav_pred_vystavenim(session, zakazka):
+    zakazky.zmen_stav(session, zakazka.id, StavZakazky.PRIJATO)
+    f = _vystav(session, zakazka)
+    assert f.stav_zakazky_pred == StavZakazky.PRIJATO
+    faktury.storno(session, f.id)
+    session.refresh(zakazka)
+    assert zakazka.stav == StavZakazky.PRIJATO  # ne „Předáno“
+
+
+def test_uzavrit_bez_dokladu_jen_s_potvrzenim(session, zakazka):
+    with pytest.raises(ChybaValidace, match="bez dokladu"):
+        zakazky.zmen_stav(session, zakazka.id, StavZakazky.PREDANO)
+    z = zakazky.zmen_stav(session, zakazka.id, StavZakazky.PREDANO, bez_dokladu=True)
+    assert z.uzavrena_bez_dokladu
+    _vystav(session, z)  # doklad jde vystavit i potom
+    session.refresh(z)
+    assert not z.uzavrena_bez_dokladu

@@ -8,10 +8,10 @@
     <label class="roztahnout">Firma (příjmení a jméno)
       <input type="text" name="k_nazev" value="{{ hz.get('k_nazev') or '' }}" autocomplete="off">
     </label>
-    <button type="button" class="maly"
+    <button type="button" tabindex="-1" class="maly"
             hx-get="/zakaznici/okno" hx-vals='{"cil": "prijem"}' hx-target="#okno-obsah"
             hx-on::after-request="document.getElementById('okno-databaze').showModal()">Vybrat</button>
-    <button type="button" class="maly secondary outline" title="Vyprázdnit panel – nový zákazník"
+    <button type="button" tabindex="-1" class="maly secondary outline" title="Vyprázdnit panel – nový zákazník"
             hx-get="/zakazky/nova/zakaznik" hx-target="#panel-zakaznik" hx-swap="outerHTML">Nový</button>
   </div>
   {% if zakaznik %}
@@ -34,7 +34,7 @@
         <input type="text" name="k_ico" value="{{ hz.get('k_ico') or '' }}" inputmode="numeric" autocomplete="off">
       </label>
       {# TODO: napojit na ARES – zatím jen tlačítko (viz PLAN.md) #}
-      <button type="button" class="maly secondary outline" title="Načíst údaje firmy z rejstříku podle IČO"
+      <button type="button" tabindex="-1" class="maly secondary outline" title="Načíst údaje firmy z rejstříku podle IČO"
               onclick="upozorni('Načtení údajů z rejstříku (ARES) zatím není hotové – připravuje se.')">Načti</button>
     </div>
     {{ pole('k_dic', 'DIČ', hz) }}

@@ -372,7 +372,11 @@
       const panel = document.querySelector("#okno-formular-obsah [data-kosik-panel]");
       if (!panel) return;
       const seznam = panel.querySelector("[data-kosik-seznam]");
-      panel.querySelector("[data-kosik-pocet]").textContent = `${kosik.length} položek`;
+      const n = kosik.length, polozek = n === 1 ? "položka" : n >= 2 && n <= 4 ? "položky" : "položek";
+      panel.querySelector("[data-kosik-pocet]").textContent = `${n} ${polozek}`;
+      // hlavní akce okna ukazuje, kolik zapíše do zakázky
+      const vlozit = document.querySelector("#okno-formular-obsah [data-vlozit-kosik]");
+      if (vlozit) vlozit.textContent = n ? `Vložit ${n} ${polozek}` : "Vložit";
       seznam.replaceChildren();
       if (!kosik.length) {
         const p = document.createElement("p");

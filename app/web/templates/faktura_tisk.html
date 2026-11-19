@@ -43,7 +43,7 @@
       {% endif %}
       <dt>Variabilní symbol</dt><dd>{{ f.variabilni_symbol or '' }}</dd>
       {% if f.cislo_zakazky %}<dt>Zakázka</dt><dd>{{ f.cislo_zakazky }}</dd>{% endif %}
-      {% if f.spz %}<dt>Vozidlo</dt><dd>{{ f.spz }} {{ f.vozidlo_popis or '' }}{% if f.tachometr %}, {{ f.tachometr|cislo }} km{% endif %}</dd>{% endif %}
+      {% if f.spz %}<dt>Vozidlo</dt><dd>{{ f.spz }} {{ f.vozidlo_popis if f.vozidlo_popis and f.vozidlo_popis != '—' else '' }}{% if f.tachometr %}, {{ f.tachometr|cislo }} km{% endif %}</dd>{% endif %}
     </dl>
   </div>
 

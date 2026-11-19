@@ -13,7 +13,7 @@
     <input type="text" name="{{ predpona }}vin" value="{{ hodnoty.get(predpona ~ 'vin') or '' }}"
            maxlength="20" class="vstup-spz" autocomplete="off">
   </label>
-  <button type="button" class="maly secondary outline" title="Doplnit údaje vozidla z Registru silničních vozidel podle VIN"
+  <button type="button" tabindex="-1" class="maly secondary outline" title="Doplnit údaje vozidla z Registru silničních vozidel podle VIN"
           onclick="nactiZRegistru(this, '{{ predpona }}')">Načti</button>
 </div>
 {%- endmacro %}
@@ -72,7 +72,7 @@
   <p class="tlumene poznamka">{{ duvod }}</p>
 {% else %}
   <form method="post" action="{{ akce }}" data-potvrdit="{{ potvrzeni }}" data-potvrdit-ano="Smazat">
-    <button type="submit" class="secondary outline">{{ text }}</button>
+    <button type="submit" class="smazat-akce">{{ text }}</button>
   </form>
 {% endif %}
 {%- endmacro %}
@@ -84,6 +84,7 @@
 
 {% macro stav(zakazka) -%}
 <span class="stav stav-{{ zakazka.stav }}">{{ zakazka.nazev_stavu }}</span>
+{%- if zakazka.uzavrena_bez_dokladu %} <span class="stav stav-bez-dokladu" title="Uzavřeno bez faktury / vyúčtování">bez dokladu</span>{% endif %}
 {%- endmacro %}
 
 {% macro spz(text) -%}
