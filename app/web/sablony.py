@@ -81,7 +81,13 @@ def _url_s(request, **zmeny) -> str:
     return request.url.path + ("?" + urlencode(parametry) if parametry else "")
 
 
+def _material_prvni(radky) -> list:
+    """Řádky zakázky / dokladu: nejdřív materiál, pak práce; uvnitř typu pořadí zadání."""
+    return sorted(radky, key=lambda r: 0 if r.typ == TypPolozky.MATERIAL else 1)
+
+
 templates.env.globals["url_s"] = _url_s
+templates.env.filters["material_prvni"] = _material_prvni
 templates.env.filters["datum"] = _datum
 templates.env.filters["datumcas"] = _datumcas
 templates.env.filters["cislo"] = _cislo

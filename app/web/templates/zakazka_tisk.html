@@ -78,7 +78,7 @@
   </div>
 
   <div class="sekce">
-    <h3>Provedené práce a materiál</h3>
+    <h3>Materiál a provedené práce</h3>
     <table>
       <thead><tr>
         <th>Položka</th><th class="cislo">Množství</th><th class="cislo">Cena/j.{% if nast.platce_dph %} bez DPH{% endif %}</th>
@@ -86,7 +86,7 @@
         <th class="cislo">Celkem{% if nast.platce_dph %} bez DPH{% endif %}</th>
       </tr></thead>
       <tbody>
-      {% for r in zakazka.polozky %}
+      {% for r in zakazka.polozky|material_prvni %}
         <tr>
           <td>{{ r.nazev }}{% if r.kod %} <span class="tlumene">{{ r.kod }}</span>{% endif %}</td>
           <td class="cislo">{{ r.mnozstvi|mnozstvi }} {{ r.jednotka }}</td>
@@ -103,8 +103,8 @@
     {% if zakazka.polozky %}
     <div class="rekapitulace">
       <dl>
-        <dt>Práce</dt><dd>{{ rek.prace|penize }}</dd>
         <dt>Materiál</dt><dd>{{ rek.material|penize }}</dd>
+        <dt>Práce</dt><dd>{{ rek.prace|penize }}</dd>
         {% if nast.platce_dph %}
           {% for sazba, zaklad in rek.zaklady.items() %}
             <dt>Základ {{ sazba|mnozstvi }} %</dt><dd>{{ zaklad|penize }}</dd>

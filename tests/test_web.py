@@ -596,15 +596,23 @@ def test_detail_zakazky_mrizka_polozek():
     pid = re.search(r'data-odebrat="/polozky/(\d+)/smazat"', detail).group(1)
     assert f'data-upravit="/polozky/{pid}/upravit"' in detail
     for akce in [f'href="/polozky/{pid}/upravit" role="button" class="maly upravit-radek" data-okno',
-                 f'data-smazat-radek="/polozky/{pid}/smazat"', f'href="{loc}/cenik"', f'href="{loc}/polozky/nova"']:
+                 f'data-smazat-radek="/polozky/{pid}/smazat"',
+                 f'href="{loc}/cenik?typ=material"', f'href="{loc}/polozky/nova?typ=material"',
+                 f'href="{loc}/cenik?typ=prace"', f'href="{loc}/polozky/nova?typ=prace"']:
         assert akce in detail, akce
+    # dvě mřížky: nahoře Materiál, pod ní Práce; Diagnostika (práce) je v mřížce Práce, materiál zatím žádný
+    assert detail.index('id="polozky-material"') < detail.index('id="polozky-prace"') < detail.index("Diagnostika")
+    assert "Zatím žádný materiál." in detail and "Zatím žádná práce." not in detail
+    # tlačítka přidání už nejsou v levém sloupci
+    assert 'role="button" data-okno>Přidat z ceníku</a>' not in detail and ">Ruční položka</a>" not in detail
     # Upravit / Odebrat položku už nejsou v levém sloupci (jsou přímo v řádku, Upravit vlevo od Smazat)
     assert 'data-radek="upravit" data-okno>' not in detail and 'data-radek="odebrat">' not in detail
     assert detail.index(f'href="/polozky/{pid}/upravit" role="button"') < detail.index(f'data-smazat-radek="/polozky/{pid}/smazat"')
     # prázdná zakázka: odkazy na přidání v mřížce, bez tlačítek pro řádky
     prazdna = _prijem(spz="9Z99999").headers["location"].split("?")[0]
     detail = client.get(prazdna).text
-    assert "Zatím žádné položky" in detail and "upravit-radek" not in detail
+    assert "Zatím žádný materiál." in detail and "Zatím žádná práce." in detail and "upravit-radek" not in detail
+    assert 'class="soucty"' not in detail
 
 
 def test_okno_cenik_pridava_a_zustava_otevrene():
@@ -880,3 +888,18 @@ def test_hledani_vin_prijme_vozidlo_s_vin():
     # vozidlo s tím VIN už v evidenci → hledání rovnou na vozidlo
     _prijem(spz="1VN0001", v_vin=vin)
     assert client.get("/hledat", params={"q": vin}, follow_redirects=False).status_code == 303
+
+
+def test_material_pred_praci_v_tisku_a_dokladu():
+    loc = _zakazka_s_polozkou()  # práce Diagnostika
+    client.post(f"{loc}/polozky", data={"typ": "material", "nazev": "Olejový filtr", "mnozstvi": "1", "cena": "300"})
+    tisk = client.get(f"{loc}/tisk").text
+    assert tisk.index("Olejový filtr") < tisk.index("Diagnostika")
+    assert tisk.index("<dt>Materiál</dt>") < tisk.index("<dt>Práce</dt>")
+    r = client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "odb_nazev": "Jana", "forma_uhrady": "hotove"},
+                    follow_redirects=False)
+    doklad = r.headers["location"].split("?")[0]
+    for adresa in (doklad, f"{doklad}/tisk"):
+        text = client.get(adresa).text
+        assert text.index("Olejový filtr") < text.index("Diagnostika"), adresa
+        assert text.index("<dt>Materiál</dt>") < text.index("<dt>Práce</dt>"), adresa

@@ -7,7 +7,7 @@
     <th class="cislo">Celkem{% if f.platce_dph %} bez DPH{% endif %}</th>
   </tr></thead>
   <tbody>
-  {% for r in f.polozky %}
+  {% for r in f.polozky|material_prvni %}
     <tr>
       <td>{{ r.nazev }}{% if r.kod %} <span class="kod-polozky">(kód {{ r.kod }})</span>{% endif %}</td>
       <td class="cislo">{{ r.mnozstvi|mnozstvi }} {{ r.jednotka }}</td>
@@ -21,8 +21,8 @@
 </div>
 <div class="rekapitulace">
   <dl>
-    <dt>Práce</dt><dd>{{ rek.prace|penize }}</dd>
     <dt>Materiál</dt><dd>{{ rek.material|penize }}</dd>
+    <dt>Práce</dt><dd>{{ rek.prace|penize }}</dd>
     {% if f.platce_dph %}
       {% for sazba, zaklad in rek.zaklady.items() %}
         <dt>Základ {{ sazba|mnozstvi }} %</dt><dd>{{ zaklad|penize }}</dd>

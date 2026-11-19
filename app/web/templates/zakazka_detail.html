@@ -7,11 +7,6 @@
   {% if not doklad %}<a href="/zakazky/{{ zakazka.id }}/upravit" role="button" class="secondary" data-okno>Upravit zakázku</a>{% endif %}
   <a href="/zakazky/{{ zakazka.id }}/tisk?tisk=1" role="button" class="secondary outline" target="_blank"
      title="Zakázkový list A4 – tisk nebo uložení do PDF">Zakázkový list</a>
-  {% if lze_menit %}
-    <hr>
-    <a href="/zakazky/{{ zakazka.id }}/cenik" role="button" data-okno>Přidat z ceníku</a>
-    <a href="/zakazky/{{ zakazka.id }}/polozky/nova" role="button" class="secondary" data-okno>Ruční položka</a>
-  {% endif %}
   {% if doklad %}
     <hr>
     <a href="/faktury/{{ doklad.id }}" role="button">{{ doklad.nazev_typu }} {{ doklad.cislo }}</a>
@@ -98,26 +93,35 @@
   </section>
 </div>
 
-{# položky jako datová mřížka: klik vybere řádek (Upravit / Odebrat vlevo), dvojklik otevře úpravu #}
-<div id="polozky" class="titulek-mrizky">
-  <strong>Materiál a práce</strong>
-  <span class="tlumene">{{ zakazka.polozky|length }} položek{% if lze_menit and zakazka.polozky %} · dvojklik = upravit{% endif %}</span>
+{# položky ve dvou mřížkách: nahoře materiál, pod ním práce; každá má vlastní tlačítka Z ceníku / Ruční.
+   Upravit a Smazat jsou v řádku, dvojklik = upravit, Delete = odebrat vybraný řádek. #}
+{% macro mrizka_polozek(typ, radky, nazev, prazdne) %}
+<section class="sekce-polozek" id="polozky-{{ typ }}">
+<div class="titulek-mrizky">
+  <span><strong>{{ nazev }}</strong>
+    <span class="tlumene">{{ radky|length }} položek{% if radky %} · {{ (rek.material if typ == 'material' else rek.prace)|penize }} {{ nast.mena }} bez DPH{% endif %}</span></span>
+  {% if lze_menit %}<span class="tlacitka-mrizky neni-tisk">
+    <a href="/zakazky/{{ zakazka.id }}/cenik?typ={{ typ }}" role="button" class="maly" data-okno
+       title="{{ nazev }} z ceníku">+ Z ceníku</a>
+    <a href="/zakazky/{{ zakazka.id }}/polozky/nova?typ={{ typ }}" role="button" class="maly secondary outline" data-okno
+       title="{{ nazev }} mimo ceník (zadat ručně)">+ Ruční</a>
+  </span>{% endif %}
 </div>
-{% if zakazka.polozky %}
+{% if radky %}
 <div class="overflow-auto">
 <table class="polozky striped mrizka-polozek{% if not nast.platce_dph %} bez-dph{% endif %}">
   <thead><tr>
-    <th>Typ</th><th>Kód</th><th>Název</th><th class="cislo">Množství</th><th>MJ</th><th class="cislo">Cena/j. bez DPH</th>
-    {% if nast.platce_dph %}<th class="cislo">DPH</th>{% endif %}
-    <th class="cislo">Celkem bez DPH</th>
-    {% if nast.platce_dph %}<th class="cislo">Celkem s DPH</th>{% endif %}
+    <th class="sl-kod">Kód</th><th class="sl-nazev">Název</th><th class="cislo sl-mnozstvi">Množství</th><th class="sl-mj">MJ</th>
+    <th class="cislo sl-cena">Cena/j. bez DPH</th>
+    {% if nast.platce_dph %}<th class="cislo sl-dph">DPH</th>{% endif %}
+    <th class="cislo sl-celkem">Celkem bez DPH</th>
+    {% if nast.platce_dph %}<th class="cislo sl-celkem">Celkem s DPH</th>{% endif %}
     {% if lze_menit %}<th class="sl-smazat neni-tisk"></th>{% endif %}
   </tr></thead>
   <tbody>
-  {% for r in zakazka.polozky %}
+  {% for r in radky %}
     <tr {% if lze_menit %}data-otevrit="/polozky/{{ r.id }}/upravit" data-upravit="/polozky/{{ r.id }}/upravit" data-okno
         data-odebrat="/polozky/{{ r.id }}/smazat" data-odebrat-text="Odebrat {{ r.nazev }}?"{% endif %}>
-      <td><span class="typ typ-{{ r.typ }}">{{ r.nazev_typu }}</span></td>
       <td class="tlumene">{{ r.kod or '' }}</td>
       <td>{{ r.nazev }}</td>
       <td class="cislo">{% if lze_menit %}
@@ -143,10 +147,21 @@
   </tbody>
 </table>
 </div>
+{% else %}
+<p class="prazdna-mrizka tlumene">{{ prazdne }}
+  {% if lze_menit %}<a href="/zakazky/{{ zakazka.id }}/cenik?typ={{ typ }}" data-okno>Přidat z ceníku</a> nebo
+  <a href="/zakazky/{{ zakazka.id }}/polozky/nova?typ={{ typ }}" data-okno>zadat ručně</a>.{% endif %}</p>
+{% endif %}
+</section>
+{% endmacro %}
+<div id="polozky">
+{{ mrizka_polozek('material', zakazka.polozky|selectattr('typ', 'equalto', 'material')|list, 'Materiál', 'Zatím žádný materiál.') }}
+{{ mrizka_polozek('prace', zakazka.polozky|selectattr('typ', 'equalto', 'prace')|list, 'Práce', 'Zatím žádná práce.') }}
 {# součty ve spodní liště #}
+{% if zakazka.polozky %}
 <div class="soucty">
-  <span>Práce <strong>{{ rek.prace|penize }}</strong></span>
   <span>Materiál <strong>{{ rek.material|penize }}</strong></span>
+  <span>Práce <strong>{{ rek.prace|penize }}</strong></span>
   {% if nast.platce_dph or rek.dph %}
   <span>Bez DPH <strong>{{ rek.bez_dph|penize }}</strong></span>
   {% for sazba, dan in rek.dane.items() %}
@@ -155,11 +170,8 @@
   {% endif %}
   <span class="celkem">Celkem k úhradě <strong>{{ rek.celkem|penize }} {{ nast.mena }}</strong></span>
 </div>
-{% else %}
-<p class="prazdna-mrizka tlumene">Zatím žádné položky.
-  {% if lze_menit %}<a href="/zakazky/{{ zakazka.id }}/cenik" data-okno>Přidat z ceníku</a> nebo
-  <a href="/zakazky/{{ zakazka.id }}/polozky/nova" data-okno>zadat ručně</a>.{% endif %}</p>
 {% endif %}
+</div>
 
 {# doklady k zakázce – i stornované, ať je vidět historie #}
 {% if doklady %}
