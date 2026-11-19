@@ -1,3 +1,4 @@
+import re
 from datetime import date, timedelta
 from decimal import Decimal
 
@@ -225,7 +226,11 @@ def test_spayd_a_qr(session, zakazka):
     kod = faktury.spayd(f, nast)
     assert kod.startswith("SPD*1.0*ACC:CZ6508000000192000145399*AM:786.50*CC:CZK")
     assert f"X-VS:{f.variabilni_symbol}" in kod
-    assert faktury.qr_svg(kod).startswith("<svg")
+    svg = faktury.qr_svg(kod)
+    # #59: viewBox se čtvercovým poměrem a bez pevné velikosti; bílý okraj 4 moduly
+    m = re.match(r'<svg viewBox="0 0 (\d+) (\d+)"', svg)
+    assert m and m.group(1) == m.group(2) and "width=" not in svg.split(">")[0]
+    assert 'M4 4.5h7' in svg  # první modul až za okrajem 4 moduly
 
 
 def test_jen_prevod_a_hotove(session, zakazka):

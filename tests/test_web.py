@@ -184,8 +184,8 @@ def test_nastaveni_ulozeni():
     assert "normohodin" not in r.text
 
 
-def _zakazka_s_polozkou():
-    loc = _prijem().headers["location"].split("?")[0]
+def _zakazka_s_polozkou(**navic):
+    loc = _prijem(**navic).headers["location"].split("?")[0]
     client.post(f"{loc}/polozky", data={"typ": "prace", "nazev": "Diagnostika", "mnozstvi": "1", "cena": "1000"})
     return loc
 
@@ -195,8 +195,12 @@ def test_faktura_cely_tok():
                                     "cislo_uctu": "19-2000145399/0800", "platce_dph": "1",
                                     "vychozi_dph": "21",
                                     "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
-    loc = _zakazka_s_polozkou()
-    assert "Vystavit fakturu" in client.get(loc).text
+    loc = _zakazka_s_polozkou(spz="1FV6060", v_vin="TMBJJ7NE8J0606060")
+    detail_zakazky = client.get(loc).text
+    assert "Vystavit fakturu" in detail_zakazky
+    # #61: přepínač stavu vlevo, bez popisku „Stav:“
+    assert 'class="zmena-stavu neni-tisk" role="group" aria-label="Stav zakázky"' in detail_zakazky
+    assert '<span class="tlumene">Stav:</span>' not in detail_zakazky
     formular = client.get(f"{loc}/vystavit?typ=faktura")
     assert formular.status_code == 200 and "Jana Dvořáková" in formular.text
 
@@ -209,6 +213,13 @@ def test_faktura_cely_tok():
 
     tisk = client.get(f"/faktury/{fid}/tisk").text
     assert "Faktura – daňový doklad" in tisk and "Autoservis Test" in tisk and "CZ6508000000192000145399" in tisk
+    # #60: vozidlo po řádcích (SPZ + značka a model / VIN / km), číslo zakázky jen vpravo nahoře
+    assert "<dt>Zakázka</dt>" not in tisk and 'class="cislo-zakazky">zakázka 20' in tisk
+    assert re.search(r"<dt>Vozidlo</dt><dd>1FV6060 &nbsp;Škoda Fabia</dd>", tisk)
+    assert '<dt>VIN</dt><dd class="vin">TMBJJ7NE8J0606060</dd>' in tisk
+    assert re.search(r"<dt>Stav tachometru</dt><dd>98\W000 km</dd>", tisk)
+    # #59: QR se škáluje přes viewBox (bez pevné šířky), takže se v tisku neořízne
+    assert '<svg viewBox="0 0 ' in tisk and '<svg width=' not in tisk
 
     prehled = client.get("/faktury").text  # výchozí záložka Vyúčtování – faktura v ní není
     assert 'href="/faktury?filtr=vyuctovani&rok=&q=" aria-current="page"' in prehled and f"/faktury/{fid}" not in prehled

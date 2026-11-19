@@ -49,27 +49,28 @@
   <p class="hlavicka-listu">Dodací list <strong>{{ l.cislo or '—' }}</strong>{% if l.datum %} · {{ l.datum }}{% endif %}{% if l.dodavatel %} · {{ l.dodavatel }}{% endif %}
     {% if l.bez_dph is not none %}<span class="tlumene"> · celkem {{ l.bez_dph|penize }} bez DPH / {{ l.s_dph|penize }} s DPH</span>{% endif %}</p>
   {% set novych = radky|selectattr('je_novy')|list|length %}
-  <p class="tlumene napoveda">{{ radky|length }} dílů: {{ radky|length - novych }} v ceníku, {{ novych }} nových.
-    <button type="button" class="odkaz-tlacitko" onclick="this.form.querySelectorAll('[name=vybrano]').forEach(c => c.checked = true)">Vybrat vše</button>
-    · <button type="button" class="odkaz-tlacitko" onclick="this.form.querySelectorAll('[name=vybrano]').forEach(c => c.checked = false)">Zrušit výběr</button></p>
+  <div class="vyber-dilu">
+    <button type="button" class="secondary outline maly" onclick="this.form.querySelectorAll('[name=vybrano]').forEach(c => c.checked = true)">Vybrat vše</button>
+    <button type="button" class="secondary outline maly" onclick="this.form.querySelectorAll('[name=vybrano]').forEach(c => c.checked = false)">Zrušit výběr</button>
+    <span class="tlumene">{{ radky|length }} dílů: {{ radky|length - novych }} v ceníku, {{ novych }} nových</span>
+  </div>
   <div class="overflow-auto">
   <table class="striped tabulka-importu">
-    <thead><tr><th class="sl-vyber"></th><th>Kód</th><th>Název</th><th class="cislo">Množství</th>
-      <th class="cislo">Nákup bez DPH</th><th class="cislo">Prodej bez DPH (MOC)</th><th class="cislo">DPH</th><th>Stav</th></tr></thead>
+    <thead><tr><th class="sl-vyber"></th><th>Stav</th><th>Kód</th><th>Název</th><th class="cislo">Množství</th>
+      <th class="cislo">Nákup bez DPH</th><th class="cislo">Prodej bez DPH (MOC)</th><th class="cislo">DPH</th></tr></thead>
     <tbody>
     {% for r in radky %}
       {% set d = r.dil %}{% set p = r.polozka %}
       <tr>
-        <td class="sl-vyber"><input type="checkbox" name="vybrano" value="{{ r.index }}" checked aria-label="Importovat {{ d.kod }}"></td>
-        <td class="hlavni">{{ d.kod }}</td>
+        <td class="sl-vyber"><input type="checkbox" name="vybrano" value="{{ r.index }}" id="dil-{{ r.index }}" checked aria-label="Importovat {{ d.kod }}"></td>
+        <td class="sl-stav"><label for="dil-{{ r.index }}">{% if r.je_novy %}<span class="stav-db mimo-db">Nová položka</span>
+            {% else %}<span class="stav-db v-db">V ceníku</span>{% if r.zmena_cen %}<br><span class="tlumene maly-text">změna ceny</span>{% endif %}{% endif %}</label></td>
+        <td class="hlavni"><label for="dil-{{ r.index }}">{{ d.kod }}</label></td>
         <td>{{ d.nazev }}{% if p and p.nazev != d.nazev %}<br><span class="tlumene" title="Název v ceníku zůstane">v ceníku: {{ p.nazev }}</span>{% endif %}</td>
         <td class="cislo">{{ d.mnozstvi|mnozstvi }}</td>
         <td class="cislo">{% if p and p.nakupni_cena is not none and p.nakupni_cena != d.nakup %}<span class="stara-cena">{{ p.nakupni_cena|penize }}</span> → {% endif %}{{ d.nakup|penize }}</td>
         <td class="cislo castka-hlavni">{% if p and p.cena != d.moc %}<span class="stara-cena">{{ p.cena|penize }}</span> → {% endif %}{{ d.moc|penize }}</td>
         <td class="cislo tlumene">{{ d.dph|mnozstvi }} %</td>
-        <td>{% if r.je_novy %}<span class="stav-db mimo-db">Nová položka</span>
-            {% elif r.zmena_cen %}<span class="stav-db v-db">V ceníku</span> <span class="tlumene">změna ceny</span>
-            {% else %}<span class="stav-db v-db">V ceníku</span>{% endif %}</td>
       </tr>
     {% endfor %}
     </tbody>

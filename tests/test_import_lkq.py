@@ -1,4 +1,5 @@
 """#8 Import dodacího listu LKQ (CSV) do ceníku a zakázky."""
+import re
 from decimal import Decimal
 
 import pytest
@@ -108,7 +109,11 @@ def test_okno_importu_web():
     assert r.status_code == 200 and "není dodací list LKQ" in r.text
     r = client.post("/cenik/import/nahled", data={"okno": "1"}, files={"soubor": ("list.csv", CSV.encode())})
     assert "3116034551" in r.text and r.text.count("Nová položka") == 3 and r.text.count('name="vybrano"') == 3
-    import re
+    # #63: tlačítka výběru jako tlačítka vedle sebe; v řádku zaškrtávátko, stav a kód hned za sebou
+    assert '<div class="vyber-dilu">' in r.text and r.text.count('class="secondary outline maly"') == 2
+    assert re.search(r'name="vybrano" value="0" id="dil-0"[^>]*></td>\s*<td class="sl-stav"><label for="dil-0">'
+                     r'<span class="stav-db mimo-db">Nová položka</span>\s*</label></td>\s*'
+                     r'<td class="hlavni"><label for="dil-0">OPT 06-S383</label>', r.text)
     data = re.search(r'name="data_listu" value="([^"]+)"', r.text).group(1)
     import html
     r = client.post("/cenik/import", data={"okno": "1", "data_listu": html.unescape(data), "vybrano": ["0", "2"]})

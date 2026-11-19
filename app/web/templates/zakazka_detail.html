@@ -33,15 +33,14 @@
 {% endblock %}
 {% block content %}
 
-{# nástrojová lišta: číslo, stav a přepínání stavu #}
+{# nástrojová lišta: přepínání stavu vlevo (#61), číslo uprostřed #}
 <div class="nadpis-radek nadpis-na-stred">
   {# stav jen jednou: u vyúčtované zakázky štítek, jinak přepínač (aktuální stav zvýrazněný) #}
   <h1>Zakázka {{ zakazka.cislo }}{% if doklad %} {{ stav(zakazka) }}{% endif %}</h1>
   {% if doklad %}
-  <span class="tlumene neni-tisk">Zakázka je vyúčtovaná – pro změny nejdřív stornujte doklad.</span>
+  <span class="tlumene neni-tisk">Zakázka je vyúčtovaná – pro změny nejdřív smažte doklad.</span>
   {% else %}
-  <div class="zmena-stavu neni-tisk">
-    <span class="tlumene">Stav:</span>
+  <div class="zmena-stavu neni-tisk" role="group" aria-label="Stav zakázky">
     <form method="post" action="/zakazky/{{ zakazka.id }}/stav" class="prepinac-stavu">
       {% for s in StavZakazky.OTEVRENE %}
         <button type="submit" name="stav" value="{{ s }}" class="stav-tlacitko{% if s == zakazka.stav %} aktivni{% endif %}"

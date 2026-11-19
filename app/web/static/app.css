@@ -879,6 +879,9 @@ fieldset.panel > legend ~ * { clear: both; }
 .nadpis-radek.nadpis-na-stred { display: grid; grid-template-columns: 1fr auto 1fr; }
 .nadpis-radek.nadpis-na-stred > h1 { grid-column: 2; grid-row: 1; text-align: center; }
 .nadpis-radek.nadpis-na-stred > :not(h1) { grid-column: 3; grid-row: 1; justify-self: end; }
+/* #61: přepínač stavu zakázky úplně vlevo */
+.nadpis-radek.nadpis-na-stred > .zmena-stavu { grid-column: 1; justify-self: start; }
+.zmena-stavu .prepinac-stavu { flex: 0 0 auto; }
 
 /* #49: Zrušit / Zpět oddělené od ukládacích akcí (Uložit, Uložit a další) */
 .akce .zpet.oddelene { margin-top: 1rem; }
@@ -964,6 +967,11 @@ tbody td.hlavni.doklad-vyuctovani, tbody td.hlavni.doklad-vyuctovani a { color: 
 .import-lkq .sl-vyber { width: 2.2rem; text-align: center; }
 .import-lkq .sl-vyber input { margin: 0; }
 .import-lkq .stara-cena { color: var(--text-tlumeny); text-decoration: line-through; font-weight: 400; }
-button.odkaz-tlacitko { background: none; border: 0; box-shadow: none; padding: 0; margin: 0; width: auto;
-  color: var(--akcent-tmavy); font-size: inherit; font-weight: 600; cursor: pointer; }
-button.odkaz-tlacitko:hover { text-decoration: underline; }
+/* #63: tlačítka výběru vedle sebe; zaškrtávátko, stav a kód dílu pohromadě vlevo */
+.import-lkq .vyber-dilu { display: flex; gap: .5rem; align-items: center; flex-wrap: wrap; margin: 0 0 .6rem; }
+.import-lkq .vyber-dilu button { width: auto; margin: 0; }
+.import-lkq .vyber-dilu .tlumene { margin-left: .4rem; }
+.import-lkq .sl-stav { white-space: nowrap; width: 1%; }
+.import-lkq td.sl-stav, .import-lkq td.sl-vyber { padding-right: .3rem; }
+.import-lkq td label { display: inline; margin: 0; cursor: pointer; font-weight: inherit; }
+.import-lkq td .maly-text { margin: 0; }

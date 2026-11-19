@@ -6,7 +6,8 @@
     <div>
       <h1>{{ f.nadpis }}</h1>
     </div>
-    <div class="cislo-dokladu">č. {{ f.cislo }}</div>
+    <div class="cislo-dokladu">č. {{ f.cislo }}
+      {% if f.cislo_zakazky %}<div class="cislo-zakazky">zakázka {{ f.cislo_zakazky }}</div>{% endif %}</div>
   </div>
 
   <div class="strany">
@@ -42,8 +43,11 @@
         {% if iban %}<dt>IBAN</dt><dd>{{ iban }}</dd>{% endif %}
       {% endif %}
       <dt>Variabilní symbol</dt><dd>{{ f.variabilni_symbol or '' }}</dd>
-      {% if f.cislo_zakazky %}<dt>Zakázka</dt><dd>{{ f.cislo_zakazky }}</dd>{% endif %}
-      {% if f.spz %}<dt>Vozidlo</dt><dd>{{ f.spz }} {{ f.vozidlo_popis if f.vozidlo_popis and f.vozidlo_popis != '—' else '' }}{% if f.tachometr %}, {{ f.tachometr|cislo }} km{% endif %}</dd>{% endif %}
+      {# #60: vozidlo po řádcích – SPZ, značka a model / VIN / km při zakázce; číslo zakázky je vpravo nahoře #}
+      {% set vuz = f.zakazka.vozidlo if f.zakazka else none %}
+      {% if f.spz %}<dt>Vozidlo</dt><dd>{{ f.spz }}{% if f.vozidlo_popis and f.vozidlo_popis != '—' %} &nbsp;{{ f.vozidlo_popis }}{% endif %}</dd>{% endif %}
+      {% if vuz and vuz.vin %}<dt>VIN</dt><dd class="vin">{{ vuz.vin }}</dd>{% endif %}
+      {% if f.tachometr %}<dt>Stav tachometru</dt><dd>{{ f.tachometr|cislo }} km</dd>{% endif %}
     </dl>
   </div>
 

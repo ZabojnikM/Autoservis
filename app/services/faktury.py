@@ -506,4 +506,6 @@ def spayd(faktura: Faktura, nast) -> str | None:
 
 def qr_svg(text: str) -> str:
     import segno
-    return segno.make(text, error="m").svg_inline(scale=3, border=2, dark="#000", light="#fff")
+    # #59: viewBox místo pevné šířky/výšky – SVG se zmenší celé (bez oříznutí) na rozměr z CSS;
+    # bílý okraj 4 moduly podle normy QR
+    return segno.make(text, error="m").svg_inline(border=4, omitsize=True, dark="#000", light="#fff")
