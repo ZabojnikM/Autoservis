@@ -1,11 +1,10 @@
 {% extends "_okno.html" if okno else "base.html" %}
 {% from "_makra.html" import spz %}
 {# Okno „Přidat materiál / práci z ceníku“ – vypadá a funguje jako okno Databáze zákazníků (#46):
-   nahoře titulek s tlačítky Nová položka ceníku a Zavřít, pod ním hledání a tabulka přes celou šířku.
-   Vložit na řádku (i Enter / dvojklik) zapíše položku se zadaným množstvím rovnou do zakázky; okno zůstane
-   otevřené s potvrzením a po zavření se detail zakázky obnoví. Bez okna (celá stránka) to funguje stejně. #}
+   nahoře titulek a jen tlačítko Zavřít, pod ním hledání a tabulka přes celou šířku.
+   Vložit na řádku (i Enter / dvojklik) zapíše položku se zadaným množstvím do zakázky a okno zavře (#48);
+   detail zakázky se obnoví s hláškou „Přidáno: …“. Chyba (např. množství 0) zůstane v okně. #}
 {% set nadpis_okna = {'material': 'Přidat materiál z ceníku', 'prace': 'Přidat práci z ceníku'}.get(typ_okna, 'Přidat z ceníku') %}
-{% set typ_param = ('?typ=' ~ typ_okna) if typ_okna else '' %}
 {% block title %}{{ nadpis_okna }} – {{ zakazka.cislo }}{% endblock %}
 {% block content %}
 <div class="okno-cenik formular prijem siroky" data-bez-potvrzeni>
@@ -13,7 +12,6 @@
   <header class="okno-hlavicka">
     <h1>{{ nadpis_okna }} <span class="oznaceni">zakázka {{ zakazka.cislo }} · {{ spz(zakazka.vozidlo.spz) }}</span></h1>
     <span class="tlacitka-hlavicky neni-tisk">
-      <a href="/cenik/nova{{ typ_param }}" role="button" class="secondary outline maly" target="_blank">Nová položka ceníku</a>
       {# TODO: tlačítko Import položek do zakázky se vrátí, až bude import hotový (#8) #}
       {% if okno %}
       <button type="button" class="zpet maly" data-zavrit-okno title="Zavřít okno (Esc)">✕ Zavřít</button>
@@ -31,7 +29,7 @@
   <div id="cenik-vysledky" class="vysledky-ceniku">
     {% include "_cenik_vyber_vysledky.html" %}
   </div>
-  <p class="tlumene napoveda-okna neni-tisk">Vložit / Enter / dvojklik zapíše řádek do zakázky · šipky ↓ ↑ vybírají ·
+  <p class="tlumene napoveda-okna neni-tisk">Vložit / Enter / dvojklik zapíše řádek do zakázky a zavře okno · šipky ↓ ↑ vybírají ·
     Upravit = karta položky ceníku · Esc zavře okno</p>
 </div>
 {% endblock %}

@@ -621,7 +621,7 @@ def test_detail_zakazky_mrizka_polozek():
     assert 'class="soucty"' not in detail
 
 
-def test_okno_cenik_pridava_a_zustava_otevrene():
+def test_okno_cenik_vlozi_a_zavre():
     client.post("/cenik/nova", data={"typ": "material", "nazev": "Brzdová kapalina", "cena": "180", "jednotka": "l"})
     client.post("/cenik/nova", data={"typ": "material", "nazev": "Stěrač", "cena": "250"})
     loc = _prijem().headers["location"].split("?")[0]
@@ -638,8 +638,10 @@ def test_okno_cenik_pridava_a_zustava_otevrene():
     okno = client.get(f"{loc}/cenik", params={"okno": "1"}).text
     assert "K vložení" not in okno and "Na zakázce" not in okno
     r = client.post(f"{loc}/polozky", data={"polozka_ceniku_id": cid, "mnozstvi": "2", "okno": "1", "q": "brzd"})
-    assert r.status_code == 200 and "Přidáno: Brzdová kapalina (2 l)" in r.text and "data-obnovit-po-zavreni" in r.text
-    assert 'value="brzd"' in r.text  # hledání zůstane, jde vkládat dál
+    # #48: Vložit okno zavře a obnoví detail zakázky, hláška přijde v cookie
+    from urllib.parse import unquote
+    assert r.status_code == 204 and r.headers["HX-Refresh"] == "true"
+    assert unquote(r.cookies.get("zprava")) == "Přidáno: Brzdová kapalina (2 l)"
     r = client.post(f"{loc}/polozky", data={"polozka_ceniku_id": cid, "mnozstvi": "0", "okno": "1"})
     assert "větší než 0" in r.text
     # Vložit zapíše výběr najednou
@@ -934,14 +936,14 @@ def test_okno_ceniku_jen_pro_jeden_typ():
     material = client.get(f"{loc}/cenik", params={"typ": "material", "okno": "1"}).text
     assert "Přidat materiál z ceníku" in material and "Filtr oleje" in material and "Výměna filtru" not in material
     assert "<th>Zaměnitelný díl</th>" in material and "BOSCH 0451" in material and "<th>Typ</th>" not in material
-    assert '"typ": "material"' in material and "Nová položka ceníku" in material
+    assert '"typ": "material"' in material and "Nová položka ceníku" not in material  # #48: nahoře jen Zavřít
     # ruční položka se do okna ceníku nedává – je jen tlačítkem + Ruční v mřížce zakázky (#25)
     assert "/polozky/nova" not in material and "Ruční položka" not in material
     # #3: tlačítka v liště nad seznamem, okno bez sloupce akcí vlevo (sloupec Kód je širší)
     assert '<aside class="akce"' not in material and 's-akcemi' not in material
-    # #46: tlačítka v titulku nahoře (Nová položka ceníku, Zavřít), nápověda dole vpravo
+    # #46 / #48: v titulku nahoře jen Zavřít, nápověda dole vpravo
     hlavicka = material.split('class="okno-hlavicka"')[1].split("</header>")[0]
-    assert hlavicka.index("Nová položka ceníku") < hlavicka.index("✕ Zavřít")
+    assert "✕ Zavřít" in hlavicka and "Nová položka" not in hlavicka
     assert material.index('id="cenik-vysledky"') < material.index('class="tlumene napoveda-okna')
     prace = client.get(f"{loc}/cenik", params={"typ": "prace", "okno": "1"}).text
     assert "Přidat práci z ceníku" in prace and "Výměna filtru" in prace and "Filtr oleje" not in prace

@@ -346,9 +346,8 @@ async def zakazka_pridej_polozku(request: Request, db: DB, zakazka_id: int):
             return _okno_ceniku(request, db, zakazka_id, data.get("q", ""), okno, chyba=str(e),
                                 typ=data.get("typ_okna"))
         return _formular_polozky(request, db, zakazka_id, data, okno, e)
-    if z_ceniku and okno and not data.get("z_rucni"):  # z okna ruční položky („Použít z ceníku“) zpět na zakázku
-        return _okno_ceniku(request, db, zakazka_id, data.get("q", ""), okno, pridano=True, typ=data.get("typ_okna"),
-                            zprava=f"Přidáno: {radek.nazev} ({_mnozstvi(radek.mnozstvi)} {radek.jednotka})")
+    if z_ceniku and okno:  # Vložit v okně ceníku (#48): okno se zavře a detail zakázky obnoví s hláškou
+        return _po_ulozeni_okna(zprava=f"Přidáno: {radek.nazev} ({_mnozstvi(radek.mnozstvi)} {radek.jednotka})")
     return _po_ulozeni(okno, f"/zakazky/{zakazka_id}#polozky", zprava="Položka přidána.")
 
 
