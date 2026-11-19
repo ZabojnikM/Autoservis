@@ -605,7 +605,10 @@ def test_detail_zakazky_mrizka_polozek():
     assert "Zatím žádný materiál." in detail and "Zatím žádná práce." not in detail
     # #26: v titulku název, pak tlačítka, souhrn (počet a částka) až na konci vpravo
     titulek = detail.split('id="polozky-prace"')[1].split("</div>")[0]
-    assert titulek.index("<strong>Práce</strong>") < titulek.index("+ Z ceníku") < titulek.index("+ Ruční")         < titulek.index('class="tlumene souhrn-mrizky">1 položka')
+    # #41: bez nadpisu, tlačítka „Práce ceník / Nová práce“, souhrn vpravo
+    assert "<strong>Práce</strong>" not in titulek
+    assert titulek.index(">Práce ceník</a>") < titulek.index(">Nová práce</a>")         < titulek.index('class="tlumene souhrn-mrizky">1 položka')
+    assert ">Materiál ceník</a>" in detail and ">Nový materiál</a>" in detail
     # tlačítka přidání už nejsou v levém sloupci
     assert 'role="button" data-okno>Přidat z ceníku</a>' not in detail and ">Ruční položka</a>" not in detail
     # Upravit / Odebrat položku už nejsou v levém sloupci (jsou přímo v řádku, Upravit vlevo od Smazat)
@@ -887,7 +890,7 @@ def test_uprava_radku_na_karte_ceniku_a_mnozstvi_v_radku():
     # ruční řádek (bez ceníku) se upravuje ve stejném okně jako karta Materiál, volba „do ceníku“ nezaškrtnutá
     uprava = client.get(f"/polozky/{rucni}/upravit").text
     assert "Upravit materiál" in uprava and "ruční položka" in uprava and "Zaměnitelný díl" in uprava
-    assert re.search(r'name="ulozit_do_ceniku" value="1"\s*>', uprava)
+    assert re.search(r'name="ulozit_do_ceniku" value=""\s*checked', uprava)
 
 
 def test_hledani_vin_prijme_vozidlo_s_vin():
@@ -954,7 +957,8 @@ def test_rucni_polozka_jako_karta_ceniku():
     zid = loc.rsplit("/", 1)[1]
     okno = client.get(f"{loc}/polozky/nova", params={"typ": "material", "okno": "1"}).text
     assert "Ruční materiál" in okno and "Zaměnitelný díl" in okno and "Nákupní cena" in okno
-    assert re.search(r'name="ulozit_do_ceniku" value="1"\s*checked', okno)  # předem zaškrtnuté
+    assert re.search(r'name="ulozit_do_ceniku" value=""\s*checked', okno)  # výchozí jen do zakázky (#41)
+    assert re.search(r'name="ulozit_do_ceniku" value="1"\s*>', okno)
     prace = client.get(f"{loc}/polozky/nova", params={"typ": "prace"}).text
     assert "Ruční práce" in prace and "Název práce" in prace and "Zaměnitelný díl" not in prace
     # uložení i do ceníku: položka ceníku se založí se všemi poli a řádek je s ní propojený

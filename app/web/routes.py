@@ -312,7 +312,7 @@ def _formular_polozky(request, db, zakazka_id, hodnoty, okno=False, chyba=None, 
 @router.get("/zakazky/{zakazka_id}/polozky/nova", response_class=HTMLResponse)
 def zakazka_nova_polozka(request: Request, db: DB, zakazka_id: int, okno: str = "", typ: str = ""):
     typ = typ if typ in TypPolozky.VSECHNY else TypPolozky.MATERIAL
-    hodnoty = _nova_polozka_ceniku(db, typ) | {"mnozstvi": "1", "ulozit_do_ceniku": "1"}
+    hodnoty = _nova_polozka_ceniku(db, typ) | {"mnozstvi": "1"}  # výchozí jen do zakázky (#41)
     return _formular_polozky(request, db, zakazka_id, hodnoty, okno=bool(okno))
 
 
