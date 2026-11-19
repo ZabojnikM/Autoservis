@@ -28,14 +28,13 @@
   </div>
   {{ pole('k_telefon', 'Telefon', hz, typ='tel') }}
   {{ pole('k_email', 'E-mail', hz, typ='email') }}
-  <div class="mrizka">
-    <div class="radek-s-tlacitky">
-      <label class="roztahnout">IČO
-        <input type="text" name="k_ico" value="{{ hz.get('k_ico') or '' }}" inputmode="numeric" autocomplete="off">
-      </label>
-      <button type="button" tabindex="-1" class="maly secondary outline" title="Načíst název, adresu a DIČ firmy z ARES podle IČO"
-              onclick="nactiZAres(this, 'k_')">Načíst podle IČO</button>
-    </div>
-    {{ pole('k_dic', 'DIČ', hz) }}
+  {# IČO s tlačítkem přes celou šířku panelu, DIČ pod ním – v úzkém panelu by se pole IČO jinak zmáčklo #}
+  <div class="radek-s-tlacitky">
+    <label class="roztahnout">IČO
+      <input type="text" name="k_ico" value="{{ hz.get('k_ico') or '' }}" inputmode="numeric" autocomplete="off">
+    </label>
+    <button type="button" tabindex="-1" class="maly secondary outline" title="Načíst název, adresu a DIČ firmy z ARES podle IČO"
+            onclick="nactiZAres(this, 'k_')">Načíst podle IČO</button>
   </div>
+  {{ pole('k_dic', 'DIČ', hz) }}
 </fieldset>

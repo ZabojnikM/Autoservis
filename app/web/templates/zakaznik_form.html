@@ -23,16 +23,15 @@
       {{ pole('telefon', 'Telefon', hodnoty, typ='tel') }}
       {{ pole('email', 'E-mail', hodnoty, typ='email') }}
     </div>
-    <div class="mrizka">
-      <div class="radek-s-tlacitky">
-        <label class="roztahnout">IČO
-          <input type="text" name="ico" value="{{ hodnoty.get('ico') or '' }}" inputmode="numeric" autocomplete="off">
-        </label>
-        <button type="button" class="maly secondary outline" title="Načíst název, adresu a DIČ firmy z ARES podle IČO"
-                onclick="nactiZAres(this, '')">Načíst podle IČO</button>
-      </div>
-      {{ pole('dic', 'DIČ', hodnoty) }}
+    {# IČO s tlačítkem přes celou šířku, DIČ pod ním (jako v okně nové zakázky) #}
+    <div class="radek-s-tlacitky">
+      <label class="roztahnout">IČO
+        <input type="text" name="ico" value="{{ hodnoty.get('ico') or '' }}" inputmode="numeric" autocomplete="off">
+      </label>
+      <button type="button" class="maly secondary outline" title="Načíst název, adresu a DIČ firmy z ARES podle IČO"
+              onclick="nactiZAres(this, '')">Načíst podle IČO</button>
     </div>
+    {{ pole('dic', 'DIČ', hodnoty) }}
     {{ textove_pole('poznamka', 'Poznámka', hodnoty, radky=2) }}
   </fieldset>
 </form>
