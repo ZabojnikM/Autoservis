@@ -46,11 +46,11 @@
   <p class="tlumene poznamka">Enter = další pole · Ctrl+Enter = uložit · Esc = zrušit</p>
 {%- endmacro %}
 
-{% macro tlacitka_karty_z_ceniku(id, z_ceniku, q) -%}
+{% macro tlacitka_karty_z_ceniku(id, z_ceniku, q, typ='') -%}
 {# Karta položky ceníku otevřená tlačítkem Upravit v okně Přidat z ceníku: Uložit a Zpět (do okna ceníku). #}
   <button type="submit" form="{{ id }}">Uložit</button>
   <button type="button" class="zpet" hx-get="/zakazky/{{ z_ceniku }}/cenik" hx-target="#okno-formular-obsah"
-          hx-vals='{{ {"okno": "1", "q": q or ""}|tojson }}'>Zpět</button>
+          hx-vals='{{ {"okno": "1", "q": q or "", "typ": typ}|tojson }}'>Zpět</button>
   <p class="tlumene poznamka">Enter = další pole · Ctrl+Enter = uložit · Esc = zrušit</p>
 {%- endmacro %}
 

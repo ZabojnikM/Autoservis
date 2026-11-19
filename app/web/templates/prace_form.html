@@ -5,7 +5,7 @@
 {% block title %}{{ 'Upravit práci' if polozka else 'Nová práce' }}{% endblock %}
 {% block akce %}
   {% if z_ceniku %}
-  {{ tlacitka_karty_z_ceniku('prace-form', z_ceniku, q_ceniku) }}
+  {{ tlacitka_karty_z_ceniku('prace-form', z_ceniku, q_ceniku, 'prace') }}
   {% else %}
   {{ tlacitka_formulare('prace-form', okno, '/prace') }}
   {% endif %}

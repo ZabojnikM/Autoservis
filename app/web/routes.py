@@ -260,24 +260,31 @@ def _detail_zakazky(request, db, zakazka_id, chyba=None, hodnoty=None, status_co
 LIMIT_CENIKU = 100
 
 
-def _okno_ceniku(request, db, zakazka_id, q="", okno=False, chyba=None, zprava=None, pridano=False):
+def _typ_ceniku(typ) -> str | None:
+    """Typ okna Přidat z ceníku: materiál / práce (z tlačítka mřížky), jinak oba ceníky."""
+    return typ if typ in TypPolozky.VSECHNY else None
+
+
+def _okno_ceniku(request, db, zakazka_id, q="", okno=False, chyba=None, zprava=None, pridano=False, typ=None):
     """Okno „Přidat z ceníku“ (jako F9 ve starém systému) – hledání v ceníku a výběr položek.
 
     V okně se položky jen vybírají do seznamu vpravo (drží ho prohlížeč); do zakázky je zapíše až
     Vložit (POST /zakazky/{id}/polozky/vlozit). Storno okno zavře a zakázky se nedotkne.
-    Celá stránka (bez okna) přidává rovnou do zakázky."""
+    Celá stránka (bez okna) přidává rovnou do zakázky.
+    `typ` = materiál / práce: okno nabízí jen tento ceník (se sloupci jako karta Materiál / Práce)."""
     q = cisty_text(q) or ""
+    typ = _typ_ceniku(typ)
     zakazka = zakazky.ziskej(db, zakazka_id)
     db.refresh(zakazka)
     return _stranka(request, "zakazka_cenik.html", _status_formulare(okno, chyba), aktivni="zakazky",
-                    zakazka=zakazka, zakazka_id=zakazka_id, q=q, okno=okno,
-                    nalezene=cenik.seznam(db, q, jen_aktivni=True, limit=LIMIT_CENIKU), limit=LIMIT_CENIKU,
+                    zakazka=zakazka, zakazka_id=zakazka_id, q=q, okno=okno, typ_okna=typ,
+                    nalezene=cenik.seznam(db, q, typ=typ, jen_aktivni=True, limit=LIMIT_CENIKU), limit=LIMIT_CENIKU,
                     nast=nastaveni.nacti(db), hlaseni_chyba=chyba, hlaseni=zprava, pridano=pridano)
 
 
 @router.get("/zakazky/{zakazka_id}/cenik", response_class=HTMLResponse)
-def zakazka_cenik(request: Request, db: DB, zakazka_id: int, q: str = "", okno: str = ""):
-    return _okno_ceniku(request, db, zakazka_id, q, okno=bool(okno))
+def zakazka_cenik(request: Request, db: DB, zakazka_id: int, q: str = "", okno: str = "", typ: str = ""):
+    return _okno_ceniku(request, db, zakazka_id, q, okno=bool(okno), typ=typ)
 
 
 @router.post("/zakazky/{zakazka_id}/polozky/vlozit")
@@ -330,10 +337,11 @@ async def zakazka_pridej_polozku(request: Request, db: DB, zakazka_id: int):
     except ChybaValidace as e:
         db.rollback()
         if z_ceniku:
-            return _okno_ceniku(request, db, zakazka_id, data.get("q", ""), okno, chyba=str(e))
+            return _okno_ceniku(request, db, zakazka_id, data.get("q", ""), okno, chyba=str(e),
+                                typ=data.get("typ_okna"))
         return _formular_polozky(request, db, zakazka_id, data, okno, e)
     if z_ceniku and okno:
-        return _okno_ceniku(request, db, zakazka_id, data.get("q", ""), okno, pridano=True,
+        return _okno_ceniku(request, db, zakazka_id, data.get("q", ""), okno, pridano=True, typ=data.get("typ_okna"),
                             zprava=f"Přidáno: {radek.nazev} ({_mnozstvi(radek.mnozstvi)} {radek.jednotka})")
     return _po_ulozeni(okno, f"/zakazky/{zakazka_id}#polozky", zprava="Položka přidána.")
 
@@ -753,11 +761,12 @@ def prace_seznam(request: Request, db: DB, q: str = "", neaktivni: str = "",
 
 
 @router.get("/cenik/vyber", response_class=HTMLResponse)
-def cenik_vyber(request: Request, db: DB, q: str = "", zakazka_id: int = 0, okno: str = ""):
+def cenik_vyber(request: Request, db: DB, q: str = "", zakazka_id: int = 0, okno: str = "", typ: str = ""):
     """HTMX: hledání v ceníku v okně Přidat z ceníku (prázdné hledání = začátek ceníku)."""
     q = cisty_text(q) or ""
-    return _stranka(request, "_cenik_vyber_vysledky.html", q=q, zakazka_id=zakazka_id, okno=bool(okno),
-                    nalezene=cenik.seznam(db, q, jen_aktivni=True, limit=LIMIT_CENIKU), limit=LIMIT_CENIKU,
+    typ = _typ_ceniku(typ)
+    return _stranka(request, "_cenik_vyber_vysledky.html", q=q, zakazka_id=zakazka_id, okno=bool(okno), typ_okna=typ,
+                    nalezene=cenik.seznam(db, q, typ=typ, jen_aktivni=True, limit=LIMIT_CENIKU), limit=LIMIT_CENIKU,
                     nast=nastaveni.nacti(db))
 
 
@@ -862,7 +871,8 @@ async def cenik_upravit_uloz(request: Request, db: DB, polozka_id: int):
             return _po_ulozeni(okno, zpet, zprava=f"Karta uložena, ale řádek zakázky ne: {e}")
         return _po_ulozeni(okno, zpet, zprava=f"Položka „{polozka.nazev}“ uložena v ceníku i na zakázce.")
     if okno and z_ceniku:  # karta otevřená z okna Přidat z ceníku → zpět do něj
-        return _okno_ceniku(request, db, z_ceniku, q, okno=True, zprava=f"Karta uložena: {polozka.nazev}")
+        return _okno_ceniku(request, db, z_ceniku, q, okno=True, zprava=f"Karta uložena: {polozka.nazev}",
+                            typ=polozka.typ)
     return _po_ulozeni(okno, _adresa_ceniku(cenik.ziskej(db, polozka_id).typ), zprava="Položka ceníku uložena.")
 
 

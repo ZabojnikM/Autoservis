@@ -665,7 +665,8 @@ def test_okno_cenik_radek_upravit_kartu():
     r = client.post(f"/cenik/{cid}/upravit", data={"okno": "1", "z_ceniku": zid, "q": "kapal", "typ": "material",
                                                     "nazev": "Brzdová kapalina DOT4", "cena": "190", "aktivni": "1"})
     assert r.status_code == 200 and "Karta uložena: Brzdová kapalina DOT4" in r.text
-    assert "Přidat z ceníku" in r.text and 'value="kapal"' in r.text
+    # karta materiálu se vrátí do okna materiálu
+    assert "Přidat materiál z ceníku" in r.text and 'value="kapal"' in r.text
     # bez okna se karta chová jako dřív
     assert "Smazat z ceníku" in client.get(f"/cenik/{cid}/upravit").text
 
@@ -903,3 +904,25 @@ def test_material_pred_praci_v_tisku_a_dokladu():
         text = client.get(adresa).text
         assert text.index("Olejový filtr") < text.index("Diagnostika"), adresa
         assert text.index("<dt>Materiál</dt>") < text.index("<dt>Práce</dt>"), adresa
+
+
+def test_okno_ceniku_jen_pro_jeden_typ():
+    client.post("/cenik/nova", data={"typ": "material", "kod": "MANN W712", "nazev": "Filtr oleje", "cena": "250",
+                                     "zamenitelny_dil": "BOSCH 0451"})
+    client.post("/prace/nova", data={"typ": "prace", "nazev": "Výměna filtru", "cena": "400"})
+    loc = _prijem().headers["location"].split("?")[0]
+    zid = loc.rsplit("/", 1)[1]
+    material = client.get(f"{loc}/cenik", params={"typ": "material", "okno": "1"}).text
+    assert "Přidat materiál z ceníku" in material and "Filtr oleje" in material and "Výměna filtru" not in material
+    assert "<th>Zaměnitelný díl</th>" in material and "BOSCH 0451" in material and "<th>Typ</th>" not in material
+    assert '"typ": "material"' in material and f'href="/zakazky/{zid}/polozky/nova?typ=material"' in material
+    prace = client.get(f"{loc}/cenik", params={"typ": "prace", "okno": "1"}).text
+    assert "Přidat práci z ceníku" in prace and "Výměna filtru" in prace and "Filtr oleje" not in prace
+    assert "Zaměnitelný díl" not in prace
+    # hledání při psaní drží typ
+    vysledky = client.get("/cenik/vyber", params={"q": "filtr", "zakazka_id": zid, "okno": "1", "typ": "prace"}).text
+    assert "Výměna filtru" in vysledky and "Filtr oleje" not in vysledky
+    assert 'name="typ_okna" value="prace"' in vysledky
+    # bez typu (starší odkazy) oba ceníky se sloupcem Typ
+    oba = client.get(f"{loc}/cenik", params={"okno": "1"}).text
+    assert "Filtr oleje" in oba and "Výměna filtru" in oba and "<th>Typ</th>" in oba

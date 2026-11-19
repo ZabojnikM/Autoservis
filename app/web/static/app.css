@@ -489,6 +489,7 @@ th.razeni.cislo a { text-align: right; }
 .okno-cenik .vyber-cenik { table-layout: fixed; width: 100%; }
 .okno-cenik .vyber-cenik .sl-typ { width: 6.5rem; }
 .okno-cenik .vyber-cenik .sl-kod { width: 8.5rem; }
+.okno-cenik .vyber-cenik .sl-zamenitelny { width: 8.5rem; }
 .okno-cenik .vyber-cenik .sl-cena { width: 6.5rem; }
 .okno-cenik .vyber-cenik .sl-cena-mj { width: 9.5rem; }  /* „1 600,00 / úkon“ */
 /* poslední sloupec: Upravit | množství | Přidat – musí se vejít celý, jinak se pole množství ořízne */

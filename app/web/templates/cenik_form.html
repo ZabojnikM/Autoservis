@@ -5,7 +5,7 @@
 {% block title %}{{ 'Upravit materiál' if polozka else 'Nový materiál' }}{% endblock %}
 {% block akce %}
   {% if z_ceniku %}
-  {{ tlacitka_karty_z_ceniku('cenik-form', z_ceniku, q_ceniku) }}
+  {{ tlacitka_karty_z_ceniku('cenik-form', z_ceniku, q_ceniku, 'material') }}
   {% else %}
   {{ tlacitka_formulare('cenik-form', okno, '/cenik') }}
   {% endif %}

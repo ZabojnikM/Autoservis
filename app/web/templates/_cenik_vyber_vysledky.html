@@ -2,19 +2,25 @@
    okno=True: přidání přes HTMX, odpověď = znovu vykreslené okno s hláškou.
    Řádek: dvojklik nebo Enter (vybraný šipkami) přidá zadané množství (předvyplněno 1);
    Upravit otevře kartu položky ceníku – v okně ve stejném okně, po uložení se vrátí sem. #}
+{# typ_okna = material / prace: jen jeden ceník se sloupci jako karta Materiál / Práce (bez sloupce Typ);
+   bez typu oba ceníky se sloupcem Typ. #}
+{% set ukaz_typ = not typ_okna %}
+{% set ukaz_zamenitelny = typ_okna == 'material' %}
 {% if nalezene %}
-<table class="vyber-cenik striped">
-  <colgroup><col class="sl-typ"><col class="sl-kod"><col><col class="sl-cena-mj"><col class="sl-cena"><col class="sl-mnozstvi"></colgroup>
-  <thead><tr><th>Typ</th><th>Kód</th><th>Název</th><th class="cislo">Cena bez DPH</th>
+<table class="vyber-cenik striped vyber-{{ typ_okna or 'vse' }}">
+  <colgroup>{% if ukaz_typ %}<col class="sl-typ">{% endif %}<col class="sl-kod"><col>{% if ukaz_zamenitelny %}<col class="sl-zamenitelny">{% endif %}<col class="sl-cena-mj"><col class="sl-cena"><col class="sl-mnozstvi"></colgroup>
+  <thead><tr>{% if ukaz_typ %}<th>Typ</th>{% endif %}<th>Kód</th><th>Název</th>{% if ukaz_zamenitelny %}<th>Zaměnitelný díl</th>{% endif %}
+    <th class="cislo">Cena bez DPH</th>
     <th class="cislo">{% if nast.platce_dph %}Cena s DPH{% endif %}</th><th class="cislo">Množství</th></tr></thead>
   <tbody>
   {% for p in nalezene %}
     {% set cena = p.cena %}
     {% set adresa_karty = ('/prace/%d/upravit' if p.typ == 'prace' else '/cenik/%d/upravit') % p.id %}
     <tr data-pridat title="Dvojklik nebo Enter = přidat{% if okno %} do seznamu k vložení{% else %} do zakázky{% endif %}">
-      <td><span class="typ typ-{{ p.typ }}">{{ p.nazev_typu }}</span></td>
+      {% if ukaz_typ %}<td><span class="typ typ-{{ p.typ }}">{{ p.nazev_typu }}</span></td>{% endif %}
       <td class="tlumene zkratit" title="{{ p.kod or '' }}">{{ p.kod or '' }}</td>
       <td title="{{ p.nazev }}{% if p.poznamka %} – {{ p.poznamka }}{% endif %}"><strong>{{ p.nazev }}</strong></td>
+      {% if ukaz_zamenitelny %}<td class="tlumene zkratit" title="{{ p.zamenitelny_dil or '' }}">{{ p.zamenitelny_dil or '' }}</td>{% endif %}
       <td class="cislo">{{ cena|penize }} <span class="tlumene">/ {{ p.jednotka }}</span></td>
       <td class="cislo tlumene">{% if nast.platce_dph %}{{ (cena * (100 + p.sazba_dph) / 100)|penize }}{% endif %}</td>
       <td class="bunka-pridat"><div>
@@ -31,6 +37,7 @@
               {% if okno %}data-kosik data-nazev="{{ p.nazev }}" data-jednotka="{{ p.jednotka }}" data-typ="{{ p.typ }}"{% endif %}>
           <input type="hidden" name="polozka_ceniku_id" value="{{ p.id }}">
           {% if okno %}<input type="hidden" name="okno" value="1"><input type="hidden" name="q" value="{{ q }}">{% endif %}
+          {% if typ_okna %}<input type="hidden" name="typ_okna" value="{{ typ_okna }}">{% endif %}
           <span class="krokovac">
             <button type="button" class="krok" data-krok="-1" tabindex="-1" aria-label="Ubrat 1">−</button>
             <input type="text" name="mnozstvi" value="1" inputmode="decimal" aria-label="Množství – {{ p.nazev }}"
@@ -48,7 +55,7 @@
 <p class="tlumene maly-text omezeni">Zobrazeno prvních {{ limit }} položek – upřesněte hledání.</p>
 {% endif %}
 {% elif q %}
-<p class="tlumene" style="padding:.5rem .6rem">V ceníku nic nenalezeno – zadejte <a href="/zakazky/{{ zakazka_id }}/polozky/nova" {% if okno %}data-okno{% endif %}>ruční položku</a>.</p>
+<p class="tlumene" style="padding:.5rem .6rem">V ceníku nic nenalezeno – zadejte <a href="/zakazky/{{ zakazka_id }}/polozky/nova{% if typ_okna %}?typ={{ typ_okna }}{% endif %}" {% if okno %}data-okno{% endif %}>ruční položku</a>.</p>
 {% else %}
-<p class="tlumene" style="padding:.5rem .6rem">Ceník je prázdný.</p>
+<p class="tlumene" style="padding:.5rem .6rem">{{ {'material': 'Ceník materiálu', 'prace': 'Ceník prací'}.get(typ_okna, 'Ceník') }} je prázdný.</p>
 {% endif %}
