@@ -18,8 +18,9 @@
     {% set adresa_karty = ('/prace/%d/upravit' if p.typ == 'prace' else '/cenik/%d/upravit') % p.id %}
     <tr data-pridat title="Dvojklik nebo Enter = přidat{% if okno %} do seznamu k vložení{% else %} do zakázky{% endif %}">
       {% if ukaz_typ %}<td><span class="typ typ-{{ p.typ }}">{{ p.nazev_typu }}</span></td>{% endif %}
-      <td class="tlumene zkratit" title="{{ p.kod or '' }}">{{ p.kod or '' }}</td>
-      <td title="{{ p.nazev }}{% if p.poznamka %} – {{ p.poznamka }}{% endif %}"><strong>{{ p.nazev }}</strong></td>
+      {# kód je hlavní údaj – tučně, seznam je podle něj seřazený (#28) #}
+      <td class="zkratit kod-polozky-okna" title="{{ p.kod or '' }}"><strong>{{ p.kod or '' }}</strong></td>
+      <td title="{{ p.nazev }}{% if p.poznamka %} – {{ p.poznamka }}{% endif %}">{{ p.nazev }}</td>
       {% if ukaz_zamenitelny %}<td class="tlumene zkratit" title="{{ p.zamenitelny_dil or '' }}">{{ p.zamenitelny_dil or '' }}</td>{% endif %}
       <td class="cislo">{{ cena|penize }} <span class="tlumene">/ {{ p.jednotka }}</span></td>
       <td class="cislo tlumene">{% if nast.platce_dph %}{{ (cena * (100 + p.sazba_dph) / 100)|penize }}{% endif %}</td>

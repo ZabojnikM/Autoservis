@@ -278,7 +278,7 @@ def _okno_ceniku(request, db, zakazka_id, q="", okno=False, chyba=None, zprava=N
     db.refresh(zakazka)
     return _stranka(request, "zakazka_cenik.html", _status_formulare(okno, chyba), aktivni="zakazky",
                     zakazka=zakazka, zakazka_id=zakazka_id, q=q, okno=okno, typ_okna=typ,
-                    nalezene=cenik.seznam(db, q, typ=typ, jen_aktivni=True, limit=LIMIT_CENIKU), limit=LIMIT_CENIKU,
+                    nalezene=cenik.seznam(db, q, typ=typ, jen_aktivni=True, limit=LIMIT_CENIKU, podle_kodu=True), limit=LIMIT_CENIKU,
                     nast=nastaveni.nacti(db), hlaseni_chyba=chyba, hlaseni=zprava, pridano=pridano)
 
 
@@ -768,7 +768,7 @@ def cenik_vyber(request: Request, db: DB, q: str = "", zakazka_id: int = 0, okno
     q = cisty_text(q) or ""
     typ = _typ_ceniku(typ)
     return _stranka(request, "_cenik_vyber_vysledky.html", q=q, zakazka_id=zakazka_id, okno=bool(okno), typ_okna=typ,
-                    nalezene=cenik.seznam(db, q, typ=typ, jen_aktivni=True, limit=LIMIT_CENIKU), limit=LIMIT_CENIKU,
+                    nalezene=cenik.seznam(db, q, typ=typ, jen_aktivni=True, limit=LIMIT_CENIKU, podle_kodu=True), limit=LIMIT_CENIKU,
                     nast=nastaveni.nacti(db))
 
 

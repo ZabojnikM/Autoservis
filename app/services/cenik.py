@@ -148,9 +148,15 @@ def seznam(
     typ: str | None = None,
     jen_aktivni: bool = False,
     limit: int = 500,
+    podle_kodu: bool = False,
 ) -> list[PolozkaCeniku]:
+    """`podle_kodu` = řadit podle kódu (položky bez kódu na konec), jinak práce před materiálem a podle názvu."""
     dotaz = _dotaz_seznamu(hledat, typ, jen_aktivni)
-    return list(session.exec(dotaz.order_by(PolozkaCeniku.typ.desc(), func.lower(PolozkaCeniku.nazev)).limit(limit)))
+    if podle_kodu:
+        poradi = (PolozkaCeniku.kod.is_(None), PolozkaCeniku.kod.collate("cs"), PolozkaCeniku.nazev.collate("cs"))
+    else:
+        poradi = (PolozkaCeniku.typ.desc(), func.lower(PolozkaCeniku.nazev))
+    return list(session.exec(dotaz.order_by(*poradi).limit(limit)))
 
 
 def pocty_podle_typu(session: Session, hledat: str | None = None, jen_aktivni: bool = False) -> dict[str, int]:
