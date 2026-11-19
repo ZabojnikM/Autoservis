@@ -69,7 +69,9 @@
         {% if nast.platce_dph and typ == 'faktura' %}
         <label>DUZP <input type="date" name="duzp" value="{{ hodnoty.get('duzp')|iso }}"></label>
         {% endif %}
+        {% if typ == 'faktura' %}{# #58: vyúčtování splatnost nemá #}
         <label>Splatnost <input type="date" name="datum_splatnosti" value="{{ hodnoty.get('datum_splatnosti')|iso }}" required></label>
+        {% endif %}
       </div>
       {% if typ == 'faktura' %}
       <label>Forma úhrady

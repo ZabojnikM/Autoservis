@@ -46,7 +46,8 @@
     <dl>
       <dt>Vystaveno</dt><dd>{{ f.datum_vystaveni|datum }}</dd>
       {% if f.platce_dph and f.typ == 'faktura' %}<dt>DUZP</dt><dd>{{ f.duzp|datum }}</dd>{% endif %}
-      <dt>Splatnost</dt><dd {% if f.po_splatnosti %}class="po-terminu"{% endif %}>{{ f.datum_splatnosti|datum }}</dd>
+      {# #58: vyúčtování splatnost neuvádí #}
+      {% if f.typ == 'faktura' %}<dt>Splatnost</dt><dd {% if f.po_splatnosti %}class="po-terminu"{% endif %}>{{ f.datum_splatnosti|datum }}</dd>{% endif %}
       {% if f.typ == 'faktura' %}<dt>Forma úhrady</dt><dd>{{ f.nazev_formy_uhrady }}</dd>{% endif %}
       <dt>Var. symbol</dt><dd>{{ f.variabilni_symbol or '—' }}</dd>
       <dt>Celkem</dt><dd><strong>{{ f.celkem|penize }} {{ f.mena }}</strong></dd>

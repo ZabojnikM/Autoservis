@@ -1221,3 +1221,41 @@ def test_faktura_hotove_tisk_bez_qr():
                     follow_redirects=False)
     tisk = client.get(f"{r.headers['location'].split('?')[0]}/tisk").text
     assert "Hotově" in tisk and "<svg" not in tisk
+
+
+def test_splatnost_jen_u_faktury():
+    """#58: vyúčtování nemá splatnost v okně vystavení, detailu ani tisku; faktura ano."""
+    client.post("/nastaveni", data={"nazev_servisu": "Autoservis Test", "ico": "12345678", "dic": "CZ12345678", "mesto": "Brno",
+                                    "cislo_uctu": "19-2000145399/0800", "ucet_vyuctovani": "2001234567/2010",
+                                    "platce_dph": "1", "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    loc = _zakazka_s_polozkou()
+    assert 'name="datum_splatnosti"' not in client.get(f"{loc}/vystavit?typ=vyuctovani").text
+    assert 'name="datum_splatnosti"' in client.get(f"{loc}/vystavit?typ=faktura").text
+    r = client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "uhrazeno_ihned": "1"}, follow_redirects=False)
+    doklad = r.headers["location"].split("?")[0]
+    assert "<dt>Splatnost</dt>" not in client.get(doklad).text
+    assert "splatnosti" not in client.get(f"{doklad}/tisk").text
+    client.post(f"{doklad}/smazat")
+    r = client.post(f"{loc}/vystavit", data={"typ": "faktura", "odb_nazev": "Jana", "forma_uhrady": "prevod"},
+                    follow_redirects=False)
+    doklad = r.headers["location"].split("?")[0]
+    assert "<dt>Splatnost</dt>" in client.get(doklad).text
+    assert "Datum splatnosti" in client.get(f"{doklad}/tisk").text
+
+
+def test_zakazky_vychozi_razeni_od_nejstarsi():
+    """#56: bez zvoleného řazení podle čísla vzestupně, ruční řazení zůstává."""
+    for spz in ("1AA1111", "2BB2222", "3CC3333"):
+        _prijem(spz=spz)
+    text = client.get("/zakazky", params={"vse": "1"}).text
+    cisla = re.findall(r"<strong>(\d{4}-\d{4})</strong>", text) or re.findall(r">(\d{4}-\d{4})<", text)
+    assert len(cisla) >= 3 and cisla == sorted(cisla)
+    opacne = re.findall(r">(\d{4}-\d{4})<", client.get("/zakazky", params={"vse": "1", "razeni": "-cislo"}).text)
+    assert opacne[:3] == sorted(set(opacne), reverse=True)[:3]
+
+
+def test_nastaveni_platce_dph_u_dic():
+    """#52: zaškrtávátko Plátce DPH je hned u DIČ s nápovědou."""
+    text = client.get("/nastaveni").text
+    dic, platce, dph = text.index('name="dic"'), text.index('name="platce_dph"'), text.index("<legend>Ceny a DPH")
+    assert dic < platce < dph and "DIČ je povinné jen pro plátce DPH" in text

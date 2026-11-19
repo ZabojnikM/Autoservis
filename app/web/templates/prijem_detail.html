@@ -47,14 +47,7 @@
     </dl>
     {% endif %}
   </section>
-  <section class="panel">
-    <h2 class="titulek-panelu">Příjem</h2>
-    <dl>
-      <dt>Přijato</dt><dd>{{ hodnota(n.created_at|datumcas if n.created_at else None) }}</dd>
-      <dt>Změněno</dt><dd>{{ hodnota(n.updated_at|datumcas if n.updated_at else None) }}</dd>
-      <dt>Revize</dt><dd>{{ hodnota(n.revision) }}</dd>
-    </dl>
-  </section>
+  {# #53: technické údaje a Příjem prohozené #}
   <section class="panel">
     <h2 class="titulek-panelu">Technické údaje z registru</h2>
     {% if n.technicke %}
@@ -62,6 +55,14 @@
       {% for nazev, text in n.technicke %}<dt>{{ nazev }}</dt><dd>{{ hodnota(text, n.je_nejiste(nazev)) }}</dd>{% endfor %}
     </dl>
     {% else %}<p class="prazdny-udaj">Neuvedeno</p>{% endif %}
+  </section>
+  <section class="panel">
+    <h2 class="titulek-panelu">Příjem</h2>
+    <dl>
+      <dt>Přijato</dt><dd>{{ hodnota(n.created_at|datumcas if n.created_at else None) }}</dd>
+      <dt>Změněno</dt><dd>{{ hodnota(n.updated_at|datumcas if n.updated_at else None) }}</dd>
+      <dt>Revize</dt><dd>{{ hodnota(n.revision) }}</dd>
+    </dl>
   </section>
 </div>
 {% endif %}

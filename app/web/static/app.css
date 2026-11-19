@@ -918,6 +918,8 @@ dd .vedle { margin-left: 1rem; margin-right: .35rem; }
 .stav-db.mimo-db { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
 .stav-db.konflikt-db { background: #fee2e2; color: #991b1b; border-color: #fca5a5; cursor: help; }
 .prijem-seznam td.tlacitka-prijmu { white-space: nowrap; width: 1%; }
+.prijem-seznam td.spz-prijmu { white-space: nowrap; }
+.prijem-seznam td.spz-prijmu .stav-db { margin-left: 6px; }
 .prijem-seznam td.tlacitka-prijmu [role=button] { margin: 0 4px 0 0; width: auto; }
 .upozorneni-db { margin: 0 0 .75rem; }
 .prijem-seznam td.tlacitka-prijmu .hlavni-akce { display: inline-block; min-width: 8.5rem; text-align: center; }

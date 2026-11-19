@@ -310,7 +310,8 @@ class Faktura(SQLModel, table=True):
 
     @property
     def po_splatnosti(self) -> bool:
-        return not self.je_uhrazena and self.datum_splatnosti < date.today()
+        # vyúčtování splatnost neuvádí (#58) – je jen Uhrazeno / Neuhrazeno
+        return self.typ == TypDokladu.FAKTURA and not self.je_uhrazena and self.datum_splatnosti < date.today()
 
     @property
     def stav(self) -> str:

@@ -495,8 +495,10 @@ def spayd(faktura: Faktura, nast) -> str | None:
     zprava = re.sub(r"[*]", "", f"{faktura.nazev_typu} {faktura.cislo}")[:60]
     casti = [
         "SPD*1.0", f"ACC:{iban}", f"AM:{castka:.2f}", f"CC:{mena}",
-        f"DT:{faktura.datum_splatnosti:%Y%m%d}", f"MSG:{zprava}",
     ]
+    if faktura.typ == TypDokladu.FAKTURA:  # vyúčtování splatnost neuvádí (#58)
+        casti.append(f"DT:{faktura.datum_splatnosti:%Y%m%d}")
+    casti.append(f"MSG:{zprava}")
     if faktura.variabilni_symbol:
         casti.append(f"X-VS:{faktura.variabilni_symbol}")
     return "*".join(casti)

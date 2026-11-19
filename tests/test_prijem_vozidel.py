@@ -42,7 +42,10 @@ def test_seznam_od_nejnovejsiho_a_dve_navstevy_stejneho_auta(soubor):
     assert ">Příjem vozidel</a>" in text and 'class="striped klik-otevre prijem-seznam"' in text
     km = [t.replace(" ", " ") for t in re.findall(r"12\d.\d00", text)]
     assert text.count("1AB2345") == 2 and km[:2] == ["120 500", "120 000"]  # dvě návštěvy stejného auta
-    assert "ŠKODA OCTAVIA" in text and "Neuvedeno" in text  # chybějící VIN / km / značka
+    assert "<td>ŠKODA</td>" in text and "<td>OCTAVIA</td>" in text and "Neuvedeno" in text  # chybějící VIN / km / značka
+    # #53: SPZ → Značka → Model → VIN → Km → Přijato, tlačítka na konci
+    hlavicka = re.findall(r"<th[^>]*>([^<]*)</th>", text.split("<thead>")[1].split("</thead>")[0])
+    assert hlavicka == ["SPZ", "Značka", "Model", "VIN", "Km", "Přijato", ""]
     assert "tajne" not in text and "/fotky/" not in text  # sources, events, fotky se nezobrazují
 
 
@@ -54,6 +57,8 @@ def test_detail_nejisty_vin_a_chybejici_hodnoty(soubor):
     vin = detail.split("<dt>VIN</dt>")[1].split("</dd>")[0]
     assert 'class="nejiste"' in vin  # nejistý VIN je označený
     assert "TovarniZnacka" in detail and "Palivo" in detail and "tajne" not in detail
+    karty = re.findall(r'<h2 class="titulek-panelu">([^<]+)</h2>', detail)
+    assert karty == ["Vozidlo", "V databázi", "Technické údaje z registru", "Příjem"]  # #53: prohozené
     prazdny = client.get("/prijem/x2").text
     assert prazdny.count("Neuvedeno") >= 4 and 'class="nejiste"' not in prazdny
     r = client.get("/prijem/neexistuje")

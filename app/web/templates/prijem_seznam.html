@@ -17,22 +17,25 @@
 {% else %}
 <div class="overflow-auto">
 <table class="striped klik-otevre prijem-seznam">
-  <thead><tr><th></th><th>Přijato</th><th>SPZ</th><th>Databáze</th><th>Značka a model</th><th>VIN</th><th class="cislo">Km</th></tr></thead>
+  {# #53: SPZ → Značka → Model → VIN → Km → Přijato; stav v databázi u SPZ, tlačítka na konci řádku #}
+  <thead><tr><th>SPZ</th><th>Značka</th><th>Model</th><th>VIN</th><th class="cislo">Km</th><th>Přijato</th><th></th></tr></thead>
   <tbody>
   {% for n in prijmy.navstevy %}
     {% set shoda = shody[n.id] %}
     {% set detail = '/prijem/' ~ (n.id|urlencode) %}
     {% set a = shoda.akce %}
+    {% set v = shoda.vozidlo %}
     <tr data-otevrit="{{ a[1] if a else detail }}"{% if a and a[2] %} data-okno{% endif %}
         title="{{ ('Klik: ' ~ a[0]) if a else 'Klik otevře podrobnosti' }}">
-      <td class="tlacitka-prijmu">{{ hlavni_akce(shoda, 'maly') }}
-        <a href="{{ detail }}" role="button" class="maly secondary outline">Podrobnosti</a></td>
-      <td>{{ n.created_at|datumcas if n.created_at else 'Neuvedeno' }}</td>
-      <td>{% if n.spz %}{{ spz(n.spz) }}{% if n.je_nejiste('spz') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}<span class="tlumene">Neuvedeno</span>{% endif %}</td>
-      <td>{{ stav_db(shoda) }}</td>
-      <td>{% if n.popis %}{{ n.popis }}{% elif shoda.vozidlo and (shoda.vozidlo.znacka or shoda.vozidlo.model) %}<span class="tlumene" title="Z naší databáze">{{ shoda.vozidlo.popis }}</span>{% else %}<span class="tlumene">Neuvedeno</span>{% endif %}</td>
+      <td class="spz-prijmu">{% if n.spz %}{{ spz(n.spz) }}{% if n.je_nejiste('spz') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}<span class="tlumene">Neuvedeno</span>{% endif %}
+        {{ stav_db(shoda) }}</td>
+      <td>{% if n.znacka %}{{ n.znacka }}{% elif v and v.znacka %}<span class="tlumene" title="Z naší databáze">{{ v.znacka }}</span>{% else %}<span class="tlumene">Neuvedeno</span>{% endif %}</td>
+      <td>{% if n.model %}{{ n.model }}{% elif v and v.model %}<span class="tlumene" title="Z naší databáze">{{ v.model }}</span>{% else %}<span class="tlumene">Neuvedeno</span>{% endif %}</td>
       <td class="vin">{% if n.vin %}{{ n.vin }}{% if n.je_nejiste('vin') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}<span class="tlumene">Neuvedeno</span>{% endif %}</td>
       <td class="cislo">{% if n.km is not none %}{{ n.km|cislo }}{% if n.je_nejiste('odometer_km') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}<span class="tlumene">Neuvedeno</span>{% endif %}</td>
+      <td>{{ n.created_at|datumcas if n.created_at else 'Neuvedeno' }}</td>
+      <td class="tlacitka-prijmu">{{ hlavni_akce(shoda, 'maly') }}
+        <a href="{{ detail }}" role="button" class="maly secondary outline">Podrobnosti</a></td>
     </tr>
   {% endfor %}
   </tbody>

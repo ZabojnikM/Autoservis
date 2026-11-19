@@ -44,6 +44,12 @@
       {{ p('dic', 'DIČ', placeholder='např. CZ12345678') }}
       {{ p('vystavil', 'Vystavil (jméno na dokladu)') }}
     </div>
+    {# #52: plátce DPH hned u DIČ – povinnost DIČ s ním souvisí #}
+    <label class="volba"><input type="checkbox" name="platce_dph" value="1" {% if nast.platce_dph %}checked{% endif %}>
+      jsem <strong>plátce DPH</strong></label>
+    <p class="tlumene poznamka">DIČ je povinné jen pro plátce DPH. Neplátce ho může nechat prázdné, nebo vyplnit
+      (identifikovaná osoba) – faktura ho pak uvede. Změna plátcovství se projeví u nově přidaných položek;
+      řádky v zakázkách a vystavené doklady se nemění.</p>
     <div class="mrizka">
       {{ p('telefon', 'Telefon') }}
       {{ p('email', 'E-mail') }}
@@ -71,9 +77,7 @@
       </label>
       {{ p('mena', 'Měna') }}
     </div>
-    <label><input type="checkbox" name="platce_dph" value="1" {% if nast.platce_dph %}checked{% endif %}>
-      jsem <strong>plátce DPH</strong></label>
-    <p class="tlumene">Změna se projeví u nově přidaných položek. Řádky v zakázkách a vystavené doklady se nemění.</p>
+    <p class="tlumene">Plátce DPH se nastavuje u údajů servisu (u DIČ).</p>
   </fieldset>
 
   <fieldset class="panel">

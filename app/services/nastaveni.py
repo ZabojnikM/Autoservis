@@ -70,7 +70,7 @@ class NastaveniServisu:
         if not (self.ulice or self.mesto):
             chybi.append(("ulice", "adresa"))
         if self.platce_dph and not self.dic:
-            chybi.append(("dic", "DIČ (plátce DPH)"))
+            chybi.append(("dic", "DIČ (nebo zrušte „plátce DPH“, pokud nejste plátce)"))
         return chybi
 
     @property

@@ -340,8 +340,9 @@ def seznam(
 
 def stranka(session: Session, stav: str | list[str] | None = None, jen_otevrene: bool = False, hledat: str | None = None,
             razeni: str | None = None, od=0, limit: int = VELIKOST_STRANKY) -> Stranka:
-    """Seznam zakázek pro mřížku – řazení podle sloupce a načítání po dávkách."""
-    return strankuj_dotaz(session, _dotaz_seznamu(stav, jen_otevrene, hledat), RAZENI, razeni, "-prijato",
+    """Seznam zakázek pro mřížku – řazení podle sloupce a načítání po dávkách.
+    Výchozí řazení podle čísla od nejstarší (#56)."""
+    return strankuj_dotaz(session, _dotaz_seznamu(stav, jen_otevrene, hledat), RAZENI, razeni, "cislo",
                           od, limit, doplnkove=[Zakazka.id])
 
 

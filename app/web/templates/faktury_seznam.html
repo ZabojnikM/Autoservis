@@ -43,7 +43,7 @@
       <td><a href="/faktury/{{ f.id }}"><strong>{{ f.cislo }}</strong></a>
         {% if f.typ == 'vyuctovani' %}<span class="tlumene">vyúčt.</span>{% endif %}</td>
       <td>{{ f.datum_vystaveni|datum }}</td>
-      <td>{{ f.datum_splatnosti|datum }}</td>
+      <td>{% if f.typ == 'faktura' %}{{ f.datum_splatnosti|datum }}{% else %}<span class="tlumene">—</span>{% endif %}</td>
       <td>{{ f.odb_nazev }}</td>
       <td>{% if f.spz %}{{ spz(f.spz) }}{% endif %}</td>
       <td class="cislo">{{ f.celkem|penize }}</td>

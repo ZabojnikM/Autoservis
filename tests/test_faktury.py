@@ -293,3 +293,20 @@ def test_uzavrit_bez_dokladu_jen_s_potvrzenim(session, zakazka):
     _vystav(session, z)  # doklad jde vystavit i potom
     session.refresh(z)
     assert not z.uzavrena_bez_dokladu
+
+
+def test_vyuctovani_bez_splatnosti(session, zakazka):
+    """#58: vyúčtování splatnost neuvádí – nikdy není po splatnosti, QR bez data splatnosti."""
+    v = _vystav(session, zakazka, typ=TypDokladu.VYUCTOVANI, uhrazeno_ihned="",
+                datum_splatnosti=date.today() - timedelta(days=30), datum_vystaveni=date.today() - timedelta(days=40))
+    assert not v.po_splatnosti and v.stav == "neuhrazena"
+    assert "*DT:" not in faktury.spayd(v, nastaveni.nacti(session))
+
+
+def test_neplatce_bez_dic_vystavi_fakturu(session, zakazka):
+    """#52: neplátce s prázdným DIČ vystaví fakturu bez DPH."""
+    nastaveni.uloz(session, {"platce_dph": "1", "dic": ""})
+    assert "zrušte „plátce DPH“" in nastaveni.nacti(session).chybejici_udaje_text
+    nastaveni.uloz(session, {"platce_dph": "0"})
+    f = _vystav(session, zakazka)
+    assert not f.platce_dph and f.celkem == Decimal("650.00")
