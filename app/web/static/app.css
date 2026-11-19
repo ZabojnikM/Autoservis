@@ -666,7 +666,7 @@ h2 { font-size: 1.2rem; } h3 { font-size: 1.05rem; }
 .rozvrzeni { gap: var(--mezera); }
 .obsah { padding: 20px; }
 .s-akcemi .obsah { padding-left: 0; }
-.akce { width: 196px; margin: 20px 0 0 20px; padding: 12px; gap: 8px; top: 120px; }
+.akce { width: 196px; margin: 20px 0 0 20px; padding: 12px; gap: 8px; top: 78px; }  /* horní lišta 58 px + 20 px mezera */
 .akce a[role=button], .akce button { padding: 9px 16px; font-size: 1rem; }
 .akce .poznamka { font-size: .8rem; margin-top: 4px; }
 
@@ -899,10 +899,10 @@ dd .vedle { margin-left: 1rem; margin-right: .35rem; }
 .jedna-lista .logo-firmy { height: 36px; width: auto; max-width: 160px; object-fit: contain; }
 .jedna-lista .lista-vpravo { display: flex; align-items: center; gap: 10px; justify-self: end; }
 .jedna-lista .hledani { margin: 0; }
-.jedna-lista .hledani input { width: 300px; margin: 0; }
+.jedna-lista .hledani input { width: 460px; margin: 0; }
 .jedna-lista .ozubene-kolo { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px;
   border-radius: 10px; color: #4b5563; }
 .jedna-lista .ozubene-kolo:hover, .jedna-lista .ozubene-kolo.aktivni { background: var(--akcent-svetly); color: var(--akcent-tmavy); }
-@media (max-width: 1400px) { .jedna-lista .hledani input { width: 210px; } .jedna-lista .firma { font-size: 1.15rem; } }
+@media (max-width: 1400px) { .jedna-lista .hledani input { width: 320px; } .jedna-lista .firma { font-size: 1.15rem; } }
 .radek-loga { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .nahled-loga { height: 48px; width: auto; max-width: 200px; object-fit: contain; border: 1px solid var(--ram); border-radius: 8px; padding: 4px; background: #fff; }
