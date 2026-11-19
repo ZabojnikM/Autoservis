@@ -587,12 +587,16 @@ def test_detail_zakazky_mrizka_polozek():
     assert 'class="hlavicka-zakazky"' in detail and 'class="soucty"' in detail
     pid = re.search(r'data-odebrat="/polozky/(\d+)/smazat"', detail).group(1)
     assert f'data-upravit="/polozky/{pid}/upravit"' in detail
-    for akce in ['data-radek="upravit" data-okno>', 'data-radek="odebrat">', f'href="{loc}/cenik"', f'href="{loc}/polozky/nova"']:
+    for akce in [f'href="/polozky/{pid}/upravit" role="button" class="maly upravit-radek" data-okno',
+                 f'data-smazat-radek="/polozky/{pid}/smazat"', f'href="{loc}/cenik"', f'href="{loc}/polozky/nova"']:
         assert akce in detail, akce
+    # Upravit / Odebrat položku už nejsou v levém sloupci (jsou přímo v řádku, Upravit vlevo od Smazat)
+    assert 'data-radek="upravit" data-okno>' not in detail and 'data-radek="odebrat">' not in detail
+    assert detail.index(f'href="/polozky/{pid}/upravit" role="button"') < detail.index(f'data-smazat-radek="/polozky/{pid}/smazat"')
     # prázdná zakázka: odkazy na přidání v mřížce, bez tlačítek pro řádky
     prazdna = _prijem(spz="9Z99999").headers["location"].split("?")[0]
     detail = client.get(prazdna).text
-    assert "Zatím žádné položky" in detail and 'data-radek="odebrat">' not in detail
+    assert "Zatím žádné položky" in detail and "upravit-radek" not in detail
 
 
 def test_okno_cenik_pridava_a_zustava_otevrene():

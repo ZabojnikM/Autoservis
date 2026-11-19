@@ -116,6 +116,12 @@
           && !document.querySelector("dialog[open]")) {
         const tlacitko = document.querySelector(".akce [data-radek=odebrat]:not(:disabled)");
         if (tlacitko) { e.preventDefault(); tlacitko.click(); }
+        else if (vybranyRadek.dataset.odebrat) {  // položky zakázky: tlačítka jsou přímo v řádku, Delete se zeptá
+          e.preventDefault();
+          const cil = vybranyRadek.dataset.odebrat;
+          potvrd(vybranyRadek.dataset.odebratText || "Odebrat vybraný řádek?", {ano: "Odebrat", nebezpecne: true})
+            .then((ano) => { if (ano) odesliPost(cil); });
+        }
       }
     });
     document.addEventListener("DOMContentLoaded", () => {

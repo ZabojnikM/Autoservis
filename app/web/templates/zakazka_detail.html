@@ -11,10 +11,6 @@
     <hr>
     <a href="/zakazky/{{ zakazka.id }}/cenik" role="button" data-okno>Přidat z ceníku</a>
     <a href="/zakazky/{{ zakazka.id }}/polozky/nova" role="button" class="secondary" data-okno>Ruční položka</a>
-    {% if zakazka.polozky %}
-    <button type="button" class="secondary outline" data-radek="upravit" data-okno>Upravit položku</button>
-    <button type="button" class="secondary outline" data-radek="odebrat">Odebrat položku</button>
-    {% endif %}
   {% endif %}
   {% if doklad %}
     <hr>
@@ -138,6 +134,8 @@
       <td class="cislo"><strong>{{ r.zaklad|penize }}</strong></td>
       {% if nast.platce_dph %}<td class="cislo">{{ (r.zaklad * (100 + r.sazba_dph) / 100)|penize }}</td>{% endif %}
       {% if lze_menit %}<td class="sl-smazat neni-tisk">
+        <a href="/polozky/{{ r.id }}/upravit" role="button" class="maly upravit-radek" data-okno
+           title="Upravit položku (také dvojklik na řádek)">Upravit</a>
         <button type="button" class="maly smazat-radek" data-smazat-radek="/polozky/{{ r.id }}/smazat"
                 title="Smazat položku ze zakázky">Smazat</button></td>{% endif %}
     </tr>
