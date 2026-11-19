@@ -1039,3 +1039,11 @@ def test_kontrola_spz_a_prodej_pod_nakupem_v_sablonach():
     assert "data-kontrola-spz" in client.get("/vozidla/nove").text
     assert "data-kontrola-spz" in client.get("/zakazky/nova").text
     assert "data-pod-nakupem" in client.get("/cenik/nova").text
+
+
+def test_prazdny_pozadavek_a_interni_poznamka():
+    """#40: prázdný požadavek ukáže „Nevyplněno · Doplnit“, interní poznámka je zvlášť."""
+    loc = _prijem(spz="5P55555", pozadavek="", poznamka="Klíče na recepci").headers["location"].split("?")[0]
+    detail = client.get(loc).text
+    assert "Nevyplněno" in detail and f'href="{loc}/upravit" data-okno>Doplnit</a>' in detail
+    assert 'class="interni-poznamka neni-tisk"' in detail and "Klíče na recepci" in detail

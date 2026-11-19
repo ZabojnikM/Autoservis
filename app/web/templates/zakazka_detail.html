@@ -102,8 +102,11 @@
   </section>
   <section class="panel pozadavek">
     <h2 class="titulek-panelu">Požadavek zákazníka / popis závady</h2>
-    <p class="zachovat-radky">{{ zakazka.pozadavek }}</p>
-    {% if zakazka.poznamka %}<p class="tlumene neni-tisk">Interní poznámka: {{ zakazka.poznamka }}</p>{% endif %}
+    {% if zakazka.pozadavek %}<p class="zachovat-radky">{{ zakazka.pozadavek }}</p>
+    {% else %}<p class="prazdny-udaj">Nevyplněno{% if not doklad %} · <a href="/zakazky/{{ zakazka.id }}/upravit" data-okno>Doplnit</a>{% endif %}</p>{% endif %}
+    {# interní poznámka zvlášť a odlišeně – nepatří k požadavku zákazníka a netiskne se (#40) #}
+    {% if zakazka.poznamka %}<div class="interni-poznamka neni-tisk"><span class="udaj-nazev">Interní poznámka</span>
+      <p class="zachovat-radky">{{ zakazka.poznamka }}</p></div>{% endif %}
   </section>
 </div>
 
