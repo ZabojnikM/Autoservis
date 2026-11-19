@@ -24,7 +24,7 @@
       {{ pole_vin(hodnoty) }}
       <div class="mrizka">
         {{ pole('rok_vyroby', 'Rok výroby', hodnoty, extra='inputmode="numeric" pattern="(19|20)[0-9]{2}" title="Rok čtyřmi číslicemi, např. 2015"') }}
-        {{ pole('datum_registrace', 'Datum 1. registrace', hodnoty, typ='date') }}
+        {{ pole('cislo_motoru', 'Typ vozidla (TP)', hodnoty) }}
       </div>
       <div class="mrizka">
         {{ pole('kod_motoru', 'Kód motoru', hodnoty) }}
@@ -37,7 +37,7 @@
         {{ pole('barva', 'Barva', hodnoty) }}
       </div>
       <div class="mrizka">
-        {{ pole('cislo_motoru', 'Typ vozidla (TP)', hodnoty) }}
+        {{ pole('datum_registrace', 'Datum 1. registrace', hodnoty, typ='date') }}
         {{ pole('termin_stk', 'Termín STK', hodnoty, typ='date') }}      </div>
       {% if hodnoty.get('motor') %}{{ pole('motor', 'Motor (starší popis)', hodnoty) }}{% endif %}
     </fieldset>
