@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% from "_makra.html" import zahlavi, hledani_seznamu, stavovy_radek with context %}
 {# Ceník materiálu – samostatný seznam (práce mají vlastní stránku /prace) #}
-{% block title %}Ceník materiálu{% endblock %}
+{% block title %}Materiál{% endblock %}
 {% block akce %}
   <a href="/cenik/nova" role="button" data-okno>Nový materiál</a>
   <button type="button" class="secondary outline" data-radek="upravit" data-okno>Upravit</button>
@@ -46,7 +46,7 @@
 </div>
 {{ stavovy_radek(stranka, 'Ceny za měrnou jednotku · dvojklik = upravit') }}
 {% else %}
-<p class="tlumene prazdna-mrizka">{% if q %}Nic nenalezeno.{% else %}Ceník materiálu je zatím prázdný.{% endif %}</p>
+<p class="tlumene prazdna-mrizka">{% if q %}Nic nenalezeno.{% else %}Materiál je zatím prázdný.{% endif %}</p>
 {% endif %}
 </div>
 {% endblock %}
