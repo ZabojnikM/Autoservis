@@ -145,3 +145,19 @@ Zatím naimportován testovací vzorek 50 zakázek (záznamy mají poznámku „
 
 Při spuštění se do existující databáze automaticky doplní nové tabulky i sloupce – data zůstanou.
 Před aktualizací programu přesto doporučujeme zálohu (zkopírovat `data/autoservis.db`).
+
+## Verze a vydání
+
+Číslování `MAJOR.MINOR.OPRAVA` (zatím `0.x` – vývoj; `1.0.0` = úplný přechod ze starého systému):
+nová funkce / větší změna = další MINOR (0.3.0 → 0.4.0), jen oprava vydané verze = OPRAVA (0.3.0 → 0.3.1).
+Server instaluje **jen vydané verze** (`AUTOSERVIS_AKTUALIZACE=vydani`, viz `nastroje/server-CLAUDE.md`),
+běžné commity do `main` se na něj nedostanou.
+
+Vydání nové verze (na vývojovém počítači, testy musí procházet):
+1. zvýšit `APP_VERSION` v `app/config.py` a commitnout („Verze X.Y.Z“),
+2. `git tag -a vX.Y.Z -m "Verze X.Y.Z"` a `git push origin main vX.Y.Z`,
+3. GitHub Release ze značky se seznamem změn (uzavřená issues od minulé verze):
+   `gh release create vX.Y.Z --title "Verze X.Y.Z" --notes-file poznamky.md`,
+4. na serveru Nastavení → Aktualizace aplikace → Zkontrolovat aktualizace → Nainstalovat.
+
+Seznam vydání: https://github.com/ZabojnikM/Autoservis/releases

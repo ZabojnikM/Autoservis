@@ -2,8 +2,9 @@
 
 Tato složka je **git klon** repozitáře `ZabojnikM/Autoservis` (GitHub) a běží z ní testovací
 server aplikace jako služba systemd `autoservis`. Vývoj probíhá na jiném počítači. Nová verze se
-na server dostane **jen přes git**: vývojář pushne na GitHub a aktualizace se nainstaluje
-tlačítkem v aplikaci. Kód se na server nikdy nenahrává přímo (sdílený disk, kopírování, scp).
+na server dostane **jen přes git**: vývojář na GitHubu **vydá verzi** (značka `vX.Y.Z`
+a GitHub Release) a aktualizace ji nainstaluje tlačítkem v aplikaci. Běžné commity mezi
+vydáními se na server nedostanou. Kód se na server nikdy nenahrává přímo (sdílený disk, kopírování, scp).
 
 Tento soubor je v repu jako `nastroje/server-CLAUDE.md`. `CLAUDE.md` v kořeni složky ho jen
 importuje (`@nastroje/server-CLAUDE.md`), takže se aktualizuje spolu s aplikací.
@@ -29,11 +30,13 @@ maž jen ty své.
 
 ## Aktualizace
 **Nastavení → Aktualizace aplikace → Zkontrolovat aktualizace → Nainstalovat.**
-Služba má `AUTOSERVIS_AKTUALIZACE=main`, takže se instaluje poslední commit větve `main`.
+Služba má `AUTOSERVIS_AKTUALIZACE=vydani`, takže se instaluje jen **poslední vydaná verze**
+(nejvyšší značka `vX.Y.Z`, seznam vydání: https://github.com/ZabojnikM/Autoservis/releases).
+Commity, které ještě nejsou vydané, se nenainstalují.
 Instalace sama:
-1. stáhne změny (`git fetch`),
+1. stáhne změny (`git fetch --tags`),
 2. zazálohuje databázi do `data/backups/pred-aktualizaci-*.db`,
-3. přepne kód (`git checkout --detach origin/main`),
+3. přepne kód na poslední vydání (`git checkout --detach vX.Y.Z`),
 4. při změně `requirements.txt` spustí `pip install` (při chybě vrátí původní kód),
 5. ukončí aplikaci – systemd (`Restart=always`) ji spustí znovu a stránka se sama obnoví.
 
@@ -44,15 +47,24 @@ Totéž ručně z příkazové řádky (jako uživatel služby, ve složce aplik
 ```
 git fetch --tags --prune origin
 cp data/autoservis.db data/backups/rucne-$(date +%Y%m%d-%H%M%S).db
-git checkout --detach origin/main
+git checkout --detach "$(git tag -l 'v*' --sort=-v:refname | head -n1)"   # poslední vydání
 .venv/bin/python -m pip install -r requirements.txt   # jen když se změnil requirements.txt
 sudo systemctl restart autoservis
 ```
 
+### Přepnutí serveru z větve `main` na vydání (jednorázově)
+Dřív služba instalovala každý commit (`AUTOSERVIS_AKTUALIZACE=main`). Přepnutí na vydání:
+```
+sudo sed -i 's/AUTOSERVIS_AKTUALIZACE=main/AUTOSERVIS_AKTUALIZACE=vydani/' /etc/systemd/system/autoservis.service
+sudo systemctl daemon-reload && sudo systemctl restart autoservis
+```
+Pak v aplikaci **Zkontrolovat aktualizace → Nainstalovat** (nebo ruční postup výše). Kdo by
+chtěl na testovacím serveru dál zkoušet nevydané změny, nechá `main` – ostrý provoz vždy `vydani`.
+
 ## Kontrola, že aplikace běží
 - `curl -s http://localhost:8001/api/zdravi` → `"stav":"ok"` a verze (testovací server běží na portu 8001, viz `ExecStart` ve službě)
 - `systemctl status autoservis`, logy: `journalctl -u autoservis -n 50`
-- spuštěná verze: `git describe --tags --always`
+- spuštěná verze: `git describe --tags --always` (u vydání přesně `vX.Y.Z`, jinak `vX.Y.Z-počet-gcommit`)
 
 ## Nové zprovoznění (kdyby bylo potřeba celé znovu)
 ```
@@ -64,7 +76,7 @@ python3 -m venv .venv
 echo '@nastroje/server-CLAUDE.md' > CLAUDE.md
 ```
 Databázi (`data/autoservis.db`) a `.env` přenést ze zálohy. Služba systemd: šablona je
-v `nastroje/autoservis.service` (doplnit uživatele a cestu, `AUTOSERVIS_AKTUALIZACE=main`),
+v `nastroje/autoservis.service` (doplnit uživatele a cestu, `AUTOSERVIS_AKTUALIZACE=vydani`),
 zkopírovat do `/etc/systemd/system/` a `sudo systemctl daemon-reload && sudo systemctl enable --now autoservis`.
 Složka musí patřit uživateli služby (jinak git hlásí „dubious ownership“ a aktualizace selže).
 

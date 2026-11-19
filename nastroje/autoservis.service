@@ -12,8 +12,8 @@ WorkingDirectory=/CESTA/K/AUTOSERVIS
 ExecStart=/CESTA/K/AUTOSERVIS/.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8000
 EnvironmentFile=-/CESTA/K/AUTOSERVIS/.env
 # Aktualizace tlačítkem v Nastavení (jen když složka je git klon):
-#   vydani = poslední vydání vX.Y.Z (ostrý provoz), main = poslední commit (testovací server)
-Environment=AUTOSERVIS_AKTUALIZACE=main
+#   vydani = jen vydané verze vX.Y.Z (výchozí, ostrý provoz), main = každý commit (jen pro zkoušení)
+Environment=AUTOSERVIS_AKTUALIZACE=vydani
 # Po instalaci se aplikace ukončí a Restart=always ji spustí znovu s novým kódem.
 Restart=always
 RestartSec=3
