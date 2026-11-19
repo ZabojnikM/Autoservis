@@ -109,10 +109,12 @@ Slovenský desktopový program (jednorázová licence: 150 € jedno PC / 300 �
 
 **Platná pravidla vzhledu (dodržovat u každé nové obrazovky):**
 - **Lokální webová aplikace** v prohlížeči; cílové rozlišení **1366×768** – hlavní okna se vejdou bez posouvání.
+- **Jen počítač – mobil se zatím neřeší** (rozhodnuto 19. 11. 2026). Mobilní zobrazení by byla úplně jiná větev
+  vývoje (samostatné rozhraní), ne úprava tohoto desktopového. Chyby a návrhy jen pro telefon se do issues nezakládají.
 - **Hustý desktopový styl**: písmo 14 px, šedá plocha, bílé panely s šedým titulkem, tabulky jako mřížka. Vždy **světlý režim**.
 - **Horní lišta**: logo, hledání (SPZ, VIN, jméno, číslo zakázky), tlačítko **+ Příjem vozidla**.
 - **Menu vodorovně nahoře** pod lištou: Zakázky, Vozidla, Zákazníci, Ceník, Sklad (zatím neaktivní), Faktury, Nastavení.
-- **Tlačítka akcí ve svislém sloupci vlevo** (blok `akce` v šabloně). Na mobilu jako řádek nad obsahem.
+- **Tlačítka akcí ve svislém sloupci vlevo** (blok `akce` v šabloně).
 - **Seznamy**: klik vybere řádek, **dvojklik otevře**; tlačítka Nový / Otevřít / Upravit pracují s vybraným řádkem;
   filtry stavů jako záložky; stavový řádek s počtem záznamů.
 - **Formuláře jako okna** (dialog nad stránkou, `data-okno` + `?okno=1`): OK/Zrušit vlevo, Esc = Zrušit
