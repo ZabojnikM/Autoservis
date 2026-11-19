@@ -21,8 +21,8 @@ udělej kopii do `data/backups/`. Testovací záznamy označuj (např. „TEST�
 maž jen ty své.
 
 ## Po nasazení nové verze
-1. Podívej se do `VERZE.txt` (commit, datum a popis nasazené verze).
-2. Pokud se změnil `requirements.txt`:
+1. Podívej se do `VERZE.txt` (commit, popis, čas nasazení a jestli se změnily závislosti).
+2. Pokud je v `VERZE.txt` u závislostí `ZMENENY` (nebo `.venv` ještě neexistuje):
    `.venv\Scripts\python -m pip install -r requirements.txt`
 3. **Restartuj aplikaci.** Automatický reload (`--reload`) na Windows zamrzá, server proto
    pouštěj bez něj.

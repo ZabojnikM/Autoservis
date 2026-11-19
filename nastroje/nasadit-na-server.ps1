@@ -26,6 +26,12 @@ git archive --format=zip -o "$tmp.zip" HEAD
 Expand-Archive "$tmp.zip" $tmp -Force
 Remove-Item "$tmp.zip"
 
+# Změnily se závislosti oproti verzi na serveru?
+$reqNova = Join-Path $tmp "requirements.txt"
+$reqServer = Join-Path $Cil "requirements.txt"
+$zmenaZavislosti = -not (Test-Path $reqServer) -or
+    ((Get-FileHash $reqNova).Hash -ne (Get-FileHash $reqServer).Hash)
+
 # Zrcadlení na server; vyloučené složky/soubory robocopy na cíli nemaže
 robocopy $tmp $Cil /MIR /R:2 /W:2 /NP /NFL /NDL `
     /XD data .venv venv .git .claude __pycache__ .pytest_cache `
@@ -36,8 +42,14 @@ if ($LASTEXITCODE -ge 8) { throw "robocopy selhal (kód $LASTEXITCODE)" }
 $pokyny = Join-Path $tmp "nastroje\server-CLAUDE.md"
 if (Test-Path $pokyny) { Copy-Item $pokyny (Join-Path $Cil "CLAUDE.md") -Force }
 
-"$commit  $(git log -1 --format='%ci  %s')" | Set-Content (Join-Path $Cil "VERZE.txt") -Encoding utf8
+$zavislosti = if ($zmenaZavislosti) { "ZMENENY - spust pip install -r requirements.txt" } else { "beze zmeny" }
+@(
+    "$commit  $(git log -1 --format='%ci  %s')"
+    "Nasazeno: $(Get-Date -Format 'yyyy-MM-dd HH:mm')"
+    "Zavislosti (requirements.txt): $zavislosti"
+) | Set-Content (Join-Path $Cil "VERZE.txt") -Encoding utf8
 Remove-Item $tmp -Recurse -Force
 
 Write-Host "Nasazeno: $commit -> $Cil" -ForegroundColor Green
-Write-Host "Na serveru restartuj aplikaci (spustit.bat); při změně requirements.txt i pip install." -ForegroundColor Yellow
+if ($zmenaZavislosti) { Write-Host "Závislosti se změnily - na serveru je potřeba pip install." -ForegroundColor Yellow }
+Write-Host "Na serveru restartuj aplikaci." -ForegroundColor Yellow
