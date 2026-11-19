@@ -121,12 +121,14 @@
   <h2 class="nadpis-oddilu">{{ nazev }}</h2>
   {% if lze_menit %}<span class="tlacitka-mrizky neni-tisk">
     <a href="/zakazky/{{ zakazka.id }}/cenik?typ={{ typ }}" role="button" data-okno
-       title="{{ nazev }} z ceníku">Ceník</a>
+       title="{{ nazev }} z ceníku" aria-label="{{ nazev }} z ceníku">Ceník</a>
     <a href="/zakazky/{{ zakazka.id }}/polozky/nova?typ={{ typ }}" role="button" class="secondary outline" data-okno
-       title="{{ 'Nová práce' if typ == 'prace' else 'Nový materiál' }} – jen do zakázky, nebo i do ceníku">Nový</a>
+       title="{{ 'Nová práce' if typ == 'prace' else 'Nový materiál' }} – jen do zakázky, nebo i do ceníku"
+       aria-label="{{ 'Nová práce' if typ == 'prace' else 'Nový materiál' }}">Nový</a>
     {% if typ == 'material' %}
     {# TODO: import materiálu do zakázky (dodací list dodavatele) – #8; zatím zašedlé #}
-    <button type="button" class="secondary outline" disabled title="Import materiálu z dodacího listu – připravuje se (#8)">Import</button>
+    <button type="button" class="secondary outline" disabled title="Import materiálu z dodacího listu – připravuje se (#8)"
+            aria-label="Import materiálu – připravuje se">Import</button>
     {% else %}<span class="misto-tlacitka" aria-hidden="true"></span>{% endif %}
   </span>{% endif %}
   {% set n = radky|length %}

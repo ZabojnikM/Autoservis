@@ -12,7 +12,7 @@
             hx-get="/zakaznici/okno" hx-vals='{"cil": "prijem"}' hx-target="#okno-obsah"
             hx-on::after-request="document.getElementById('okno-databaze').showModal()">Vybrat</button>
     <button type="button" tabindex="-1" class="maly secondary outline" title="Vyprázdnit panel – nový zákazník"
-            hx-get="/zakazky/nova/zakaznik" hx-target="#panel-zakaznik" hx-swap="outerHTML">Nový</button>
+            hx-get="/zakazky/nova/zakaznik" hx-target="#panel-zakaznik" hx-swap="outerHTML">Nový zákazník</button>
   </div>
   {% if zakaznik %}
     <p class="stav-panelu">✅ Zákazník z databáze – změny údajů se uloží k němu.
@@ -34,7 +34,7 @@
         <input type="text" name="k_ico" value="{{ hz.get('k_ico') or '' }}" inputmode="numeric" autocomplete="off">
       </label>
       <button type="button" tabindex="-1" class="maly secondary outline" title="Načíst název, adresu a DIČ firmy z ARES podle IČO"
-              onclick="nactiZAres(this, 'k_')">Načti</button>
+              onclick="nactiZAres(this, 'k_')">Načíst podle IČO</button>
     </div>
     {{ pole('k_dic', 'DIČ', hz) }}
   </div>

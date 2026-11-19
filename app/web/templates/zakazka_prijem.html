@@ -39,7 +39,7 @@
                 hx-get="/vozidla/okno" hx-include="#panel-zakaznik [name=zakaznik_id]" hx-target="#okno-obsah"
                 hx-on::after-request="document.getElementById('okno-databaze').showModal()">Vybrat</button>
         <button type="button" tabindex="-1" class="maly secondary outline" title="Vyprázdnit panel – nové vozidlo"
-                hx-get="/zakazky/nova/vozidlo" hx-vals='{"novy": "1"}' hx-target="#vozidlo-udaje">Nový</button>
+                hx-get="/zakazky/nova/vozidlo" hx-vals='{"novy": "1"}' hx-target="#vozidlo-udaje">Nové vozidlo</button>
       </div>
       <div id="vozidlo-udaje">
         {% include "_prijem_vozidlo.html" %}

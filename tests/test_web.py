@@ -360,7 +360,7 @@ def test_prijem_tri_panely_a_vychozi_hodnoty():
     r = client.get("/zakazky/nova")
     for text in ['id="panel-zakaznik"', 'id="panel-vozidlo"', "Označení", 'name="datum_prijeti"',
                  'name="v_kod_motoru"', 'name="v_termin_stk"', 'name="v_datum_registrace"', 'hx-get="/vozidla/okno"',
-                 'hx-get="/zakaznici/okno"', "Uložit zakázku", "Načti"]:
+                 'hx-get="/zakaznici/okno"', "Uložit zakázku", "Načíst podle VIN", "Načíst podle IČO"]:
         assert text in r.text, text
     # plánované ukončení a stav paliva se už nezadávají
     assert 'name="termin_dokonceni"' not in r.text and 'name="stav_paliva"' not in r.text
@@ -1080,3 +1080,19 @@ def test_seznamy_jeden_klik_a_upravit_v_radku():
     zakazky = client.get("/zakazky").text
     assert "klik-otevre" in zakazky and f'href="/zakazky/{zid}/upravit" role="button" class="maly upravit-radek"' in zakazky
     assert "klik-otevre" in client.get("/vozidla").text and 'class="maly upravit-radek"' in client.get("/vozidla").text
+
+
+def test_audit_49_popisky_a_tlacitka():
+    """#49: přístupné popisky Ceník / Nový, Načíst podle VIN / IČO, Nové vozidlo / Nový zákazník,
+    v kartě ceníku Uložit a Uložit a další u sebe, Zpět oddělené; nápověda seznamů podle chování."""
+    loc = _prijem(spz="4A44444").headers["location"].split("?")[0]
+    detail = client.get(loc).text
+    assert 'aria-label="Materiál z ceníku">Ceník</a>' in detail and 'aria-label="Nová práce">Nový</a>' in detail
+    prijem = client.get("/zakazky/nova").text
+    assert ">Nové vozidlo</button>" in prijem and ">Nový zákazník</button>" in prijem
+    karta = client.get("/cenik/nova").text
+    akce = karta.split('<aside class="akce')[1].split("</aside>")[0]
+    assert akce.index(">Uložit</button>") < akce.index(">Uložit a další</button>") < akce.index('class="zpet oddelene"')
+    assert "dvojklik" not in client.get("/zakazky").text.split('id="stav-seznamu"')[-1][:600]
+    client.post("/cenik/nova", data={"typ": "material", "nazev": "Filtr 49", "cena": "10"})
+    assert "klik na řádek otevře kartu materiálu" in client.get("/cenik").text

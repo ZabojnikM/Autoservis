@@ -7,12 +7,9 @@
   {% if z_ceniku %}
   {{ tlacitka_karty_z_ceniku('cenik-form', z_ceniku, q_ceniku, 'material') }}
   {% else %}
-  {{ tlacitka_formulare('cenik-form', okno, '/cenik') }}
+  {{ tlacitka_formulare('cenik-form', okno, '/cenik', dalsi=not polozka and not radek_zakazky) }}
   {% endif %}
-  {% if z_ceniku or radek_zakazky %}
-  {% elif not polozka %}
-  <button type="submit" form="cenik-form" name="dalsi" value="1" class="secondary">Uložit a další</button>
-  {% else %}
+  {% if polozka and not z_ceniku and not radek_zakazky %}
   <form method="post" action="/cenik/{{ polozka.id }}/smazat" class="smazat"
         data-potvrdit="Smazat materiál z ceníku? Zakázky, kde už je použit, zůstanou beze změny." data-potvrdit-ano="Smazat">
     <input type="hidden" name="zpet" data-aktualni>

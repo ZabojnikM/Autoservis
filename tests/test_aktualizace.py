@@ -146,6 +146,8 @@ def test_blok_se_zapnutou_aktualizaci(monkeypatch):
     r = client.post("/nastaveni/aktualizace/zkontrolovat").text
     assert "v0.3.0" in r and "Nová karta" in r and 'hx-post="/nastaveni/aktualizace/instalovat"' in r
     assert "Vrátit předchozí verzi" in r and "pred-aktualizaci.db" in r and "restartujte" not in r
+    # #49: název zálohy a datum viditelně, celá cesta jen v Podrobnostech
+    assert "<strong>pred-aktualizaci.db</strong> (2026-11-19)" in r and "<details" in r
     monkeypatch.setattr(akt, "spusteny_commit", lambda *a: "0000000")  # nainstalováno, čeká na restart
     assert "restartujte aplikaci" in client.get("/nastaveni/aktualizace").text
 

@@ -47,8 +47,13 @@
           hx-swap="outerHTML" hx-disabled-elt="this">Zkontrolovat aktualizace</button>
 
   {% if s.predchozi %}
-  <p class="tlumene">Poslední aktualizace {{ s.predchozi.cas|replace('T', ' ') }}: {{ s.predchozi.predchozi[:7] }} → {{ s.predchozi.nova[:7] }}.
-    {% if s.predchozi.zaloha_db %}Záloha databáze před aktualizací: <code>{{ s.predchozi.zaloha_db }}</code>{% endif %}</p>
+  {# #49: jen název zálohy a datum, celá cesta na serveru až v Podrobnostech #}
+  <p class="tlumene">Poslední aktualizace {{ s.predchozi.cas|replace('T', ' ') }}: {{ s.predchozi.predchozi[:7] }} → {{ s.predchozi.nova[:7] }}{% if s.predchozi.cil %} ({{ s.predchozi.cil }}){% endif %}.
+    {% if s.predchozi.zaloha_db %}{% set soubor = s.predchozi.zaloha_db.replace('\\', '/').split('/')[-1] %}
+    Záloha databáze před aktualizací: <strong>{{ soubor }}</strong> ({{ s.predchozi.cas[:10] }}).{% endif %}</p>
+  {% if s.predchozi.zaloha_db %}
+  <details class="podrobnosti-zalohy tlumene"><summary>Podrobnosti</summary><code>{{ s.predchozi.zaloha_db }}</code></details>
+  {% endif %}
   <button type="button" class="secondary" hx-post="/nastaveni/aktualizace/vratit" hx-target="#aktualizace"
           hx-swap="outerHTML" hx-disabled-elt="this"
           hx-confirm="Vrátit kód na verzi {{ s.predchozi.predchozi[:7] }}? Data v databázi zůstanou, jak jsou.">Vrátit předchozí verzi</button>

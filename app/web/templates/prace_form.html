@@ -9,10 +9,7 @@
   {% else %}
   {{ tlacitka_formulare('prace-form', okno, '/prace') }}
   {% endif %}
-  {% if z_ceniku or radek_zakazky %}
-  {% elif not polozka %}
-  <button type="submit" form="prace-form" name="dalsi" value="1" class="secondary">Uložit a další</button>
-  {% else %}
+  {% if polozka and not z_ceniku and not radek_zakazky %}
   <form method="post" action="/prace/{{ polozka.id }}/smazat" class="smazat"
         data-potvrdit="Smazat práci z ceníku? Zakázky, kde už je použita, zůstanou beze změny." data-potvrdit-ano="Smazat">
     <input type="hidden" name="zpet" data-aktualni>

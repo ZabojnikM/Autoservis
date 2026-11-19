@@ -5,7 +5,7 @@
 </label>
 {%- endmacro %}
 
-{# Pole VIN s tlačítkem Načti – doplní údaje vozidla z registru vozidel (nactiZRegistru v base.html).
+{# Pole VIN s tlačítkem Načíst podle VIN – doplní údaje vozidla z registru vozidel (nactiZRegistru v base.html).
    `predpona` = předpona jmen polí vozidla ve formuláři ('' ve formuláři vozidla, 'v_' na příjmu). #}
 {% macro pole_vin(hodnoty, predpona='') -%}
 <div class="radek-s-tlacitky">
@@ -14,7 +14,7 @@
            maxlength="20" class="vstup-spz" autocomplete="off">
   </label>
   <button type="button" tabindex="-1" class="maly secondary outline" title="Doplnit údaje vozidla z Registru silničních vozidel podle VIN"
-          onclick="nactiZRegistru(this, '{{ predpona }}')">Načti</button>
+          onclick="nactiZRegistru(this, '{{ predpona }}')">Načíst podle VIN</button>
 </div>
 {%- endmacro %}
 
@@ -33,14 +33,16 @@
   {% if okno %}<input type="hidden" name="okno" value="1">{% endif %}
 {%- endmacro %}
 
-{% macro tlacitka_formulare(id, okno, zpet, ok='Uložit', zakazano='') -%}
+{% macro tlacitka_formulare(id, okno, zpet, ok='Uložit', zakazano='', dalsi=False) -%}
 {# Tlačítka do bloku akce (sloupec vlevo): OK a Zrušit (v okně) / Zpět (celá stránka).
-   zakazano = důvod, proč uložit nejde (tlačítko je zašedlé a důvod je pod ním). #}
+   zakazano = důvod, proč uložit nejde (tlačítko je zašedlé a důvod je pod ním).
+   dalsi = i „Uložit a další“ (nová položka ceníku) – obě ukládací akce u sebe, Zrušit oddělené (#49). #}
   <button type="submit" form="{{ id }}" {% if zakazano %}disabled title="{{ zakazano }}"{% endif %}>{{ ok }}</button>
+  {% if dalsi %}<button type="submit" form="{{ id }}" name="dalsi" value="1" class="secondary">Uložit a další</button>{% endif %}
   {% if okno %}
-  <button type="button" class="zpet" data-zavrit-okno>Zrušit</button>
+  <button type="button" class="zpet{% if dalsi %} oddelene{% endif %}" data-zavrit-okno>Zrušit</button>
   {% else %}
-  <a href="{{ zpet }}" class="zpet" role="button">Zpět</a>
+  <a href="{{ zpet }}" class="zpet{% if dalsi %} oddelene{% endif %}" role="button">Zpět</a>
   {% endif %}
   {% if zakazano %}<p class="poznamka chyba-text">{{ zakazano }}</p>{% endif %}
   <p class="tlumene poznamka">Enter = další pole · Ctrl+Enter = uložit · Esc = zrušit</p>
@@ -136,7 +138,8 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
 </th>
 {%- endmacro %}
 
-{% macro stavovy_radek(stranka, napoveda='Klik = výběr řádku · dvojklik = otevřít') -%}
+{# napoveda = jak se ovládá daný seznam (seznamy s třídou klik-otevre otevírají řádek jedním klikem, #39/#49) #}
+{% macro stavovy_radek(stranka, napoveda='Klik na řádek otevře · Upravit je v řádku') -%}
 <div class="stavovy-radek" id="stav-seznamu">
   <span>Zobrazeno {{ stranka.do }} z {{ stranka.celkem }}
     {% if stranka.dalsi is not none %}
