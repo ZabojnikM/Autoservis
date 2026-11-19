@@ -13,4 +13,4 @@ TEMPLATES_DIR = WEB_DIR / "templates"
 STATIC_DIR = WEB_DIR / "static"
 
 APP_NAME = "Autoservis"
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.3.0"
