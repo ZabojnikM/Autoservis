@@ -99,7 +99,7 @@
 {% macro vstup_spz(hodnota, oob=False, autofocus=True) -%}
 {# Pole SPZ při příjmu – po potvrzení (Enter / Tab) dohledá vozidlo. oob=True: přepíše pole po výběru z databáze. #}
 <input type="text" id="spz" name="spz" value="{{ hodnota or '' }}" required {% if not oob and autofocus %}autofocus{% endif %}
-       class="vstup-spz" autocomplete="off" placeholder="např. 1AB 2345"
+       class="vstup-spz" autocomplete="off" placeholder="např. 1AB 2345" data-kontrola-spz
        hx-get="/zakazky/nova/vozidlo" hx-trigger="change"
        hx-target="#vozidlo-udaje" hx-include="#panel-zakaznik, #vozidlo-udaje" hx-sync="this:replace"
        {% if oob %}hx-swap-oob="true"{% endif %}>

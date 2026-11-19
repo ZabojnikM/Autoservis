@@ -16,7 +16,7 @@
   <div class="uprava-panely">
     <fieldset class="panel">
       <legend>Vozidlo</legend>
-      {{ pole('spz', 'SPZ', hodnoty, povinne=True, extra='class="vstup-spz" autofocus', placeholder='např. 1AB 2345') }}
+      {{ pole('spz', 'SPZ', hodnoty, povinne=True, extra='class="vstup-spz" autofocus data-kontrola-spz', placeholder='např. 1AB 2345') }}
       <div class="mrizka">
         {{ pole('znacka', 'Značka', hodnoty, placeholder='např. Škoda') }}
         {{ pole('model', 'Model / typ', hodnoty, placeholder='např. Octavia 1.9 TDI') }}

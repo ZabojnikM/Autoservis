@@ -362,6 +362,7 @@ button.smazat-radek:hover { background: var(--c-chyba) !important; color: #fff !
 .zprava { position: fixed; top: 6.25rem; left: 50%; transform: translateX(-50%); z-index: 100; max-width: min(560px, 90vw);
   display: flex; align-items: center; gap: .75rem; background: #e8f5e9; color: #1b5e20; border: 1px solid #a5d6a7; border-left: 4px solid var(--c-hotovo); padding: .45rem .9rem; font-size: .9rem; box-shadow: 0 3px 12px rgba(0,0,0,.15); transition: opacity .4s; }
 .zprava.mizi { opacity: 0; }
+.upozorneni-text { margin: 0 0 .5rem; color: #b45309; font-weight: 600; font-size: .9rem; }
 .zprava[hidden] { display: none; }
 .zprava button.zavrit-zpravu { width: auto; margin: 0; padding: 0 .35rem; background: none; border: 0; box-shadow: none;
   color: inherit; font-size: 1rem; line-height: 1; opacity: .7; cursor: pointer; }

@@ -157,3 +157,15 @@ def test_smazani_zakazky_s_materialem_a_praci(session, zakazka):
     zakazky.smaz(session, zakazka.id)
     assert session.get(PolozkaZakazky, r.id) is None
     assert cenik.ziskej(session, p.id).nazev == "Filtr"
+
+
+def test_zaporne_mnozstvi_zakazane(session, zakazka):
+    """#33: záporné množství (vratky) se nepoužívá – položka ho odmítne z ceníku, ručně i při úpravě."""
+    p = cenik.vytvor(session, {"nazev": "Filtr", "cena": "100"})
+    with pytest.raises(ChybaValidace, match="větší než 0"):
+        polozky.pridej_z_ceniku(session, zakazka.id, p.id, mnozstvi="-1")
+    with pytest.raises(ChybaValidace, match="větší než 0"):
+        polozky.pridej_rucne(session, zakazka.id, {"typ": "prace", "nazev": "Sleva", "cena": "100", "mnozstvi": "-2"})
+    r = polozky.pridej_z_ceniku(session, zakazka.id, p.id, mnozstvi="2")
+    with pytest.raises(ChybaValidace, match="větší než 0"):
+        polozky.uprav(session, r.id, {"mnozstvi": "-1"})

@@ -26,6 +26,7 @@
       {% endif %}
     </div>
     {% endfor %}
+    <p class="upozorneni-text" data-pod-nakupem data-jen-cenik hidden>Pozor: prodejní cena je nižší než nákupní.</p>
     {# jednotka a sazba DPH pod nákupními cenami (#43) #}
     {% set jednotka = hodnoty.get('jednotka') or 'ks' %}
     {% set jednotky = ['ks', 'l', 'm', 'cm', 'g', 'kg', 'sada'] %}

@@ -64,6 +64,20 @@
     const upozorni = (text) => potvrd(text, {ano: "OK", ne: null});
     // Formulář s data-potvrdit="text" se odešle až po potvrzení (data-potvrdit-ano = text tlačítka).
     // Skryté pole name="zpet" s data-aktualni dostane adresu stránky, odkud se akce spustila (zachová filtr seznamu).
+    // Kontrola SPZ před uložením (#33): česká SPZ = A–Z a číslice, 5–8 znaků (mezery a pomlčky se vynechají).
+    // Jiný tvar (zahraniční, s diakritikou…) se uloží až po potvrzení. Zachytává se před HTMX (fáze capture).
+    document.addEventListener("submit", async (e) => {
+      const f = e.target, pole = f.querySelector?.("input[data-kontrola-spz]");
+      if (!pole || f.dataset.spzPotvrzena === pole.value) return;
+      const spz = pole.value.replace(/[\s-]/g, "").toUpperCase();
+      if (!spz || /^[A-Z0-9]{5,8}$/.test(spz)) return;
+      e.preventDefault(); e.stopImmediatePropagation();
+      if (await potvrd(`SPZ „${pole.value.trim()}“ nemá obvyklý tvar české SPZ (písmena A–Z a číslice, 5–8 znaků). ` +
+                       "Je to zahraniční nebo neobvyklá SPZ a chcete ji uložit takto?",
+                       {ano: "Uložit takto", ne: "Opravit"})) {
+        f.dataset.spzPotvrzena = pole.value; f.requestSubmit();
+      } else pole.focus();
+    }, true);
     document.addEventListener("submit", async (e) => {
       const f = e.target;
       f.querySelectorAll("input[name=zpet][data-aktualni]").forEach((p) => { p.value = location.pathname + location.search; });
@@ -272,7 +286,18 @@
       if (druh === "bez" || druh === "s") prepocitejDvojici(e.target.closest(".dvojice-cen"), druh);
       if (e.target.matches?.("[data-sazba-dph]"))
         e.target.closest("form").querySelectorAll(".dvojice-cen").forEach((d) => prepocitejDvojici(d));
+      if (e.target.closest?.("form")) hlidejProdejPodNakupem(e.target.closest("form"));
     });
+    // Prodejní cena pod nákupní (#33): jen upozornění pod cenami, uložit jde dál (porovnává ceny bez DPH).
+    function hlidejProdejPodNakupem(form) {
+      const hlaska = form.querySelector("[data-pod-nakupem]");
+      if (!hlaska) return;
+      const prodej = cisloZPole(form.querySelector("[name=cena]")?.value ?? "");
+      const nakup = cisloZPole(form.querySelector("[name=nakupni_cena]")?.value ?? "");
+      hlaska.hidden = !(prodej !== null && nakup !== null && prodej < nakup);
+    }
+    document.addEventListener("DOMContentLoaded", () => document.querySelectorAll("form").forEach(hlidejProdejPodNakupem));
+    document.addEventListener("htmx:afterSettle", (e) => e.detail.target.querySelectorAll?.("form").forEach(hlidejProdejPodNakupem));
 
     // ---- Formuláře s třídou enter-dalsi: Enter v poli přejde na další pole (formulář neodešle), jako ve starém systému.
     document.addEventListener("keydown", (e) => {

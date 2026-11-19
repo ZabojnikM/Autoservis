@@ -642,7 +642,7 @@ def test_okno_cenik_pridava_a_zustava_otevrene():
     assert r.status_code == 204 and r.headers["HX-Refresh"] == "true"
     assert "Brzdová kapalina" in client.get(loc).text
     r = client.post(f"{loc}/polozky/vlozit", data={"polozka_ceniku_id": [cid], "mnozstvi": ["0"]})
-    assert r.status_code == 422 and "nesmí být 0" in r.text
+    assert r.status_code == 422 and "větší než 0" in r.text
     # bez okna (celá stránka) se přidání přesměruje na detail
     r = client.post(f"{loc}/polozky", data={"polozka_ceniku_id": cid, "mnozstvi": "1"}, follow_redirects=False)
     assert r.status_code == 303
@@ -1032,3 +1032,10 @@ def test_formulare_ceniku_dph_pod_cenami():
     assert material.index('name="nakupni_cena') < material.index('name="jednotka"')
     assert material.index('name="nazev"') < material.index("<legend>Ceny za jednotku</legend>") \
         < material.index('name="jednotka"')
+
+
+def test_kontrola_spz_a_prodej_pod_nakupem_v_sablonach():
+    """#33: pole SPZ mají kontrolu tvaru (dotaz v prohlížeči), materiál má upozornění na prodej pod nákupní cenou."""
+    assert "data-kontrola-spz" in client.get("/vozidla/nove").text
+    assert "data-kontrola-spz" in client.get("/zakazky/nova").text
+    assert "data-pod-nakupem" in client.get("/cenik/nova").text

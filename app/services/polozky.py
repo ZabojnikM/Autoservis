@@ -22,8 +22,8 @@ def _kladne_mnozstvi(hodnota) -> Decimal:
     mnozstvi = desetinne_nebo_none(hodnota, "Množství", "mnozstvi")
     if mnozstvi is None:
         mnozstvi = Decimal("1")
-    if mnozstvi == 0:
-        raise ChybaValidace("Množství nesmí být 0.", "mnozstvi")
+    if mnozstvi <= 0:  # záporné množství (vratky) se nepoužívá – zakázáno (#33)
+        raise ChybaValidace("Množství musí být větší než 0.", "mnozstvi")
     return mnozstvi
 
 
