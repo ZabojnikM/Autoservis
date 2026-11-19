@@ -693,6 +693,12 @@ def test_detail_vozidla_zalozky_historie():
     # vlevo Vozidlo (i technické údaje), vpravo Majitel a pod ním Termíny a historie
     assert r.text.index(">Vozidlo<") < r.text.index(">Majitel<") < r.text.index(">Termíny a historie<")
     assert "Technické údaje" not in r.text and "Druh paliva" in r.text
+    # #5: bez nadpisu se SPZ a modelem nad kartou, údaje v pořadí jako formulář vozidla
+    assert '<div class="nadpis-radek">' not in r.text.split('class="karta-vozidla-panely"')[0].split('<main')[-1]
+    poradi = ["SPZ<", "Značka<", "Model / typ<", ">VIN<", "Rok výroby<", "Typ vozidla (TP)<", "Kód motoru<",
+              "Objem<", "Výkon<", "Druh paliva<", "Olej<", "Barva<", "Datum 1. registrace<", "Termín STK<"]
+    karta = r.text.split('class="panel karta-vozidla"')[1].split("</section>")[0]
+    assert [karta.index(t) for t in poradi] == sorted(karta.index(t) for t in poradi)
     assert "Zakázky (1)" in r.text and "Práce (1)" in r.text and "Materiál (1)" in r.text
     assert "Jana Dvořáková" in r.text and "Nejde startovat" in r.text and f'data-otevrit="{loc}"' in r.text
     prace = client.get(f"/vozidla/{vid}", params={"zalozka": "prace"}).text

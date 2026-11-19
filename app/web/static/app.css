@@ -844,6 +844,7 @@ a:hover > .spz { border-color: var(--akcent); background: var(--akcent-svetly); 
 .karta-vozidla .nadpis-skupiny { margin: 18px 0 10px; padding-top: 12px; border-top: 1px solid #eef0f3;
   font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-tlumeny, #6b7280); }
 .karta-vozidla .cely { grid-column: 1 / -1; }
+.karta-vozidla .dva { grid-column: span 2; }
 .karta-vozidla .udaj { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .karta-vozidla .udaj-nazev { font-size: .8rem; font-weight: 600; color: var(--text-tlumeny, #6b7280); }
 .karta-vozidla .udaj-hodnota { font-size: 1.1rem; color: var(--text, #111827); overflow-wrap: anywhere; }

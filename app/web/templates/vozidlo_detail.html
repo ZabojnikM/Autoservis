@@ -15,10 +15,6 @@
 {% endblock %}
 {% block content %}
 {% set v = vozidlo %}
-<div class="nadpis-radek">
-  <h1>{{ spz(v.spz) }} {% if v.znacka or v.model %}{{ v.popis }}{% endif %}</h1>
-</div>
-
 {# vlevo velká karta Vozidlo (údaje ve skupinách), vpravo Majitel a pod ním Termíny a historie #}
 {% macro udaj(nazev, hodnota, trida='', titulek='') -%}
   <div class="udaj {{ trida }}"{% if titulek %} title="{{ titulek }}"{% endif %}><span class="udaj-nazev">{{ nazev }}</span>
@@ -27,6 +23,7 @@
 <div class="karta-vozidla-panely">
   <section class="panel karta-vozidla">
     <h2 class="titulek-panelu">Vozidlo</h2>
+    {# stejné pořadí jako formulář Nové / Upravit vozidlo (SPZ nahoře nad kartou není – je tady a v názvu okna) #}
     <div class="skupina-udaju hlavni-radek">
       {{ udaj('SPZ', spz(v.spz)) }}
       {{ udaj('Značka', v.znacka, 'hlavni') }}
@@ -40,20 +37,22 @@
         {% else %}<span class="udaj-hodnota prazdne">—</span>{% endif %}
       </div>
     </div>
-    <h3 class="nadpis-skupiny">Registrace</h3>
     <div class="skupina-udaju">
       {{ udaj('Rok výroby', v.rok_vyroby) }}
+      {{ udaj('Typ vozidla (TP)', v.cislo_motoru, 'dva', titulek='Typ / varianta / verze z technického průkazu') }}
+    </div>
+    <div class="skupina-udaju">
+      {{ udaj('Kód motoru', v.kod_motoru or v.motor, 'hlavni') }}{{ udaj('Objem', v.objem) }}{{ udaj('Výkon', v.vykon) }}
+    </div>
+    <div class="skupina-udaju">
+      {{ udaj('Druh paliva', v.palivo) }}{{ udaj('Olej', v.olej) }}{{ udaj('Barva', v.barva) }}
+    </div>
+    <div class="skupina-udaju">
       {{ udaj('Datum 1. registrace', v.datum_registrace|datum) }}
       <div class="udaj"><span class="udaj-nazev">Termín STK</span>
         {% if v.termin_stk %}<span class="udaj-hodnota{% if v.termin_stk < dnes() %} po-terminu{% endif %}"
           {% if v.termin_stk < dnes() %}title="Po termínu"{% endif %}>{{ v.termin_stk|datum }}</span>
         {% else %}<span class="udaj-hodnota prazdne">—</span>{% endif %}</div>
-      {{ udaj('Typ vozidla (TP)', v.cislo_motoru, 'cely', titulek='Typ / varianta / verze z technického průkazu') }}
-    </div>
-    <h3 class="nadpis-skupiny">Motor a provoz</h3>
-    <div class="skupina-udaju">
-      {{ udaj('Kód motoru', v.kod_motoru or v.motor, 'hlavni') }}{{ udaj('Objem', v.objem) }}{{ udaj('Výkon', v.vykon) }}
-      {{ udaj('Druh paliva', v.palivo) }}{{ udaj('Olej', v.olej) }}{{ udaj('Barva', v.barva) }}
     </div>
   </section>
   <div class="karta-vozidla-vpravo">
