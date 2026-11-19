@@ -16,7 +16,7 @@
 {% block content %}
 {% set v = vozidlo %}
 {# karta vozidla jako panel Vozidlo v zakázce (#47): nahoře SPZ + značka a model, pod tím „název: hodnota“,
-   prázdné údaje se nezobrazují; vpravo Majitel a pod ním Termíny a historie, panely stejně vysoké #}
+   prázdné údaje se nezobrazují; vedle Majitel a Termíny a historie – tři panely v jedné řadě jako hlavička zakázky #}
 {% set motor = [v.kod_motoru or v.motor, v.objem, v.vykon]|select|join(' · ') %}
 {% set vyplneno = [v.vin, v.rok_vyroby, v.cislo_motoru, motor, v.palivo, v.olej, v.barva, v.datum_registrace, v.termin_stk]|select|list|length %}
 <div class="karta-vozidla-panely">
@@ -37,7 +37,6 @@
     </dl>
     {% if vyplneno < 5 %}<p class="prazdny-udaj neni-tisk">{% if not vyplneno %}Další údaje nevyplněny · {% endif %}<a href="/vozidla/{{ v.id }}/upravit" data-okno>Doplnit údaje vozidla</a></p>{% endif %}
   </section>
-  <div class="karta-vozidla-vpravo">
   <section class="panel">
     <h2 class="titulek-panelu">Majitel</h2>
     {% set k = v.zakaznik %}
@@ -65,7 +64,6 @@
     </dl>
     {% if v.poznamka %}<p class="tlumene zachovat-radky poznamka-vozidla">{{ v.poznamka }}</p>{% endif %}
   </section>
-  </div>
 </div>
 
 {# historie vozidla jako ve starém systému: zakázky, nebo práce / materiál ze všech zakázek #}
