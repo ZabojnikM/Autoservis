@@ -100,15 +100,17 @@
    Upravit a Smazat jsou vlevo v řádku (tlačítka mřížky vlevo v titulku), dvojklik = upravit, Delete = odebrat vybraný řádek. #}
 {% macro mrizka_polozek(typ, radky, nazev, prazdne) %}
 <section class="sekce-polozek" id="polozky-{{ typ }}">
+{# titulek: název a tlačítka vlevo, počet položek a částka vpravo (#26) #}
 <div class="titulek-mrizky tlacitka-vlevo">
-  <span><strong>{{ nazev }}</strong>
-    <span class="tlumene">{{ radky|length }} položek{% if radky %} · {{ (rek.material if typ == 'material' else rek.prace)|penize }} {{ nast.mena }} bez DPH{% endif %}</span></span>
+  <strong>{{ nazev }}</strong>
   {% if lze_menit %}<span class="tlacitka-mrizky neni-tisk">
-    <a href="/zakazky/{{ zakazka.id }}/cenik?typ={{ typ }}" role="button" class="maly" data-okno
+    <a href="/zakazky/{{ zakazka.id }}/cenik?typ={{ typ }}" role="button" data-okno
        title="{{ nazev }} z ceníku">+ Z ceníku</a>
-    <a href="/zakazky/{{ zakazka.id }}/polozky/nova?typ={{ typ }}" role="button" class="maly secondary outline" data-okno
+    <a href="/zakazky/{{ zakazka.id }}/polozky/nova?typ={{ typ }}" role="button" class="secondary outline" data-okno
        title="{{ nazev }} mimo ceník (zadat ručně)">+ Ruční</a>
   </span>{% endif %}
+  {% set n = radky|length %}
+  <span class="tlumene souhrn-mrizky">{{ n }} {{ 'položka' if n == 1 else 'položky' if 2 <= n <= 4 else 'položek' }}{% if radky %} · {{ (rek.material if typ == 'material' else rek.prace)|penize }} {{ nast.mena }} bez DPH{% endif %}</span>
 </div>
 {% if radky %}
 <div class="overflow-auto">

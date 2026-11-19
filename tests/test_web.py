@@ -603,6 +603,9 @@ def test_detail_zakazky_mrizka_polozek():
     # dvě mřížky: nahoře Materiál, pod ní Práce; Diagnostika (práce) je v mřížce Práce, materiál zatím žádný
     assert detail.index('id="polozky-material"') < detail.index('id="polozky-prace"') < detail.index("Diagnostika")
     assert "Zatím žádný materiál." in detail and "Zatím žádná práce." not in detail
+    # #26: v titulku název, pak tlačítka, souhrn (počet a částka) až na konci vpravo
+    titulek = detail.split('id="polozky-prace"')[1].split("</div>")[0]
+    assert titulek.index("<strong>Práce</strong>") < titulek.index("+ Z ceníku") < titulek.index("+ Ruční")         < titulek.index('class="tlumene souhrn-mrizky">1 položka')
     # tlačítka přidání už nejsou v levém sloupci
     assert 'role="button" data-okno>Přidat z ceníku</a>' not in detail and ">Ruční položka</a>" not in detail
     # Upravit / Odebrat položku už nejsou v levém sloupci (jsou přímo v řádku, Upravit vlevo od Smazat)
