@@ -1,7 +1,7 @@
 {% extends "_okno.html" if okno else "base.html" %}
 {% from "_makra.html" import pole, zacatek_formulare, tlacitka_formulare %}
 {# Ruční položka zakázky – stejné okno jako karta Materiál / Práce (sdílená pole _pole_materialu / _pole_prace)
-   a navíc Množství a volba „jen do zakázky / i do ceníku“ (výchozí jen do zakázky, #41). Údaje jen pro ceník
+   a navíc Množství a volba „jen do zakázky / i do ceníku“ (u nové položky výchozí i do ceníku). Údaje jen pro ceník
    (zaměnitelný díl, nákupní cena, poznámka) jsou vidět, jen když se ukládá do ceníku.
    `radek` = úprava ručního řádku (bez ceníku), jinak nová položka. `existujici` = položka ceníku se stejným kódem. #}
 {% set typ = hodnoty.get('typ') or 'material' %}
@@ -43,7 +43,7 @@
       {{ pole('mnozstvi', 'Množství', hodnoty, povinne=True,
               extra='inputmode="decimal" pattern="[0-9  ]*([.,][0-9]+)?" title="Číslo, např. 1,5"') }}
       {% if not radek or not radek.polozka_ceniku_id %}
-      {# kam položku uložit (#41) – výchozí jen do zakázky #}
+      {# kam položku uložit (#41) – nová položka výchozí i do ceníku, úprava ručního řádku jen do zakázky #}
       <fieldset class="volba-do-ceniku" aria-label="Uložit">
         <label class="volba"><input type="radio" name="ulozit_do_ceniku" value=""
           {% if not hodnoty.get('ulozit_do_ceniku') %}checked{% endif %}> jen do zakázky</label>
