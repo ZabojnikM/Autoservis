@@ -29,25 +29,19 @@
       {{ udaj('Značka', v.znacka, 'hlavni') }}
       {{ udaj('Model / typ', v.model, 'hlavni') }}
     </div>
-    <div class="skupina-udaju">
-      <div class="udaj cely vin"><span class="udaj-nazev">VIN</span>
+    {# kompaktně (#44): pod hlavním řádkem jedna mřížka po 4 sloupcích, pořadí jako formulář vozidla #}
+    <div class="skupina-udaju podrobnosti">
+      <div class="udaj dva vin"><span class="udaj-nazev">VIN</span>
         {% if v.vin %}
         <span class="vin-radek"><span class="udaj-hodnota" id="vin-vozidla">{{ v.vin }}</span>
           <button type="button" class="kopirovat neni-tisk" data-kopirovat="{{ v.vin }}" title="Zkopírovat VIN do schránky">Kopírovat</button></span>
         {% else %}<span class="udaj-hodnota prazdne">—</span>{% endif %}
       </div>
-    </div>
-    <div class="skupina-udaju">
       {{ udaj('Rok výroby', v.rok_vyroby) }}
-      {{ udaj('Typ vozidla (TP)', v.cislo_motoru, 'dva', titulek='Typ / varianta / verze z technického průkazu') }}
-    </div>
-    <div class="skupina-udaju">
+      {{ udaj('Typ vozidla (TP)', v.cislo_motoru, titulek='Typ / varianta / verze z technického průkazu') }}
       {{ udaj('Kód motoru', v.kod_motoru or v.motor, 'hlavni') }}{{ udaj('Objem', v.objem) }}{{ udaj('Výkon', v.vykon) }}
-    </div>
-    <div class="skupina-udaju">
-      {{ udaj('Druh paliva', v.palivo) }}{{ udaj('Olej', v.olej) }}{{ udaj('Barva', v.barva) }}
-    </div>
-    <div class="skupina-udaju">
+      {{ udaj('Druh paliva', v.palivo) }}
+      {{ udaj('Olej', v.olej) }}{{ udaj('Barva', v.barva) }}
       {{ udaj('Datum 1. registrace', v.datum_registrace|datum) }}
       <div class="udaj"><span class="udaj-nazev">Termín STK</span>
         {% if v.termin_stk %}<span class="udaj-hodnota{% if v.termin_stk < dnes() %} po-terminu{% endif %}"

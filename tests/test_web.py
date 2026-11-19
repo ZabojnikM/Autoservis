@@ -956,11 +956,11 @@ def test_rucni_polozka_jako_karta_ceniku():
     loc = _prijem().headers["location"].split("?")[0]
     zid = loc.rsplit("/", 1)[1]
     okno = client.get(f"{loc}/polozky/nova", params={"typ": "material", "okno": "1"}).text
-    assert "Ruční materiál" in okno and "Zaměnitelný díl" in okno and "Nákupní cena" in okno
+    assert "Nový materiál" in okno and "Zaměnitelný díl" in okno and "Nákupní cena" in okno
     assert re.search(r'name="ulozit_do_ceniku" value=""\s*checked', okno)  # výchozí jen do zakázky (#41)
     assert re.search(r'name="ulozit_do_ceniku" value="1"\s*>', okno)
     prace = client.get(f"{loc}/polozky/nova", params={"typ": "prace"}).text
-    assert "Ruční práce" in prace and "Název práce" in prace and "Zaměnitelný díl" not in prace
+    assert "Nová práce" in prace and "Název práce" in prace and "Zaměnitelný díl" not in prace
     # uložení i do ceníku: položka ceníku se založí se všemi poli a řádek je s ní propojený
     r = client.post(f"{loc}/polozky", data={"typ": "material", "kod": "ATE 03.9901", "nazev": "Brzdová kapalina",
                                             "zamenitelny_dil": "TRW PFB", "jednotka": "l", "mnozstvi": "2",

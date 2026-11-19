@@ -729,20 +729,24 @@ a:hover > .spz { border-color: var(--akcent); background: var(--akcent-svetly); 
 .karta-vozidla-panely .panel { background: #fff; border: 1px solid var(--ram); border-radius: 12px; box-shadow: var(--stin);
   padding: 0 18px 14px; font-size: .95rem; }
 .karta-vozidla-panely dl { gap: 6px 12px; }
-.karta-vozidla { font-size: 1.05rem !important; padding-bottom: 18px !important; }
-.karta-vozidla .skupina-udaju { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 20px; }
-.karta-vozidla .skupina-udaju + .skupina-udaju { margin-top: 14px; }
+.karta-vozidla { font-size: 1rem !important; padding-bottom: 12px !important; }
+.karta-vozidla .skupina-udaju { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px 16px; }
+.karta-vozidla .skupina-udaju + .skupina-udaju { margin-top: 10px; padding-top: 10px; border-top: 1px solid #eef0f3; }
+/* #44: podrobnosti hustě ve 4 sloupcích, SPZ výrazně */
+.karta-vozidla .skupina-udaju.podrobnosti { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px 16px; }
+.karta-vozidla .hlavni-radek { align-items: end; }
+.karta-vozidla .hlavni-radek .spz { font-size: 1.55rem; padding: 2px 12px; border-width: 2px; font-weight: 800; letter-spacing: .06em; }
 
 .karta-vozidla .cely { grid-column: 1 / -1; }
 .karta-vozidla .dva { grid-column: span 2; }
 .karta-vozidla .udaj { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-.karta-vozidla .udaj-nazev { font-size: .8rem; font-weight: 600; color: var(--text-tlumeny, #6b7280); }
-.karta-vozidla .udaj-hodnota { font-size: 1.1rem; color: var(--text, #111827); overflow-wrap: anywhere; }
+.karta-vozidla .udaj-nazev { font-size: .75rem; font-weight: 600; color: var(--text-tlumeny, #6b7280); }
+.karta-vozidla .udaj-hodnota { font-size: 1rem; color: var(--text, #111827); overflow-wrap: anywhere; }
 .karta-vozidla .udaj-hodnota.prazdne { color: #c3c7cf; }
 .karta-vozidla .udaj.hlavni .udaj-hodnota { font-weight: 700; }
 .karta-vozidla .hlavni-radek .udaj-hodnota { font-size: 1.3rem; }
 .karta-vozidla .vin-radek { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
-.karta-vozidla .udaj.vin .udaj-hodnota { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 1.25rem;
+.karta-vozidla .udaj.vin .udaj-hodnota { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 1.1rem;
   font-weight: 700; letter-spacing: .08em; }
 button.kopirovat { width: auto; margin: 0; padding: 4px 12px !important; font-size: .82rem !important; }
 .vin-zakazky { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
