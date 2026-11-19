@@ -1,14 +1,13 @@
 {% extends "base.html" %}
 {% from "_makra.html" import spz, adresa, zahlavi, hledani_seznamu, stavovy_radek with context %}
 {% block title %}Zákazníci{% endblock %}
-{% block akce %}
-  <a href="/zakaznici/novy" role="button" data-okno>Nový zákazník</a>
-  <p class="tlumene poznamka">Klik na řádek otevře zákazníka.</p>
-{% endblock %}
 {% block content %}
-<form method="get" class="filtr">
-  {{ hledani_seznamu('Jméno, telefon, e-mail, IČO, ulice, město…') }}
-</form>
+<div class="lista-filtru-seznamu">
+  <a href="/zakaznici/novy" role="button" data-okno>Nový zákazník</a>
+  <form method="get" class="filtr">
+    {{ hledani_seznamu('Jméno, telefon, e-mail, IČO, ulice, město…') }}
+  </form>
+</div>
 
 <div id="seznam">
 {% if zakaznici %}

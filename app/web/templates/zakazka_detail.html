@@ -160,7 +160,9 @@
         <button type="button" class="maly smazat-radek" data-smazat-radek="/polozky/{{ r.id }}/smazat"
                 title="Smazat položku ze zakázky">Smazat</button></td>{% endif %}
       <td class="tlumene">{{ r.kod or '' }}</td>
-      <td>{{ r.nazev }}</td>
+      <td>{{ r.nazev }}{% if r.cislo_dodaciho_listu -%}
+        <br><small>Dodací list <strong>{{ r.cislo_dodaciho_listu }}</strong></small>
+      {%- endif %}</td>
       <td class="cislo">{% if lze_menit %}
         {# množství se mění přímo tady: Enter nebo opuštění pole uloží #}
         <form method="post" action="/polozky/{{ r.id }}/mnozstvi" class="mnozstvi-radku krokovac">

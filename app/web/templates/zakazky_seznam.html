@@ -1,22 +1,24 @@
 {% extends "base.html" %}
-{% from "_makra.html" import tabulka_zakazek, stavovy_radek with context %}
+{% from "_makra.html" import tabulka_zakazek, stavovy_radek, hledani_seznamu, vyber_roku with context %}
 {% block title %}Zakázky{% endblock %}
-{% block akce %}
-  <a href="/zakazky/nova" role="button" data-okno>Nová zakázka</a>
-  <p class="tlumene poznamka">Klik na řádek otevře, Upravit je v řádku.</p>
-{% endblock %}
 {% block content %}
-{# bez vyhledávacího pole – zakázek není tolik, stačí záložky stavů a řazení (hledat jde horní lištou) #}
-<nav class="filtr-stavu">
-  <a href="/zakazky" {% if not stav and not vse %}aria-current="page"{% endif %} title="Přijato a V opravě">Otevřené ({{ pocet_otevrenych }})</a>
-  {% for s, nazev in StavZakazky.ZALOZKY %}
-  <a href="/zakazky?stav={{ s }}" {% if stav == s %}aria-current="page"{% endif %} title="Stav {{ StavZakazky.NAZVY[s] }}">{{ nazev }} ({{ pocty[s] }})</a>
-  {% endfor %}
-  <a href="/zakazky?vse=1" {% if vse and not stav %}aria-current="page"{% endif %}>Všechny ({{ pocet_vsech }})</a>
-</nav>
+<div class="lista-filtru-seznamu">
+  <a href="/zakazky/nova" role="button" data-okno>Nová zakázka</a>
+  <form method="get" class="filtr">
+    {{ hledani_seznamu('Číslo zakázky, SPZ, zákazník, požadavek…', autofocus=False) }}
+    <select name="stav" onchange="this.form.submit()" aria-label="Stav zakázky">
+      <option value="" {% if not stav and not vse %}selected{% endif %}>Otevřené ({{ pocet_otevrenych }})</option>
+      {% for s, nazev in StavZakazky.ZALOZKY %}
+      <option value="{{ s }}" {% if stav == s %}selected{% endif %}>{{ nazev }} ({{ pocty[s] }})</option>
+      {% endfor %}
+      <option value="vse" {% if vse and not stav %}selected{% endif %}>Všechny ({{ pocet_vsech }})</option>
+    </select>
+    {{ vyber_roku(roky, rok) }}
+  </form>
+</div>
 
 <div id="seznam">
 {{ tabulka_zakazek(zakazky, stranka=stranka) }}
-{% if zakazky %}{{ stavovy_radek(stranka, 'Klik na řádek otevře zakázku · Upravit je v řádku') }}{% endif %}
+{% if zakazky %}{{ stavovy_radek(stranka, 'Klik na řádek otevře zakázku') }}{% endif %}
 </div>
 {% endblock %}

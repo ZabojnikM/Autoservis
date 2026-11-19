@@ -668,6 +668,7 @@ h2 { font-size: 1.2rem; } h3 { font-size: 1.05rem; }
 .s-akcemi .obsah { padding-left: 0; }
 .akce { width: 196px; margin: 20px 0 0 20px; padding: 12px; gap: 8px; top: 78px; }  /* horní lišta 58 px + 20 px mezera */
 .akce a[role=button], .akce button { padding: 9px 16px; font-size: 1rem; }
+.akce button[form="formular-dokladu"] { padding-inline: 6px; white-space: nowrap; }
 .akce .poznamka { font-size: .8rem; margin-top: 4px; }
 
 /* tlačítka a pole */
@@ -685,6 +686,10 @@ legend { padding: 0 6px; font-size: 1rem; }
 .filtr-stavu { padding: 4px 20px 12px; gap: 6px; }
 .filtr-stavu a { padding: 5px 12px; font-size: .88rem; }
 .filtr { padding: 0 20px 14px; gap: 12px; }
+.lista-filtru-seznamu { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; padding: 8px 20px; background: #fff; border: 1px solid var(--ram); border-bottom: 0; border-radius: 12px 12px 0 0; }
+.lista-filtru-seznamu > a[role=button] { margin: 0; padding: 6.5px 15.6px; font-size: 1.144rem; }
+.lista-filtru-seznamu > .filtr { padding: 0; border: 0; flex: 1 1 26rem; }
+.lista-filtru-seznamu input[type=search] { flex: 1 1 14rem; }
 .filtr input, .filtr select { padding-top: 9px; padding-bottom: 9px; }
 .filtr label { font-size: .88rem; }
 
@@ -851,14 +856,8 @@ button.vlozit-radek { background: var(--akcent-tmavy, #3730a3) !important; borde
   color: #fff !important; }
 button.vlozit-radek:hover { filter: brightness(1.15); }
 
-/* seznamy (#39): klik na řádek otevře; Upravit v řádku se ukáže při najetí myší / na vybraném řádku */
+/* Kliknutí na řádek otevře detail. */
 table.klik-otevre tbody tr[data-otevrit] { cursor: pointer; }
-table.klik-otevre th.akce-radku { width: 6.5rem; }
-table.klik-otevre td.akce-radku { text-align: right; white-space: nowrap; }
-table.klik-otevre td.akce-radku [role=button] { visibility: hidden; margin: 0; width: auto; }
-table.klik-otevre tbody tr:hover td.akce-radku [role=button],
-table.klik-otevre tbody tr.vybrany td.akce-radku [role=button],
-table.klik-otevre td.akce-radku [role=button]:focus-visible { visibility: visible; }
 
 /* #40: jeden styl panelů – formuláře (fieldset s legendou) vypadají jako karty v detailech:
    bílá karta, nahoře šedá lišta s nadpisem verzálkami (jako .titulek-panelu) */
@@ -895,7 +894,9 @@ dd .vedle { margin-left: 1rem; margin-right: .35rem; }
 .jedna-lista .menu { position: static; background: none; border: 0; padding: 0; justify-self: start; }
 .jedna-lista .menu ul { display: flex; gap: 2px; margin: 0; padding: 0; }
 .jedna-lista .menu li { list-style: none; padding: 0; margin: 0; }
-.jedna-lista .menu a { display: block; padding: 6px 10px; font-size: .95rem; text-decoration: none; }
+/* Levý okraj první záložky lícuje s tlačítkem Nová zakázka. */
+.jedna-lista .menu li:first-child { margin-inline-start: 25px; }
+.jedna-lista .menu a { display: block; padding: 6px 10px; font-size: 1.15rem; text-decoration: none; }
 .jedna-lista .firma { display: flex; align-items: center; gap: 10px; justify-self: center; text-decoration: none;
   color: var(--text, #111827); font-size: 1.35rem; font-weight: 700; white-space: nowrap; }
 .jedna-lista .logo-firmy { height: 36px; width: auto; max-width: 160px; object-fit: contain; }
@@ -905,7 +906,11 @@ dd .vedle { margin-left: 1rem; margin-right: .35rem; }
 .jedna-lista .ozubene-kolo { display: flex; align-items: center; justify-content: center; width: 38px; height: 38px;
   border-radius: 10px; color: #4b5563; }
 .jedna-lista .ozubene-kolo:hover, .jedna-lista .ozubene-kolo.aktivni { background: var(--akcent-svetly); color: var(--akcent-tmavy); }
-@media (max-width: 1400px) { .jedna-lista .hledani input { width: 320px; } .jedna-lista .firma { font-size: 1.15rem; } }
+@media (max-width: 1400px) {
+  .horni-lista.jedna-lista { grid-template-columns: 1fr auto auto; }
+  .jedna-lista .hledani input { width: clamp(200px, 23vw, 320px); }
+  .jedna-lista .firma { font-size: 1.15rem; }
+}
 .radek-loga { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
 .nahled-loga { height: 48px; width: auto; max-width: 200px; object-fit: contain; border: 1px solid var(--ram); border-radius: 8px; padding: 4px; background: #fff; }
 
@@ -963,7 +968,11 @@ tbody td.hlavni.doklad-faktura, tbody td.hlavni.doklad-faktura a { color: var(--
 tbody td.hlavni.doklad-vyuctovani, tbody td.hlavni.doklad-vyuctovani a { color: #000; }
 
 /* #8: okno importu dodacího listu LKQ */
-.import-lkq .hlavicka-listu { margin: 0 0 .4rem; }
+@media (min-width: 900px) {
+  .nadpis-radek:has(.hlavicka-listu) > h1 { flex: 1 1 18rem; }
+  .nadpis-radek .hlavicka-listu { max-width: 58%; }
+}
+.nadpis-radek .hlavicka-listu { margin: 0 0 0 auto; text-align: right; }
 .import-lkq .sl-vyber { width: 2.2rem; text-align: center; }
 .import-lkq .sl-vyber input { margin: 0; }
 .import-lkq .stara-cena { color: var(--text-tlumeny); text-decoration: line-through; font-weight: 400; }

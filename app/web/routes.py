@@ -117,14 +117,18 @@ def _davka(vse_radky: str) -> int:
 
 
 @router.get("/zakazky", response_class=HTMLResponse)
-def zakazky_seznam(request: Request, db: DB, stav: str = "", q: str = "", vse: str = "",
+def zakazky_seznam(request: Request, db: DB, stav: str = "", q: str = "", vse: str = "", rok: str = "",
                    razeni: str = "", od: str = "", vse_radky: str = ""):
+    if stav == "vse":
+        stav, vse = "", "1"
     filtr = stav or (None if vse else StavZakazky.ZALOZKA_OTEVRENE)
-    st = zakazky.stranka(db, stav=filtr, hledat=q, razeni=razeni, od=od, limit=_davka(vse_radky))
+    rok = rok if len(rok) == 4 and rok.isascii() and rok.isdecimal() else ""
+    st = zakazky.stranka(db, stav=filtr, hledat=q, razeni=razeni, od=od, limit=_davka(vse_radky),
+                         rok=int(rok) if rok else None)
     pocty = zakazky.pocty_podle_stavu(db)
     return _stranka(
         request, "zakazky_seznam.html", aktivni="zakazky",
-        zakazky=st.polozky, stranka=st, stav=stav, q=q, vse=vse, pocty=pocty,
+        zakazky=st.polozky, stranka=st, stav=stav, q=q, vse=vse, pocty=pocty, rok=rok, roky=zakazky.roky_prijeti(db),
         pocet_otevrenych=sum(pocty[s] for s in StavZakazky.ZALOZKA_OTEVRENE), pocet_vsech=sum(pocty.values()),
     )
 

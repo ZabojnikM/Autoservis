@@ -99,8 +99,7 @@
     </tbody>
   </table>
   </div>
-  <div class="stavovy-radek"><span>Zakázek: {{ historie|length }} · vyfakturováno {{ vyfakturovano|penize }} {{ nast.mena }}</span>
-    <span>Klik na řádek otevře zakázku</span></div>
+  <div class="stavovy-radek"><span>Zakázek: {{ historie|length }} · vyfakturováno {{ vyfakturovano|penize }} {{ nast.mena }}</span></div>
   {% else %}
   <p class="prazdna-mrizka tlumene">Vozidlo zatím nemá žádnou zakázku.
     <a href="/zakazky/nova?vozidlo_id={{ v.id }}" data-okno>Přijmout vozidlo</a></p>
@@ -128,8 +127,7 @@
     </tbody>
   </table>
   </div>
-  <div class="stavovy-radek"><span>Řádků: {{ radky|length }} · celkem bez DPH {{ radky|sum(attribute='zaklad')|penize }} {{ nast.mena }}</span>
-    <span>Klik na řádek otevře zakázku</span></div>
+  <div class="stavovy-radek"><span>Řádků: {{ radky|length }} · celkem bez DPH {{ radky|sum(attribute='zaklad')|penize }} {{ nast.mena }}</span></div>
   {% else %}
   <p class="prazdna-mrizka tlumene">{{ 'Žádná práce.' if zalozka == 'prace' else 'Žádný materiál.' }}</p>
   {% endif %}

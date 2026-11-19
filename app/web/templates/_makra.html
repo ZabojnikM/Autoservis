@@ -126,6 +126,13 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
        {% if not request.query_params.get('razeni') %}disabled{% endif %}>
 {%- endmacro %}
 
+{% macro vyber_roku(roky, rok) -%}
+<select name="rok" onchange="this.form.submit()" aria-label="Rok">
+  <option value="">všechny roky</option>
+  {% for r in roky %}<option value="{{ r }}" {% if rok == r|string %}selected{% endif %}>{{ r }}</option>{% endfor %}
+</select>
+{%- endmacro %}
+
 {% macro zahlavi(klic, popisek, stranka, trida='') -%}
 {# Hlavička sloupce: klik seřadí vzestupně, další klik sestupně. #}
 {% set aktivni = stranka.razeni.lstrip('-') == klic %}
@@ -138,8 +145,8 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
 </th>
 {%- endmacro %}
 
-{# napoveda = jak se ovládá daný seznam (seznamy s třídou klik-otevre otevírají řádek jedním klikem, #39/#49) #}
-{% macro stavovy_radek(stranka, napoveda='Klik na řádek otevře · Upravit je v řádku') -%}
+{# poznamka = jediný pokyn ke kliknutí na řádek u tabulky (#66) #}
+{% macro stavovy_radek(stranka, poznamka='') -%}
 <div class="stavovy-radek" id="stav-seznamu">
   <span>Zobrazeno {{ stranka.do }} z {{ stranka.celkem }}
     {% if stranka.dalsi is not none %}
@@ -151,7 +158,7 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
             hx-select-oob="#stav-seznamu">Načíst vše</button>
     {% endif %}
   </span>
-  <span>{{ napoveda }}</span>
+  {% if poznamka %}<span>{{ poznamka }}</span>{% endif %}
 </div>
 {%- endmacro %}
 
@@ -164,7 +171,7 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
     {{ zahlavi('cislo', 'Číslo', stranka) }}{{ zahlavi('prijato', 'Přijato', stranka) }}
     {% if ukaz_vozidlo %}{{ zahlavi('vozidlo', 'Vozidlo', stranka) }}{% endif %}
     {% if ukaz_zakaznika %}{{ zahlavi('zakaznik', 'Zákazník', stranka) }}{% endif %}
-    {{ zahlavi('pozadavek', 'Požadavek', stranka) }}{{ zahlavi('stav', 'Stav', stranka) }}<th class="akce-radku neni-tisk"></th>
+    {{ zahlavi('pozadavek', 'Požadavek', stranka) }}{{ zahlavi('stav', 'Stav', stranka) }}
     {% else %}
     <th>Číslo</th><th>Přijato</th>
     {% if ukaz_vozidlo %}<th>Vozidlo</th>{% endif %}
@@ -182,7 +189,6 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
       {% if ukaz_zakaznika %}<td>{{ (z.zakaznik.nazev if z.zakaznik else '')|pomlcka }}</td>{% endif %}
       <td class="zkratit">{{ z.pozadavek|pomlcka }}</td>
       <td>{{ stav(z) }}</td>
-      {% if stranka %}<td class="akce-radku neni-tisk">{% if z.je_otevrena %}<a href="/zakazky/{{ z.id }}/upravit" role="button" class="maly upravit-radek" data-okno title="Upravit">Upravit</a>{% endif %}</td>{% endif %}
     </tr>
   {% endfor %}
   </tbody>

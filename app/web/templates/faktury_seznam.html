@@ -1,31 +1,28 @@
 {% extends "base.html" %}
-{% from "_makra.html" import spz, zahlavi, hledani_seznamu, stavovy_radek with context %}
+{% from "_makra.html" import spz, zahlavi, hledani_seznamu, stavovy_radek, vyber_roku with context %}
 {% block title %}Faktury{% endblock %}
-{% block akce %}
-  <p class="tlumene poznamka">Klik na řádek otevře doklad. Nový doklad se vystavuje ze zakázky.</p>
-{% endblock %}
 {% block content %}
-<nav class="filtr-stavu">
-  {% for klic, nazev in filtry.items() %}
-  <a href="/faktury?filtr={{ klic }}&rok={{ rok }}&q={{ q|urlencode }}" {% if filtr == klic %}aria-current="page"{% endif %}>{{ nazev }}</a>
-  {% endfor %}
-</nav>
-
-<form method="get" class="filtr">
-  <input type="hidden" name="filtr" value="{{ filtr }}">
-  {{ hledani_seznamu('Číslo, odběratel, IČO, SPZ…', autofocus=False) }}
-  <select name="rok" onchange="this.form.submit()" aria-label="Rok">
-    <option value="">všechny roky</option>
-    {% for r in roky %}<option value="{{ r }}" {% if rok == r|string %}selected{% endif %}>{{ r }}</option>{% endfor %}
-  </select>
-</form>
+{% set zobrazit_splatnost = filtr != "vyuctovani" %}
+<div class="lista-filtru-seznamu">
+  <form method="get" class="filtr">
+    {{ hledani_seznamu('Číslo, odběratel, IČO, SPZ…', autofocus=False) }}
+    <select name="filtr" onchange="this.form.submit()" aria-label="Typ dokladu">
+      {% if filtr not in filtry %}<option value="{{ filtr }}" selected hidden>Původní filtr</option>{% endif %}
+      {% for klic, nazev in filtry.items() %}
+      <option value="{{ klic }}" {% if filtr == klic %}selected{% endif %}>{{ nazev }}</option>
+      {% endfor %}
+    </select>
+    {% if typ %}<input type="hidden" name="typ" value="{{ typ }}">{% endif %}
+    {{ vyber_roku(roky, rok) }}
+  </form>
+</div>
 
 <div id="seznam">
 {% if faktury %}
 <div class="overflow-auto">
 <table class="striped klik-otevre">
   <thead><tr>
-    {{ zahlavi('cislo', 'Číslo', stranka) }}{{ zahlavi('vystaveno', 'Vystaveno', stranka) }}{{ zahlavi('splatnost', 'Splatnost', stranka) }}
+    {{ zahlavi('cislo', 'Číslo', stranka) }}{{ zahlavi('vystaveno', 'Vystaveno', stranka) }}{% if zobrazit_splatnost %}{{ zahlavi('splatnost', 'Splatnost', stranka) }}{% endif %}
     {{ zahlavi('odberatel', 'Odběratel', stranka) }}{{ zahlavi('vozidlo', 'Vozidlo', stranka) }}
     {{ zahlavi('celkem', 'Celkem', stranka, 'cislo') }}{{ zahlavi('zbyva', 'Zbývá', stranka, 'cislo') }}{{ zahlavi('stav', 'Stav', stranka) }}
   </tr></thead>
@@ -36,14 +33,16 @@
     <tr class="volne-misto" title="Doklad s tímto číslem byl smazán – číslo jde ručně použít při vystavení">
       <td class="hlavni doklad-{{ f.typ }}">{{ f.cislo }}{% if f.typ == 'vyuctovani' %} <span class="tlumene">vyúčt.</span>{% endif %}</td>
       <td>{{ f.datum_vystaveni|datum }}</td>
-      <td colspan="6" class="tlumene">Volné po smazání</td>
+      {% if zobrazit_splatnost %}<td></td>{% endif %}
+      <td class="tlumene">Volné po smazání</td>
+      <td></td><td></td><td></td><td></td>
     </tr>
     {% else %}
     <tr class="doklad-{{ f.stav }}" data-otevrit="/faktury/{{ f.id }}">
       <td class="hlavni doklad-{{ f.typ }}"><a href="/faktury/{{ f.id }}">{{ f.cislo }}</a>
         {% if f.typ == 'vyuctovani' %}<span class="tlumene">vyúčt.</span>{% endif %}</td>
       <td>{{ f.datum_vystaveni|datum }}</td>
-      <td>{% if f.typ == 'faktura' %}{{ f.datum_splatnosti|datum }}{% else %}{{ none|pomlcka }}{% endif %}</td>
+      {% if zobrazit_splatnost %}<td>{% if f.typ == 'faktura' %}{{ f.datum_splatnosti|datum }}{% else %}{{ none|pomlcka }}{% endif %}</td>{% endif %}
       <td>{{ f.odb_nazev|pomlcka }}</td>
       <td>{% if f.spz %}{{ spz(f.spz) }}{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td class="cislo castka-hlavni">{{ f.celkem|penize }}</td>
@@ -54,7 +53,7 @@
   {% endfor %}
   </tbody>
   <tfoot><tr>
-    <td colspan="5">Součet za {{ souhrn.pocet }} dokladů{% if stranka.dalsi is not none %} (všechny, i nenačtené){% endif %}</td>
+    <td colspan="{{ 5 if zobrazit_splatnost else 4 }}">Součet za {{ souhrn.pocet }} dokladů{% if stranka.dalsi is not none %} (všechny, i nenačtené){% endif %}</td>
     <td class="cislo">{{ souhrn.celkem|penize }}</td>
     <td class="cislo"><strong>{{ souhrn.zbyva|penize }}</strong></td>
     <td>{{ nast.mena }}</td>

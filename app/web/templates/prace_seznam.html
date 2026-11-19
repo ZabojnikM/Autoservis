@@ -2,16 +2,15 @@
 {% from "_makra.html" import zahlavi, hledani_seznamu, stavovy_radek with context %}
 {# Ceník prací – samostatný seznam (materiál má vlastní stránku /cenik) #}
 {% block title %}Ceník prací{% endblock %}
-{% block akce %}
-  <a href="/prace/nova" role="button" data-okno>Nová práce</a>
-  <p class="tlumene poznamka">Klik na řádek otevře kartu položky.</p>
-{% endblock %}
 {% block content %}
-<form method="get" class="filtr">
-  {{ hledani_seznamu('Kód práce (nebo název)…') }}
-  <label class="tlumene"><input type="checkbox" name="neaktivni" value="1" {% if neaktivni %}checked{% endif %}
-         onchange="this.form.submit()"> zobrazit i vyřazené</label>
-</form>
+<div class="lista-filtru-seznamu">
+  <a href="/prace/nova" role="button" data-okno>Nová práce</a>
+  <form method="get" class="filtr">
+    {{ hledani_seznamu('Kód práce (nebo název)…') }}
+    <label class="tlumene"><input type="checkbox" name="neaktivni" value="1" {% if neaktivni %}checked{% endif %}
+           onchange="this.form.submit()"> zobrazit i vyřazené</label>
+  </form>
+</div>
 
 <div id="seznam">
 {% if polozky %}

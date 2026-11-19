@@ -5,11 +5,10 @@
    U každé je vidět, jestli vozidlo už máme v databázi (podle SPZ nebo VIN). Klik na řádek:
    v databázi → otevřená zakázka vozidla / nová zakázka, není → založit vozidlo, konflikt → podrobnosti. #}
 {% block title %}Příjem vozidel{% endblock %}
-{% block akce %}
-  <a href="/prijem" role="button" class="secondary">Obnovit</a>
-  <p class="tlumene poznamka">Návštěvy zapsané Přijímacím technikem. Klik na řádek otevře zakázku vozidla, nebo založí nové vozidlo, když v databázi není.</p>
-{% endblock %}
 {% block content %}
+<div class="lista-filtru-seznamu">
+  <a href="/prijem" role="button" class="secondary">Obnovit</a>
+</div>
 {% if prijmy is none %}
 <p class="prazdna-mrizka chyba-text">Příjem vozidel je dočasně nedostupný</p>
 {% elif not prijmy.navstevy %}
