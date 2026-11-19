@@ -212,6 +212,8 @@ class PolozkaZakazky(CenaRadku, SQLModel, table=True):
     sazba_dph: Decimal = Field(default=Decimal("21"), sa_type=DesetinneCislo)
     vytvoreno: NaiveDatetime = Field(default_factory=datetime.now)
 
+    cislo_dodaciho_listu: Optional[str] = None
+
     zakazka: Optional[Zakazka] = Relationship(back_populates="polozky")
 
 

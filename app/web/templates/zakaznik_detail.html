@@ -76,7 +76,7 @@
     </tbody>
   </table>
   </div>
-  <div class="stavovy-radek"><span>Vozidel: {{ vozidla_zakaznika|length }}</span><span>Klik na řádek otevře vozidlo</span></div>
+  <div class="stavovy-radek"><span>Vozidel: {{ vozidla_zakaznika|length }}</span></div>
   {% else %}
   <p class="prazdna-mrizka tlumene">Žádná vozidla. <a href="/vozidla/nove?zakaznik_id={{ k.id }}" data-okno>Přidat vozidlo</a></p>
   {% endif %}
@@ -101,7 +101,7 @@
     </tbody>
   </table>
   </div>
-  <div class="stavovy-radek"><span>Zakázek: {{ zakazky|length }}</span><span>Klik na řádek otevře zakázku</span></div>
+  <div class="stavovy-radek"><span>Zakázek: {{ zakazky|length }}</span></div>
   {% else %}
   <p class="prazdna-mrizka tlumene">Žádné zakázky.</p>
   {% endif %}
@@ -129,8 +129,7 @@
     </tbody>
   </table>
   </div>
-  <div class="stavovy-radek"><span>Dokladů: {{ doklady|length }} · neuhrazeno {{ neuhrazeno|penize }} {{ nast.mena }}</span>
-    <span>Klik na řádek otevře doklad</span></div>
+  <div class="stavovy-radek"><span>Dokladů: {{ doklady|length }} · neuhrazeno {{ neuhrazeno|penize }} {{ nast.mena }}</span></div>
   {% else %}
   <p class="prazdna-mrizka tlumene">Žádné doklady.</p>
   {% endif %}

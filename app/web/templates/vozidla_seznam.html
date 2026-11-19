@@ -1,14 +1,13 @@
 {% extends "base.html" %}
 {% from "_makra.html" import spz, zahlavi, hledani_seznamu, stavovy_radek with context %}
 {% block title %}Vozidla{% endblock %}
-{% block akce %}
-  <a href="/vozidla/nove" role="button" data-okno>Nové vozidlo</a>
-  <p class="tlumene poznamka">Klik na řádek otevře vozidlo.</p>
-{% endblock %}
 {% block content %}
-<form method="get" class="filtr">
-  {{ hledani_seznamu('SPZ, VIN, značka, model, typ vozidla, kód motoru, majitel…') }}
-</form>
+<div class="lista-filtru-seznamu">
+  <a href="/vozidla/nove" role="button" data-okno>Nové vozidlo</a>
+  <form method="get" class="filtr">
+    {{ hledani_seznamu('SPZ, VIN, značka, model, typ vozidla, kód motoru, majitel…') }}
+  </form>
+</div>
 
 <div id="seznam">
 {% if vozidla %}
@@ -31,7 +30,7 @@
   </tbody>
 </table>
 </div>
-{{ stavovy_radek(stranka, 'Klik na řádek otevře vozidlo') }}
+{{ stavovy_radek(stranka) }}
 {% else %}
 <p class="tlumene prazdna-mrizka">{% if q %}Nic nenalezeno.{% else %}Zatím žádná vozidla – přibudou při příjmu zakázky.{% endif %}</p>
 {% endif %}

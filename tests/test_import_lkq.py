@@ -108,7 +108,9 @@ def test_okno_importu_web():
     r = client.post("/cenik/import/nahled", data={"okno": "1"}, files={"soubor": ("list.csv", "nesmysl".encode())})
     assert r.status_code == 200 and "není dodací list LKQ" in r.text
     r = client.post("/cenik/import/nahled", data={"okno": "1"}, files={"soubor": ("list.csv", CSV.encode())})
-    assert "3116034551" in r.text and r.text.count("Nová položka") == 3 and r.text.count('name="vybrano"') == 3
+    hlavicka = r.text.split('<div class="nadpis-radek">', 1)[1].split("</div>", 1)[0]
+    assert 'Dodací list <strong>3116034551</strong>' in hlavicka
+    assert r.text.count("Nová položka") == 3 and r.text.count('name="vybrano"') == 3
     # #63: tlačítka výběru jako tlačítka vedle sebe; v řádku zaškrtávátko, stav a kód hned za sebou
     assert '<div class="vyber-dilu">' in r.text and r.text.count('class="secondary outline maly"') == 2
     assert re.search(r'name="vybrano" value="0" id="dil-0"[^>]*></td>\s*<td class="sl-stav"><label for="dil-0">'
@@ -129,3 +131,4 @@ def test_okno_importu_web():
     assert r.status_code == 204
     detail = client.get(loc).text
     assert "OPT FAF10128" in detail and "Vzduchový filtr Optimal" in detail
+    assert "Dodací list <strong>3116034551</strong>" in detail

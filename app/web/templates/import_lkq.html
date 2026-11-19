@@ -23,6 +23,10 @@
 <div class="nadpis-radek">
   <h1>Import dodacího listu LKQ
     <span class="oznaceni">{% if zakazka %}do zakázky <a href="/zakazky/{{ zakazka.id }}">{{ zakazka.cislo }}</a> a ceníku{% else %}do ceníku materiálu{% endif %}</span></h1>
+  {% if dodaci_list %}
+  <p class="hlavicka-listu">Dodací list <strong>{{ dodaci_list.cislo or '—' }}</strong>{% if dodaci_list.datum %} · {{ dodaci_list.datum }}{% endif %}{% if dodaci_list.dodavatel %} · {{ dodaci_list.dodavatel }}{% endif %}
+    {% if dodaci_list.bez_dph is not none %}<span class="tlumene"> · celkem {{ dodaci_list.bez_dph|penize }} bez DPH / {{ dodaci_list.s_dph|penize }} s DPH</span>{% endif %}</p>
+  {% endif %}
 </div>
 
 {% if not dodaci_list %}
@@ -40,14 +44,11 @@
   </fieldset>
 </form>
 {% else %}
-{% set l = dodaci_list %}
 <form id="import-lkq" method="post" action="/cenik/import" class="formular prijem siroky import-lkq"
       {% if okno %}hx-post="/cenik/import" hx-target="#okno-formular-obsah"{% endif %}>
   {% if okno %}<input type="hidden" name="okno" value="1">{% endif %}
   {% if zakazka %}<input type="hidden" name="zakazka_id" value="{{ zakazka.id }}">{% endif %}
   <input type="hidden" name="data_listu" value="{{ data_listu }}">
-  <p class="hlavicka-listu">Dodací list <strong>{{ l.cislo or '—' }}</strong>{% if l.datum %} · {{ l.datum }}{% endif %}{% if l.dodavatel %} · {{ l.dodavatel }}{% endif %}
-    {% if l.bez_dph is not none %}<span class="tlumene"> · celkem {{ l.bez_dph|penize }} bez DPH / {{ l.s_dph|penize }} s DPH</span>{% endif %}</p>
   {% set novych = radky|selectattr('je_novy')|list|length %}
   <div class="vyber-dilu">
     <button type="button" class="secondary outline maly" onclick="this.form.querySelectorAll('[name=vybrano]').forEach(c => c.checked = true)">Vybrat vše</button>

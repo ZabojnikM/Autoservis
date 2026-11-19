@@ -1,7 +1,7 @@
 """Zakázky – příjem vozidla, stavy, číslování."""
 from datetime import date, datetime
 
-from sqlalchemy import case, or_
+from sqlalchemy import case, extract, or_
 from sqlmodel import Session, col, func, select
 
 from app.models import Faktura, StavZakazky, STAVY_PALIVA, Vozidlo, Zakaznik, Zakazka
@@ -339,11 +339,19 @@ def seznam(
 
 
 def stranka(session: Session, stav: str | list[str] | None = None, jen_otevrene: bool = False, hledat: str | None = None,
-            razeni: str | None = None, od=0, limit: int = VELIKOST_STRANKY) -> Stranka:
+            razeni: str | None = None, od=0, limit: int = VELIKOST_STRANKY, rok: int | None = None) -> Stranka:
     """Seznam zakázek pro mřížku – řazení podle sloupce a načítání po dávkách.
     Výchozí řazení podle čísla od nejstarší (#56)."""
-    return strankuj_dotaz(session, _dotaz_seznamu(stav, jen_otevrene, hledat), RAZENI, razeni, "cislo",
+    dotaz = _dotaz_seznamu(stav, jen_otevrene, hledat)
+    if rok is not None:
+        dotaz = dotaz.where(extract("year", Zakazka.datum_prijeti) == rok)
+    return strankuj_dotaz(session, dotaz, RAZENI, razeni, "cislo",
                           od, limit, doplnkove=[Zakazka.id])
+
+
+def roky_prijeti(session: Session) -> list[int]:
+    rok = extract("year", Zakazka.datum_prijeti)
+    return list(session.exec(select(rok).distinct().order_by(rok.desc())))
 
 
 def pocty_podle_stavu(session: Session) -> dict[str, int]:

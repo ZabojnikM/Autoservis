@@ -199,7 +199,10 @@ def importuj(session: Session, dodaci_list: DodaciList, vybrane: list[int], zaka
             session.add(polozka)
             session.flush()
             if zakazka_id:
-                polozky_sluzba.pridej_z_ceniku(session, zakazka_id, polozka.id, mnozstvi=dil.mnozstvi, commit=False)
+                radek = polozky_sluzba.pridej_z_ceniku(
+                    session, zakazka_id, polozka.id, mnozstvi=dil.mnozstvi, commit=False
+                )
+                radek.cislo_dodaciho_listu = dodaci_list.cislo or None
                 souhrn.vlozeno += 1
         session.commit()
     except Exception:

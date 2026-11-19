@@ -16,15 +16,15 @@ def test_uvod_je_seznam_zakazek():
     assert r.status_code == 303 and r.headers["location"] == "/zakazky"
     r = client.get("/")
     assert r.status_code == 200
-    assert "Autoservis" in r.text and "<title>Zakázky" in r.text and 'class="filtr-stavu"' in r.text
+    assert "Autoservis" in r.text and "<title>Zakázky" in r.text and 'name="stav"' in r.text
 
 
-def test_karty_bez_nadpisu_a_zakazky_bez_hledani():
+def test_karty_bez_nadpisu_a_filtry_zakazek():
     # název karty je v horní liště – velký nadpis nad seznamem se neopakuje
     for url in ["/zakazky", "/vozidla", "/zakaznici", "/cenik", "/prace", "/faktury", "/nastaveni"]:
         assert "<h1" not in client.get(url).text, url
-    # zakázek je málo – bez vyhledávacího pole (hledat jde horní lištou)
     zakazky = client.get("/zakazky").text
-    assert 'class="filtr"' not in zakazky and 'name="q"' in zakazky  # name="q" = jen horní lišta
-    assert zakazky.count('name="q"') == 1
-    assert 'class="filtr"' in client.get("/vozidla").text  # ostatní seznamy hledání mají
+    assert 'class="lista-filtru-seznamu"' in zakazky
+    assert zakazky.count('name="q"') == 2  # globální hledání a filtr seznamu
+    assert 'name="rok"' in zakazky
+    assert 'class="lista-filtru-seznamu"' in client.get("/vozidla").text

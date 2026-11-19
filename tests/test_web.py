@@ -222,7 +222,7 @@ def test_faktura_cely_tok():
     assert '<svg viewBox="0 0 ' in tisk and '<svg width=' not in tisk
 
     prehled = client.get("/faktury").text  # výchozí záložka Vyúčtování – faktura v ní není
-    assert 'href="/faktury?filtr=vyuctovani&rok=&q=" aria-current="page"' in prehled and f"/faktury/{fid}" not in prehled
+    assert 'value="vyuctovani" selected' in prehled and f"/faktury/{fid}" not in prehled
     vse = client.get("/faktury", params={"filtr": "vse"}).text
     assert f'<td class="hlavni doklad-faktura"><a href="/faktury/{fid}">FV' in vse  # faktura fialově (#57)
     zakazka = client.get(loc).text
@@ -280,8 +280,8 @@ def test_filtry_a_odebrane_doklady():
         assert client.get("/faktury", params={"filtr": filtr, "rok": "2026"}).status_code == 200
     # záložky Vyúčtování / Faktury / Všechny (Stornované zrušené, #15), bez výběru typu dokladu
     prehled = client.get("/faktury").text
-    zalozky = re.findall(r'href="/faktury\?filtr=(\w+)&', prehled)
-    assert zalozky == ["vyuctovani", "faktury", "vse"]
+    vyber = prehled.split('name="filtr"', 1)[1].split("</select>", 1)[0]
+    assert re.findall(r'<option value="(\w+)"', vyber) == ["vyuctovani", "faktury", "vse"]
     assert 'name="typ"' not in prehled and "faktury i vyúčtování" not in prehled
     assert "Neuhrazené" not in prehled and "Po splatnosti</a>" not in prehled
     assert "Export CSV" not in client.get("/faktury").text
@@ -1097,8 +1097,8 @@ def test_karta_vozidla_udaje_jako_v_zakazce():
     assert "<dt>Olej</dt>" not in karta and "Doplnit údaje vozidla" not in karta
 
 
-def test_seznamy_jeden_klik_a_upravit_v_radku():
-    """#39: seznamy otevírají řádek jedním klikem, Upravit je v řádku, vlevo zůstává jen „Nový …“."""
+def test_seznamy_jeden_klik_bez_uprav_v_radku():
+    """Seznamy otevírají detail jedním klikem. Zakázka se upravuje z detailu."""
     loc = _prijem(spz="8S88888").headers["location"].split("?")[0]
     zid = loc.rsplit("/", 1)[1]
     for url in ["/zakazky", "/vozidla", "/zakaznici", "/cenik", "/prace", "/faktury"]:
@@ -1106,7 +1106,9 @@ def test_seznamy_jeden_klik_a_upravit_v_radku():
         akce = text.split('<aside class="akce')[1].split("</aside>")[0] if '<aside class="akce' in text else ""
         assert 'data-radek="otevrit"' not in akce and 'data-radek="upravit"' not in akce, url
     zakazky = client.get("/zakazky").text
-    assert "klik-otevre" in zakazky and f'href="/zakazky/{zid}/upravit" role="button" class="maly upravit-radek"' in zakazky
+    assert "klik-otevre" in zakazky and f'data-otevrit="{loc}"' in zakazky
+    assert "upravit-radek" not in zakazky and "akce-radku" not in zakazky
+    assert f'href="/zakazky/{zid}/upravit" role="button"' in client.get(loc).text
     # vozidla a zákazníci: Upravit v řádku není (upravuje se z detailu)
     for url in ["/vozidla", "/zakaznici"]:
         text = client.get(url).text
@@ -1126,7 +1128,7 @@ def test_audit_49_popisky_a_tlacitka():
     assert akce.index(">Uložit</button>") < akce.index(">Uložit a další</button>") < akce.index('class="zpet oddelene"')
     assert "dvojklik" not in client.get("/zakazky").text.split('id="stav-seznamu"')[-1][:600]
     client.post("/cenik/nova", data={"typ": "material", "nazev": "Filtr 49", "cena": "10"})
-    assert "klik na řádek otevře kartu materiálu" in client.get("/cenik").text
+    assert "klik na řádek otevře kartu materiálu" not in client.get("/cenik").text
 
 
 def test_detail_vozidla_bez_tlacitka_otevrit():
