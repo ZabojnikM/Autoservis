@@ -40,6 +40,7 @@
   </tbody>
 </table>
 </div>
-<div class="stavovy-radek"><span>Příjmů: {{ prijmy.navstevy|length }}{% if prijmy.updated_at %} · aktualizováno {{ prijmy.updated_at|datumcas }}{% endif %}</span></div>
+<div class="stavovy-radek"><span>Příjmů: {{ prijmy.navstevy|length }}{% if prijmy.updated_at %} · aktualizováno {{ prijmy.updated_at|datumcas }}{% endif %}</span>
+  <span>Klik na řádek: zakázka vozidla / založit vozidlo · Podrobnosti = údaje z příjmu</span></div>
 {% endif %}
 {% endblock %}

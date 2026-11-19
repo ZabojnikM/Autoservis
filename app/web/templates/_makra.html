@@ -145,6 +145,7 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
 </th>
 {%- endmacro %}
 
+{# poznamka = jediný pokyn ke kliknutí na řádek u tabulky (#66) #}
 {% macro stavovy_radek(stranka, poznamka='') -%}
 <div class="stavovy-radek" id="stav-seznamu">
   <span>Zobrazeno {{ stranka.do }} z {{ stranka.celkem }}

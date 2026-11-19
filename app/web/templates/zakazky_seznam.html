@@ -19,6 +19,6 @@
 
 <div id="seznam">
 {{ tabulka_zakazek(zakazky, stranka=stranka) }}
-{% if zakazky %}{{ stavovy_radek(stranka) }}{% endif %}
+{% if zakazky %}{{ stavovy_radek(stranka, 'Klik na řádek otevře zakázku') }}{% endif %}
 </div>
 {% endblock %}

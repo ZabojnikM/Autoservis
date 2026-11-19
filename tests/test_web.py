@@ -1128,7 +1128,7 @@ def test_audit_49_popisky_a_tlacitka():
     assert akce.index(">Uložit</button>") < akce.index(">Uložit a další</button>") < akce.index('class="zpet oddelene"')
     assert "dvojklik" not in client.get("/zakazky").text.split('id="stav-seznamu"')[-1][:600]
     client.post("/cenik/nova", data={"typ": "material", "nazev": "Filtr 49", "cena": "10"})
-    assert "klik na řádek otevře kartu materiálu" not in client.get("/cenik").text
+    assert "klik na řádek otevře kartu materiálu" in client.get("/cenik").text
 
 
 def test_detail_vozidla_bez_tlacitka_otevrit():
@@ -1295,3 +1295,13 @@ def test_jednotny_vzhled_seznamu():
     from app.web.sablony import _pomlcka
     assert str(_pomlcka("")) == '<span class="prazdne">—</span>' and str(_pomlcka("<b>")) == "&lt;b&gt;"
     assert str(_pomlcka(0)) == "0"
+
+
+def test_seznamy_jeden_pokyn_ke_kliknuti():
+    """#66: v každém seznamu je pokyn ke kliknutí na řádek právě jednou (u tabulky)."""
+    _prijem(spz="6P66666")
+    client.post("/cenik/nova", data={"typ": "material", "kod": "P66", "nazev": "Díl", "cena": "1"})
+    client.post("/prace/nova", data={"kod": "PR66", "nazev": "Práce PR66", "cena": "400", "jednotka": "úkon"})
+    for url in ["/zakazky", "/vozidla", "/zakaznici", "/cenik", "/prace"]:
+        text = re.sub(r"<script.*?</script>", "", client.get(url).text, flags=re.S).lower()  # jen viditelný text
+        assert text.count("klik na řádek") == 1, url
