@@ -1,7 +1,7 @@
 # Okno Zakázka – naše aplikace vs. starý systém
 
 Stav k 18. 11. 2026 (aktualizováno po úpravách téhož dne). Podle snímku okna Zakázka ve starém systému a formuláře nové / upravené zakázky u nás.
-Sloupec „Stav“: ✅ máme · ⚠️ máme jinak / částečně · ❌ chybí · 🚫 záměrně nepoužíváme · 📝 v plánu (ToDo v PLAN.md).
+Sloupec „Stav“: ✅ máme · ⚠️ máme jinak / částečně · ❌ chybí · 🚫 záměrně nepoužíváme · 📝 v plánu (GitHub Issues).
 
 ## Zákazník
 
@@ -85,7 +85,7 @@ Sloupec „Stav“: ✅ máme · ⚠️ máme jinak / částečně · ❌ chybí
 
 ## Změny 18. 11. 2026
 
-- Tlačítko **Načti** u IČO (příjem zakázky i formulář zákazníka) – zatím ohlásí „připravuje se“, napojení na ARES je v ToDo.
+- Tlačítko **Načti** u IČO (příjem zakázky i formulář zákazníka) – zatím ohlásí „připravuje se“, napojení na ARES je v issue #11.
 - Vozidlo: k roku výroby přibylo **Datum 1. registrace** (formulář vozidla, příjem zakázky, karta vozidla).
 - **Plánované ukončení** a **Stav paliva** zrušeny z formuláře, detailu, tisku i seznamu zakázek (sloupec Termín).
   Hodnoty ze starého systému zůstaly v databázi, jen se nezobrazují.

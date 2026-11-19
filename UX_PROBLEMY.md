@@ -5,7 +5,7 @@ Prošlé kroky: nová zakázka s novým zákazníkem a vozidlem → přidání m
 úprava a odebrání položky → faktura → úhrada → storno → vyúčtování → storno → nový materiál v ceníku a jeho smazání →
 nové vozidlo a jeho smazání → smazání zakázky, vozidla a zákazníka.
 
-Seznam k odškrtávání: [OPRAVY.md](OPRAVY.md).
+Body jsou opravené (18. 11. 2026); co zbylo, se sleduje v [GitHub Issues](https://github.com/ZabojnikM/Autoservis/issues) (#14, #15, #19).
 
 Závažnost: 🔴 chyba / riziko pro data či doklady · 🟠 nelogičnost, která zdržuje nebo mate · 🟡 drobnost v UI
 

@@ -6,13 +6,11 @@
 
 Tento soubor slouží jako živý plán – hotové kroky odškrtáváme `[x]` a doplňujeme datum do sekce [Deník změn](#deník-změn).
 
-## ToDo (odloženo na později)
+## Úkoly
 
-- [x] **Opravy z UX auditu (18. 11. 2026)** – opraveno 37 z 39 bodů, viz [OPRAVY.md](OPRAVY.md) (podrobnosti v [UX_PROBLEMY.md](UX_PROBLEMY.md)).
-  Zbývá k rozhodnutí: formát čísel ostrých řad vs. importovaných (31) a storno faktury vs. opravný daňový doklad (14).
-- [x] ~~**Zakázkový list jako samostatná A4 stránka**~~ – hotovo 18. 11. 2026 (UI krok 5).
-- [ ] **Načtení zákazníka z ARES podle IČO** – tlačítko „Načti“ u IČO už je (příjem zakázky, formulář zákazníka),
-  zatím jen ohlásí „připravuje se“. Doplnit volání ARES a vyplnění názvu, adresy a DIČ (18. 11. 2026).
+Od 19. 11. 2026 se **všechny otevřené úkoly, chyby, rozhodnutí a nápady sledují v
+[GitHub Issues](https://github.com/ZabojnikM/Autoservis/issues)** – tento soubor je popis projektu a deník změn,
+ne seznam úkolů. Výsledky UX auditu z 18. 11. 2026 jsou v [UX_PROBLEMY.md](UX_PROBLEMY.md).
 
 ---
 
@@ -199,12 +197,12 @@ Druhá konfigurace v `.claude/launch.json` (`autoservis-import`, port 8001) spou
 
 ## 5. Plán vývoje po fázích
 
-### Fáze 0 – Příprava ✅ (kromě gitu)
+### Fáze 0 – Příprava ✅
 - [x] Průzkum podobných softwarů
 - [x] Návrh vzhledu, základních funkcí a architektury (tento dokument)
 - [x] Potvrdit technologický stack → **Python + FastAPI + SQLite + HTMX**
 - [x] `.gitignore`, README
-- [ ] Inicializovat git repozitář – **git není na PC nainstalovaný**, doplnit po instalaci
+- [x] Git repozitář na GitHubu
 - [x] Založit Python projekt (venv, `requirements.txt`), kostru složek
 - [x] Spustit prázdnou aplikaci v prohlížeči (nástěnka s menu, `/api/zdravi`, 2 testy prochází)
 
@@ -232,13 +230,7 @@ Druhá konfigurace v `.claude/launch.json` (`autoservis-import`, port 8001) spou
 - [x] Řádky zakázky jsou kopie – změna či smazání ceníku zakázky nezmění; předanou zakázku nelze měnit; smazat jde jen prázdnou zakázku
 
 ### Fáze 2b – Sklad (odloženo) ☐
-- [ ] Sklady (více skladů), **skladová karta**: skladová cena, **3 prodejní ceny**, stav, rezervováno (navázat na ceník – materiál)
-- [ ] **Příjemka** (dodavatel, nákupní cena → vážený průměr skladové ceny, volitelně přepočet prodejních cen podle rabatů)
-- [ ] **Výdej do zakázky** (odečte sklad), **předběžný výdej** (neodečte, jen na předfakturu) + potvrzení výdeje
-- [ ] Přiřazení **pracovníků** k práci (1 a více) → výkaz práce
-- [ ] **Přímý prodej** bez zakázky, **výdej do spotřeby**, **převodka** mezi sklady
-- [ ] Doklady výdejka / příjemka / převodka, storno pohybu, pohyby karty
-- [ ] Inventura, upozornění na nízký stav
+Úkoly v issue [#12](https://github.com/ZabojnikM/Autoservis/issues/12).
 
 ### Fáze 3 – Faktury a vyúčtování ✅ (základ)
 - [x] Nastavení: **údaje servisu** (dodavatel), bankovní účet (IBAN se dopočítá), **číselné řady** `FV{RRRR}` / `VY{RRRR}` + počet číslic, splatnost, text pod dokladem
@@ -250,7 +242,7 @@ Druhá konfigurace v `.claude/launch.json` (`autoservis-import`, port 8001) spou
 - [x] Hotovost se volitelně zaokrouhluje na koruny, **QR platba** (SPAYD), VS z čísla dokladu
 - [x] **Tisk / PDF** faktury a vyúčtování (A4, přes prohlížeč „Uložit jako PDF“)
 - [x] Automatické doplňování nových sloupců do existující databáze (`db.doplnit_sloupce`)
-- [ ] Druhy zakázek (záruční… – co se fakturuje)
+- Druhy zakázek (záruční… – co se fakturuje) → [#13](https://github.com/ZabojnikM/Autoservis/issues/13)
 
 > **Rozhodnutí uživatele (17. 11. 2026):** výstupní doklady jen **zakázkový list, faktura (převodem / hotově)
 > a vyúčtování**. Předfaktura, dodací list s hromadnou fakturací, platba kartou a export CSV byly
@@ -296,11 +288,9 @@ Druhá konfigurace v `.claude/launch.json` (`autoservis-import`, port 8001) spou
    (cookie `zprava`, sama zmizí po 3 s), tlačítka jednotně *Uložit + Zrušit* (okno) / *Uložit + Zpět* (stránka),
    „OK – uložit zakázku“ → „Uložit zakázku“, Nastavení má Uložit vlevo, **úhrada v okně** (dokončen i krok 1),
    povinná pole s hvězdičkou a červeným rámečkem po opuštění prázdného pole.
-7. [ ] **Offline** – Pico.css a HTMX stáhnout do `static/` (dnes z CDN, bez internetu se aplikace rozpadne).
-8. [ ] **Klávesové zkratky** (nízká priorita): šipky ↑↓ v mřížce, Enter = otevřít, Ins = nový, Esc = zpět,
-   vlastní zkratky místo F5/F7, které si nechá prohlížeč.
-9. [ ] **PWA** – „Nainstalovat jako aplikaci“ (vlastní okno bez adresního řádku, ikona na ploše).
-10. [ ] Ověření na **tabletu** (dotyk) po každé větší změně.
+7. Další kroky UI jsou v issues: offline [#16](https://github.com/ZabojnikM/Autoservis/issues/16),
+   klávesové zkratky [#17](https://github.com/ZabojnikM/Autoservis/issues/17), PWA [#18](https://github.com/ZabojnikM/Autoservis/issues/18),
+   ověření mobil/tablet/tisk [#19](https://github.com/ZabojnikM/Autoservis/issues/19).
 
 > Pro věrnější kopii starého systému: poslat **snímky obrazovek** starého systému (okna Zakázka, Sklad, Faktury), nebo zapnout
 > *computer use* a nechat starý systém projít (odloženo 18. 11. 2026). Zakázku zkoušet jen nad testovací kopií.
@@ -313,53 +303,26 @@ Druhá konfigurace v `.claude/launch.json` (`autoservis-import`, port 8001) spou
 - [x] Zjistit cestu: ODBC ovladač 602SQL (DSN `AutoservisTest`, čtení přes Autoservis-MCP)
 - [x] Pracovat jen nad **kopií** databáze (originál nikdy neměnit)
 - [x] Etapa 1: testovací vzorek 50 zakázek s vozidly, zákazníky, ceníkem a doklady (importér `app/importers/stary_system.py`)
-- [ ] Partneři + vozidla → zákazníci, vozidla
-- [ ] Skladové karty + stavy, předvolené práce, pracovníci
-- [ ] Historie: zakázky, faktury (pro historii vozidla), úhrady
-- [ ] Kontrolní součty (počty záznamů, stav skladu, součty faktur) po převodu
+- Zbývající převod dat a rozhodnutí A–D → [#10](https://github.com/ZabojnikM/Autoservis/issues/10)
 
 ### Fáze 6 – MCP napojení ☐
-- [ ] MCP server nad servisní vrstvou
-- [ ] Nástroje: `najdi_vozidlo`, `detail_vozidla`, `seznam_zakazek`, `vytvor_zakazku`, `zmen_stav_zakazky`, `najdi_skladovou_kartu`, `neuhrazene_faktury`
-- [ ] Návod na připojení do Claude Desktop / Claude Code
-- [ ] Ochrana: čtení vs. zápis (zápisové nástroje volitelně vypnout)
+Úkoly v issue [#20](https://github.com/ZabojnikM/Autoservis/issues/20).
 
 ### Fáze 7 – Importy ze souborů ☐
-- [ ] Rozhraní „importér“ (plug-in): načti → namapuj sloupce → náhled → ulož
-- [ ] CSV / XLSX (zákazníci, vozidla, skladové karty)
-- [ ] **Příjemky od dodavatelů** (Inter Cars, LKQ/AutoKelly, Nextis, APSi – podle toho, co používáš)
-- [ ] Kontrola duplicit (SPZ/VIN, kód položky)
+Úkoly v issues [#21](https://github.com/ZabojnikM/Autoservis/issues/21) a [#8](https://github.com/ZabojnikM/Autoservis/issues/8) (dodací listy ZLKQ).
 
-### Další nápady (backlog)
-- [ ] **Git** – stále není nainstalovaný, projekt nemá historii verzí (doporučeno doplnit co nejdřív)
-- [ ] Zálohování databáze (automatické kopie) – v DB jsou už **ostrá data**
-- [ ] Tabulková knihovna (Tabulator) pro sklad/ceník, pokud nebude stačit vlastní mřížka (řešení 2)
-- [ ] Tmavý režim (teď vynucený světlý)
-- [ ] **Import položek do zakázky** – tlačítko „Import“ v okně Přidat z ceníku je připravené (zatím jen hláška
-      „připravuje se“). Upřesnit: odkud se importuje (soubor CSV/Excel, nabídka dodavatele, jiná zakázka…) a v jakém formátu
-- [ ] Načtení firmy podle IČO (ARES) – zatím nechceš
-- [ ] Přihlášení a role (technik / vedoucí)
-- [x] Dekódování VIN – tlačítko **Načti** u VIN doplní údaje z Registru silničních vozidel (dataovozidlech.cz)
-- [ ] Připomínky STK / servisních prohlídek
-- [ ] Fotky vozidla při příjmu (poškození)
-- [ ] Rezervace termínů / kalendář
-- [ ] Kanban nástěnka zakázek
-- [ ] Statistiky (tržby, nejčastější opravy)
+### Další nápady
+Backlog je v issue [#22](https://github.com/ZabojnikM/Autoservis/issues/22), zálohování v [#7](https://github.com/ZabojnikM/Autoservis/issues/7),
+ARES v [#11](https://github.com/ZabojnikM/Autoservis/issues/11).
+Hotovo: dekódování VIN z Registru silničních vozidel (18. 11. 2026).
 
 ---
 
 ## 6. Otevřené otázky
 
-1. ~~Technologie~~ – potvrzeno: Python + FastAPI + SQLite + HTMX.
-2. Bude aplikace běžet na **jednom PC**, nebo ji má používat víc lidí v síti (tablet v dílně)? *(ovlivní PWA, zálohy, přihlášení)*
-3. Jsi **plátce DPH**? (v Nastavení je přepínač – potvrdit správnou hodnotu)
-4. ~~Existující data~~ → starý systém, cesta přes ODBC vyřešena. **Otevřená rozhodnutí A–D importu** (rozsah historie,
-   staré neuhrazené faktury, rozsah ceníku, DSN pro ostrý import) – viz [IMPORT_STARY_SYSTEM.md](IMPORT_STARY_SYSTEM.md), sekce 6.
-5. Má mít zakázkový list nějaký konkrétní vzor, který už používáš?
-6. Co ti na starém systému vyhovuje a co tě na něm štve (důvod přechodu)?
-7. ~~Které moduly starého systému používáš~~ → zakázky, sklad, faktury + vyúčtování.
-8. Používáš **registrační pokladnu (eKasa)**, více skladů, 3 prodejní ceny, pneuhotel? (Lze vynechat, co nepoužíváš.)
-9. UI: poslat **snímky obrazovek starého systému**, nebo zapnout computer use? (pro věrnější rozložení skladu a faktur)
+Přesunuto do issue [#23](https://github.com/ZabojnikM/Autoservis/issues/23).
+Vyřešeno: technologie (Python + FastAPI + SQLite + HTMX), cesta k datům starého systému (ODBC),
+používané moduly starého systému (zakázky, sklad, faktury + vyúčtování).
 
 ---
 
@@ -391,7 +354,7 @@ Druhá konfigurace v `.claude/launch.json` (`autoservis-import`, port 8001) spou
 | 2026-11-18 | **UI krok 6 – jednotné drobnosti**: vlastní okno potvrzení místo `confirm()`/`alert()`, krátké hlášky po uložení/smazání, jednotná tlačítka, úhrada v okně, Nastavení s akcemi vlevo, zvýraznění neplatných povinných polí. 104 testů, ověřeno v prohlížeči na kopii DB (uložení beze změny, „Ne“ u odebrání nic nesmaže) |
 | 2026-11-18 | **UI krok 5 – zakázkový list A4**: samostatný tiskový doklad (servis, zákazník, vozidlo, požadavek, položky se součty nebo prázdné řádky, podpisy příjmu a předání), tlačítko v detailu otevře tisk v nové kartě; společný tiskový rám s fakturou. 100 testů, ověřeno v prohlížeči na kopii DB (1 strana A4 do ~8 položek) |
 | 2026-11-18 | **UI krok 4 – detail vozidla a zákazníka**: panely v pásu, záložky historie (vozidlo: zakázky / práce / materiál; zákazník: vozidla / zakázky / doklady), souhrny (útrata, neuhrazeno, poslední km), tlačítka pro vybraný řádek. 99 testů, ověřeno v prohlížeči na kopii DB (jen čtení) |
-| 2026-11-18 | **UX audit** na ostré DB (zakázka, položky, faktura, úhrada, storno, vyúčtování, ceník, vozidla): 39 nálezů v [UX_PROBLEMY.md](UX_PROBLEMY.md), seznam k opravě v [OPRAVY.md](OPRAVY.md). Testovací záznamy smazány kromě 2 stornovaných dokladů a zákazníka TEST (nejdou smazat) |
+| 2026-11-18 | **UX audit** na ostré DB (zakázka, položky, faktura, úhrada, storno, vyúčtování, ceník, vozidla): 39 nálezů v [UX_PROBLEMY.md](UX_PROBLEMY.md), seznam k opravě v OPRAVY.md (zrušen 19. 11. 2026, zbytek v GitHub Issues). Testovací záznamy smazány kromě 2 stornovaných dokladů a zákazníka TEST (nejdou smazat) |
 | 2026-11-18 | **Opravy z UX auditu**: faktura jen s údaji servisu (převodem jen s účtem), VS vyúčtování s 9 na začátku, zakázku s doklady nejde smazat a její číslo se znovu nepřidělí, mazání zákazníka s doklady bez chyby 500; storno i s úhradami, zrušené úhrady zůstávají v historii (nový sloupec `uhrada.zruseno`), stav Částečně uhrazeno a nové barvy, filtr Stornované; úprava zakázky ve stejném okně jako příjem (změna vozidla a data přijetí), formulář vozidla s panelem Zákazník; Ctrl+Enter = uložit, Delete = odebrat řádek, kurzor na chybné pole; okno ceníku s pevnou výškou a seznamem „Na zakázce“; cena s DPH se v úpravě ukáže s DPH; „150 Kč“ jako číslo; jednotná adresa a PSČ, kód dílu na dokladu v závorce, hlášky vpravo dole. 109 testů, ověřeno v prohlížeči na kopii ostré DB |
 | 2026-11-18 | **Vzhled „Moderní“** (styl 3 ze vzorníku `UI/index.html`, popis ve [VZHLED.md](VZHLED.md)): barvy, písmo Inter, rozměry, husté řádky tabulek (kromě seznamu zakázek), SPZ jako štítek. Seznam vozidel: Značka, Model, Typ vozidla, Kód motoru, Rok, VIN, Majitel; karta vozidla; seznam zákazníků s celou adresou. Popis zakázky nepovinný |
 | 2026-11-18 | Podle porovnání se starým systémem ([POROVNANI_ZAKAZKA_STARY_SYSTEM.md](POROVNANI_ZAKAZKA_STARY_SYSTEM.md)): vozidlo má nové pole **Datum 1. registrace** (nový sloupec `vozidlo.datum_registrace`, záloha DB v `data/backups/`), zrušeno zadávání **Plánovaného ukončení** a **Stavu paliva** (sloupce v DB zůstaly), tlačítko **Načti** u IČO (ARES zatím ne) |
@@ -401,6 +364,7 @@ Druhá konfigurace v `.claude/launch.json` (`autoservis-import`, port 8001) spou
 | 2026-11-18 | **Zrušen Termín EK a normohodiny**: EK zmizel z formuláře vozidla, příjmu, karty vozidla i importu ze starého systému. Normohodiny: pryč sazba v Nastavení, časová norma v ceníku prací (sloupec Norma, značka „≠ NH“), výpočet ceny hodiny × sazba; práce i ruční položka teď vždy potřebuje cenu. V ostré DB nic nepoužívalo EK ani časovou normu, ceny se nezměnily; sloupce `vozidlo.termin_ek` a `polozkaceniku.cas_nh` v DB zůstaly (aplikace je nečte); 130 testů |
 | 2026-11-18 | **Okno Přidat z ceníku**: opravené pole množství (předvyplněno 1), dvojklik / Enter (šipky ↓ ↑) přidá řádek, tlačítko **Upravit** otevře kartu položky ceníku a po uložení se vrátí do okna; tlačítko **Storno** zavře okno a vrátí položky přidané v něm (Zavřít je nechá); tlačítko **Import** připravené (zatím nefunkční). Tlačítko návratu všude jednotně „Zpět“ |
 | 2026-11-18 | Seznamy bez velkého nadpisu (název karty je v horní liště): Zakázky, Vozidla, Zákazníci, Ceník, Práce, Faktury, Nastavení. **Zakázky bez vyhledávacího pole** (stačí záložky stavů a řazení, hledat jde horní lištou). Historie vozidla a seznam zakázek při stejném čase přijetí řadí novější založenou první; 135 testů |
+| 2026-11-19 | Úkoly přesunuty do **GitHub Issues** (#1–#23): z PLAN.md a OPRAVY.md převedeny otevřené body (import, sklad, ARES, MCP, importy, UI, otázky, backlog), OPRAVY.md smazán, v PLAN.md místo seznamů odkazy na issues |
 
 ## Zdroje průzkumu
 
