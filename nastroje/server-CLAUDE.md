@@ -50,7 +50,7 @@ sudo systemctl restart autoservis
 ```
 
 ## Kontrola, že aplikace běží
-- `curl -s http://localhost:8000/api/zdravi` → `"stav":"ok"` a verze
+- `curl -s http://localhost:8001/api/zdravi` → `"stav":"ok"` a verze (testovací server běží na portu 8001, viz `ExecStart` ve službě)
 - `systemctl status autoservis`, logy: `journalctl -u autoservis -n 50`
 - spuštěná verze: `git describe --tags --always`
 
