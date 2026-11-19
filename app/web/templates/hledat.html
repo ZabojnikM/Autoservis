@@ -6,7 +6,9 @@
 
 {% if vysledek.prazdny %}
   <p>Nic nenalezeno.</p>
-  {% if q %}<p><a href="/zakazky/nova?spz={{ q|urlencode }}" role="button">Přijmout vozidlo {{ q }}</a></p>{% endif %}
+  {# 17 znaků = VIN (jde do pole VIN), jinak SPZ #}
+  {% if q and hledany_vin %}<p><a href="/zakazky/nova?vin={{ q|urlencode }}" role="button">Přijmout vozidlo s VIN {{ q }}</a></p>
+  {% elif q %}<p><a href="/zakazky/nova?spz={{ q|urlencode }}" role="button">Přijmout vozidlo {{ q }}</a></p>{% endif %}
 {% endif %}
 
 {% if vysledek.vozidla %}

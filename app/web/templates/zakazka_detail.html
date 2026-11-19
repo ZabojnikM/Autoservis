@@ -126,9 +126,11 @@
       <td>{{ r.nazev }}</td>
       <td class="cislo">{% if lze_menit %}
         {# množství se mění přímo tady: Enter nebo opuštění pole uloží #}
-        <form method="post" action="/polozky/{{ r.id }}/mnozstvi" class="mnozstvi-radku">
+        <form method="post" action="/polozky/{{ r.id }}/mnozstvi" class="mnozstvi-radku krokovac">
+          <button type="button" class="krok" data-krok="-1" tabindex="-1" aria-label="Ubrat 1">−</button>
           <input type="text" name="mnozstvi" value="{{ r.mnozstvi|mnozstvi }}" inputmode="decimal"
                  aria-label="Množství – {{ r.nazev }}" onfocus="this.select()" onchange="this.form.requestSubmit()">
+          <button type="button" class="krok" data-krok="1" tabindex="-1" aria-label="Přidat 1">+</button>
         </form>{% else %}{{ r.mnozstvi|mnozstvi }}{% endif %}</td>
       <td>{{ r.jednotka }}</td>
       <td class="cislo">{{ r.cena|penize }}</td>

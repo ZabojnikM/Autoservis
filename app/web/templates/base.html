@@ -426,6 +426,41 @@
       kosik = []; oknoZmeneno = false;
       zavriOkno();
     }
+    // Tlačítka − / + u množství (okno ceníku, řádky zakázky). Minus nejde pod 1 (menší množství se píše ručně).
+    // V řádku zakázky se uloží až chvíli po posledním kliknutí (víc kliknutí = jedno uložení).
+    let casovacKroku = null;
+    // Tlačítko Kopírovat (např. VIN na kartě vozidla): text z data-kopirovat do schránky, krátce „Zkopírováno ✓“
+    document.addEventListener("click", async (e) => {
+      const b = e.target.closest("[data-kopirovat]");
+      if (!b) return;
+      const text = b.dataset.kopirovat;
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch {
+        const pole = Object.assign(document.createElement("textarea"), {value: text});  // starší prohlížeč / http
+        document.body.append(pole); pole.select(); document.execCommand("copy"); pole.remove();
+      }
+      const puvodni = b.dataset.puvodni ||= b.textContent;
+      b.textContent = "Zkopírováno ✓"; b.classList.add("zkopirovano");
+      clearTimeout(b._casovac);
+      b._casovac = setTimeout(() => { b.textContent = puvodni; b.classList.remove("zkopirovano"); }, 1500);
+    });
+    document.addEventListener("click", (e) => {
+      const tlacitko = e.target.closest("[data-krok]");
+      if (!tlacitko) return;
+      e.preventDefault();
+      const pole = tlacitko.closest(".krokovac").querySelector("input");
+      const ted = cisloZPole(pole.value) ?? 0;
+      const krok = Number(tlacitko.dataset.krok);
+      const nove = krok > 0 ? ted + krok : (ted > 1 ? Math.max(1, ted + krok) : ted);
+      if (nove === ted) return;
+      pole.value = textMnozstvi(nove);
+      const form = pole.closest("form.mnozstvi-radku");
+      if (form) {
+        clearTimeout(casovacKroku);
+        casovacKroku = setTimeout(() => form.requestSubmit(), 700);
+      }
+    });
     document.addEventListener("click", (e) => {
       const b = e.target.closest("[data-vlozit-kosik]");
       if (b) vlozKosik(b.dataset.vlozitKosik);

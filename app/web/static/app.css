@@ -419,6 +419,16 @@ button.nebezpecne { background: var(--c-chyba); border-color: var(--c-chyba); co
 table.mrizka-polozek th.sl-smazat { width: 6rem; }
 /* množství v řádku zakázky – pole přímo v mřížce */
 form.mnozstvi-radku { margin: 0; }
+/* − pole + (množství) */
+.krokovac { display: inline-flex; align-items: center; gap: 3px; width: 100%; justify-content: flex-end; }
+.okno-cenik .krokovac { width: auto; }
+.krokovac input { min-width: 0; flex: 1 1 auto; }
+.okno-cenik .krokovac input { flex: none; }
+button.krok { flex: none; width: 24px; height: 24px; padding: 0 !important; margin: 0; line-height: 1; font-size: 1rem !important;
+  font-weight: 700; border-radius: 6px; background: #f3f4f6 !important; color: #374151 !important;
+  border: 1px solid var(--ram) !important; box-shadow: none !important; }
+button.krok:hover { background: var(--akcent-svetly, #e0e7ff) !important; color: var(--akcent-tmavy, #3730a3) !important; }
+@media print { button.krok { display: none; } }
 form.mnozstvi-radku input { margin: 0 !important; padding: 2px 6px !important; height: auto; text-align: right;
   font-size: inherit; width: 100%; }
 @media print { form.mnozstvi-radku input { border: 0; padding: 0 !important; background: none; } }
@@ -478,7 +488,7 @@ th.razeni.cislo a { text-align: right; }
 .okno-cenik .vyber-cenik .sl-cena { width: 6.5rem; }
 .okno-cenik .vyber-cenik .sl-cena-mj { width: 9.5rem; }  /* „1 600,00 / úkon“ */
 /* poslední sloupec: Upravit | množství | Přidat – musí se vejít celý, jinak se pole množství ořízne */
-.okno-cenik .vyber-cenik .sl-mnozstvi { width: 17rem; }
+.okno-cenik .vyber-cenik .sl-mnozstvi { width: 20rem; }
 .okno-cenik .vyber-cenik td { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .okno-cenik .vyber-cenik td.bunka-pridat { overflow: visible; }
 .bunka-pridat > div { display: flex; gap: 6px; align-items: center; justify-content: flex-end; }
@@ -503,7 +513,7 @@ th.razeni.cislo a { text-align: right; }
 table.mrizka-polozek { table-layout: fixed; width: 100%; }
 table.mrizka-polozek th:nth-child(1) { width: 6rem; }
 table.mrizka-polozek th:nth-child(2) { width: 9rem; }
-table.mrizka-polozek th:nth-child(4) { width: 6rem; }
+table.mrizka-polozek th:nth-child(4) { width: 8.5rem; }
 table.mrizka-polozek th:nth-child(5) { width: 3.5rem; }
 table.mrizka-polozek th:nth-child(6) { width: 8.5rem; }
 table.mrizka-polozek th:nth-child(7) { width: 4.5rem; }
@@ -800,12 +810,36 @@ a:hover > .spz { border-color: var(--akcent); background: var(--akcent-svetly); 
 .seznam-zakazniku td:nth-child(1) { max-width: 15rem; overflow: hidden; text-overflow: ellipsis; }
 .seznam-zakazniku td:nth-child(3) { max-width: 22rem; overflow: hidden; text-overflow: ellipsis; }
 .seznam-zakazniku td:last-child { white-space: normal; }
-/* karta vozidla: širší první panel, VIN čitelně (proložené, bez zalomení) */
-.hlavicka-detailu:has(.karta-vozidla) { grid-template-columns: minmax(0, 1.3fr) repeat(3, minmax(0, 1fr)); }
-.karta-vozidla dl { gap: 5px 14px; }
-.karta-vozidla .vin { font-weight: 600; letter-spacing: .06em; overflow-wrap: anywhere; }
-@media (max-width: 1100px) { .hlavicka-detailu:has(.karta-vozidla) { grid-template-columns: 1fr 1fr; } }
-@media (max-width: 600px) { .hlavicka-detailu:has(.karta-vozidla) { grid-template-columns: 1fr; } }
+/* karta vozidla: vlevo velký panel Vozidlo (údaje ve skupinách), vpravo Majitel a pod ním Termíny a historie */
+.karta-vozidla-panely { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+  gap: var(--mezera); margin-bottom: var(--mezera); align-items: start; }
+.karta-vozidla-vpravo { display: grid; gap: var(--mezera); }
+.karta-vozidla-panely .panel { background: #fff; border: 1px solid var(--ram); border-radius: 12px; box-shadow: var(--stin);
+  padding: 0 18px 14px; font-size: .95rem; }
+.karta-vozidla-panely dl { gap: 6px 12px; }
+.karta-vozidla { font-size: 1.05rem !important; padding-bottom: 18px !important; }
+.karta-vozidla .skupina-udaju { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px 20px; }
+.karta-vozidla .skupina-udaju + .skupina-udaju { margin-top: 14px; }
+.karta-vozidla .nadpis-skupiny { margin: 18px 0 10px; padding-top: 12px; border-top: 1px solid #eef0f3;
+  font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--text-tlumeny, #6b7280); }
+.karta-vozidla .cely { grid-column: 1 / -1; }
+.karta-vozidla .udaj { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.karta-vozidla .udaj-nazev { font-size: .8rem; font-weight: 600; color: var(--text-tlumeny, #6b7280); }
+.karta-vozidla .udaj-hodnota { font-size: 1.1rem; color: var(--text, #111827); overflow-wrap: anywhere; }
+.karta-vozidla .udaj-hodnota.prazdne { color: #c3c7cf; }
+.karta-vozidla .udaj.hlavni .udaj-hodnota { font-weight: 700; }
+.karta-vozidla .hlavni-radek .udaj-hodnota { font-size: 1.3rem; }
+.karta-vozidla .vin-radek { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.karta-vozidla .udaj.vin .udaj-hodnota { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 1.25rem;
+  font-weight: 700; letter-spacing: .08em; }
+button.kopirovat { width: auto; margin: 0; padding: 4px 12px !important; font-size: .82rem !important; }
+button.kopirovat.zkopirovano { background: var(--c-hotovo, #15803d) !important; border-color: var(--c-hotovo, #15803d) !important; color: #fff !important; }
+.karta-vozidla .po-terminu { color: var(--c-chyba); font-weight: 700; }
+.poznamka-vozidla { margin-top: .6rem; }
+@media (max-width: 1000px) { .karta-vozidla-panely { grid-template-columns: 1fr; } }
+@media (max-width: 600px) { .karta-vozidla .skupina-udaju { grid-template-columns: 1fr 1fr; } }
+@media print { .karta-vozidla-panely { grid-template-columns: 1.6fr 1fr; } .karta-vozidla-panely .panel { box-shadow: none; } }
+.karta-vozidla-panely + .filtr-stavu { border-top-color: var(--ram); }
 
 /* detail zakázky / vozidla / zákazníka */
 .hlavicka-zakazky { gap: var(--mezera); margin-bottom: var(--mezera); }

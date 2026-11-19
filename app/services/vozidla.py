@@ -28,6 +28,18 @@ def normalizuj_vin(vin: str | None) -> str | None:
     return vin or None
 
 
+def je_vin(text: str | None) -> bool:
+    """Vypadá text jako VIN? 17 znaků, písmena a číslice (VIN nepoužívá I, O, Q). SPZ má nejvýš 8 znaků."""
+    return bool(re.fullmatch(r"[A-HJ-NPR-Z0-9]{17}", normalizuj_vin(text) or ""))
+
+
+def najdi_podle_vin(session: Session, vin: str | None) -> Vozidlo | None:
+    vin = normalizuj_vin(vin)
+    if not vin:
+        return None
+    return session.exec(select(Vozidlo).where(Vozidlo.vin == vin)).first()
+
+
 def _nastav(session: Session, vozidlo: Vozidlo, data: dict) -> None:
     if "spz" in data:
         vozidlo.spz = normalizuj_spz(data["spz"])

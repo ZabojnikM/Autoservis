@@ -86,11 +86,11 @@ def uvod():
 @router.get("/hledat", response_class=HTMLResponse)
 def hledat(request: Request, db: DB, q: str = ""):
     vysledek = hledani.hledej(db, q)
-    presna = vozidla.najdi_podle_spz(db, q)
+    presna = vozidla.najdi_podle_vin(db, q) if vozidla.je_vin(q) else vozidla.najdi_podle_spz(db, q)
     if presna:
         return _presmeruj(f"/vozidla/{presna.id}")
     # hledany_text = text v horním globálním hledání (filtry seznamů se do něj nepropisují)
-    return _stranka(request, "hledat.html", vysledek=vysledek, q=q, hledany_text=q)
+    return _stranka(request, "hledat.html", vysledek=vysledek, q=q, hledany_text=q, hledany_vin=vozidla.je_vin(q))
 
 
 # ---------------------------------------------------------------- zakázky
@@ -153,12 +153,19 @@ def _najdi(db, sluzba, hodnota):
 
 
 @router.get("/zakazky/nova", response_class=HTMLResponse)
-def zakazka_nova(request: Request, db: DB, vozidlo_id: int | None = None, spz: str = "",
+def zakazka_nova(request: Request, db: DB, vozidlo_id: int | None = None, spz: str = "", vin: str = "",
                  zakaznik_id: int | None = None, okno: str = ""):
-    """Příjem vozidla – celá stránka, nebo s `okno=1` jen obsah okna (dialog nad seznamem)."""
-    vozidlo = vozidla.ziskej(db, vozidlo_id) if vozidlo_id else vozidla.najdi_podle_spz(db, spz)
+    """Příjem vozidla – celá stránka, nebo s `okno=1` jen obsah okna (dialog nad seznamem).
+    `spz` z hledání, které vypadá jako VIN (17 znaků), se bere jako VIN – nové vozidlo ho má v poli VIN."""
+    if not vin and vozidla.je_vin(spz):
+        vin, spz = spz, ""
+    if vozidlo_id:
+        vozidlo = vozidla.ziskej(db, vozidlo_id)
+    else:
+        vozidlo = vozidla.najdi_podle_vin(db, vin) if vin else vozidla.najdi_podle_spz(db, spz)
     zakaznik = zakaznici.ziskej(db, zakaznik_id) if zakaznik_id else (vozidlo.zakaznik if vozidlo else None)
-    hodnoty = {"spz": vozidla.normalizuj_spz(spz)} | _hodnoty_vozidla(vozidlo) | _hodnoty_zakaznika(zakaznik)
+    hodnoty = {"spz": vozidla.normalizuj_spz(spz), "v_vin": vozidla.normalizuj_vin(vin) or ""} \
+        | _hodnoty_vozidla(vozidlo) | _hodnoty_zakaznika(zakaznik)
     hodnoty |= {"datum_prijeti": datetime.now().strftime("%Y-%m-%dT%H:%M")}
     return _prijem(request, db, hodnoty, okno=bool(okno))
 

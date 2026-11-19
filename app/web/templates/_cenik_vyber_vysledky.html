@@ -31,8 +31,12 @@
               {% if okno %}data-kosik data-nazev="{{ p.nazev }}" data-jednotka="{{ p.jednotka }}" data-typ="{{ p.typ }}"{% endif %}>
           <input type="hidden" name="polozka_ceniku_id" value="{{ p.id }}">
           {% if okno %}<input type="hidden" name="okno" value="1"><input type="hidden" name="q" value="{{ q }}">{% endif %}
-          <input type="text" name="mnozstvi" value="1" inputmode="decimal" aria-label="Množství – {{ p.nazev }}"
-                 class="vstup-mnozstvi" onfocus="this.select()">
+          <span class="krokovac">
+            <button type="button" class="krok" data-krok="-1" tabindex="-1" aria-label="Ubrat 1">−</button>
+            <input type="text" name="mnozstvi" value="1" inputmode="decimal" aria-label="Množství – {{ p.nazev }}"
+                   class="vstup-mnozstvi" onfocus="this.select()">
+            <button type="button" class="krok" data-krok="1" tabindex="-1" aria-label="Přidat 1">+</button>
+          </span>
           <button type="submit" class="maly">Přidat</button>
         </form>
       </div></td>

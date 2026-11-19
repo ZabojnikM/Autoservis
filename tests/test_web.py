@@ -668,7 +668,10 @@ def test_detail_vozidla_zalozky_historie():
     client.post(f"{loc}/polozky", data={"typ": "material", "nazev": "Žárovka H7", "mnozstvi": "2", "cena": "100"})
     vid = re.search(r'href="/vozidla/(\d+)"', client.get(loc).text).group(1)
     r = client.get(f"/vozidla/{vid}")
-    assert r.status_code == 200 and 'class="hlavicka-zakazky hlavicka-detailu"' in r.text
+    assert r.status_code == 200 and 'class="karta-vozidla-panely"' in r.text
+    # vlevo Vozidlo (i technické údaje), vpravo Majitel a pod ním Termíny a historie
+    assert r.text.index(">Vozidlo<") < r.text.index(">Majitel<") < r.text.index(">Termíny a historie<")
+    assert "Technické údaje" not in r.text and "Druh paliva" in r.text
     assert "Zakázky (1)" in r.text and "Práce (1)" in r.text and "Materiál (1)" in r.text
     assert "Jana Dvořáková" in r.text and "Nejde startovat" in r.text and f'data-otevrit="{loc}"' in r.text
     prace = client.get(f"/vozidla/{vid}", params={"zalozka": "prace"}).text
@@ -851,3 +854,17 @@ def test_uprava_radku_na_karte_ceniku_a_mnozstvi_v_radku():
     client.post(f"{loc}/polozky", data={"typ": "material", "nazev": "Drobný materiál", "cena": "20"})
     rucni = re.findall(r'action="/polozky/(\d+)/mnozstvi"', client.get(loc).text)[-1]
     assert "Upravit položku" in client.get(f"/polozky/{rucni}/upravit").text
+
+
+def test_hledani_vin_prijme_vozidlo_s_vin():
+    vin = "WVWZZZ3BZYE047008"
+    r = client.get("/hledat", params={"q": vin})
+    assert f'/zakazky/nova?vin={vin}' in r.text and "Přijmout vozidlo s VIN" in r.text
+    assert "/zakazky/nova?spz=1XY9999" in client.get("/hledat", params={"q": "1XY9999"}).text
+    for adresa in (f"/zakazky/nova?vin={vin}", f"/zakazky/nova?spz={vin}"):  # i starý odkaz přes spz
+        prijem = client.get(adresa).text
+        assert f'value="{vin}"' in prijem and 'name="v_vin"' in prijem
+        assert not re.search(rf'name="spz"[^>]*value="{vin}"', prijem)  # do SPZ nepatří
+    # vozidlo s tím VIN už v evidenci → hledání rovnou na vozidlo
+    _prijem(spz="1VN0001", v_vin=vin)
+    assert client.get("/hledat", params={"q": vin}, follow_redirects=False).status_code == 303

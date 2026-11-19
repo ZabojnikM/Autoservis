@@ -19,43 +19,44 @@
   <h1>{{ spz(v.spz) }} {% if v.znacka or v.model %}{{ v.popis }}{% endif %}</h1>
 </div>
 
-{# karta vozidla: hlavní identifikační údaje pohromadě | technické údaje | termíny a historie | majitel #}
-<div class="hlavicka-zakazky hlavicka-detailu">
+{# vlevo velká karta Vozidlo (údaje ve skupinách), vpravo Majitel a pod ním Termíny a historie #}
+{% macro udaj(nazev, hodnota, trida='', titulek='') -%}
+  <div class="udaj {{ trida }}"{% if titulek %} title="{{ titulek }}"{% endif %}><span class="udaj-nazev">{{ nazev }}</span>
+    {% if hodnota %}<span class="udaj-hodnota">{{ hodnota }}</span>{% else %}<span class="udaj-hodnota prazdne">—</span>{% endif %}</div>
+{%- endmacro %}
+<div class="karta-vozidla-panely">
   <section class="panel karta-vozidla">
-    <h2 class="titulek-panelu">Karta vozidla</h2>
-    <dl>
-      <dt>SPZ</dt><dd>{{ spz(v.spz) }}</dd>
-      <dt>Značka</dt><dd class="hlavni-udaj">{{ v.znacka or '—' }}</dd>
-      <dt>Model</dt><dd class="hlavni-udaj">{{ v.model or '—' }}</dd>
-      <dt title="Typ / varianta / verze z technického průkazu">Typ vozidla</dt><dd>{{ v.cislo_motoru or '—' }}</dd>
-      <dt>Kód motoru</dt><dd class="hlavni-udaj">{{ v.kod_motoru or v.motor or '—' }}</dd>
-      <dt>Rok výroby</dt><dd>{{ v.rok_vyroby or '—' }}</dd>
-      <dt>1. registrace</dt><dd>{{ v.datum_registrace|datum or '—' }}</dd>
-      <dt>VIN</dt><dd class="vin">{{ v.vin or '—' }}</dd>
-      <dt>Majitel</dt><dd>{% if v.zakaznik %}<a href="/zakaznici/{{ v.zakaznik.id }}" class="hlavni-udaj">{{ v.zakaznik.nazev }}</a>{% else %}<span class="bez-zakaznika">bez majitele</span>{% endif %}</dd>
-    </dl>
+    <h2 class="titulek-panelu">Vozidlo</h2>
+    <div class="skupina-udaju hlavni-radek">
+      {{ udaj('SPZ', spz(v.spz)) }}
+      {{ udaj('Značka', v.znacka, 'hlavni') }}
+      {{ udaj('Model / typ', v.model, 'hlavni') }}
+    </div>
+    <div class="skupina-udaju">
+      <div class="udaj cely vin"><span class="udaj-nazev">VIN</span>
+        {% if v.vin %}
+        <span class="vin-radek"><span class="udaj-hodnota" id="vin-vozidla">{{ v.vin }}</span>
+          <button type="button" class="kopirovat neni-tisk" data-kopirovat="{{ v.vin }}" title="Zkopírovat VIN do schránky">Kopírovat</button></span>
+        {% else %}<span class="udaj-hodnota prazdne">—</span>{% endif %}
+      </div>
+    </div>
+    <h3 class="nadpis-skupiny">Registrace</h3>
+    <div class="skupina-udaju">
+      {{ udaj('Rok výroby', v.rok_vyroby) }}
+      {{ udaj('Datum 1. registrace', v.datum_registrace|datum) }}
+      <div class="udaj"><span class="udaj-nazev">Termín STK</span>
+        {% if v.termin_stk %}<span class="udaj-hodnota{% if v.termin_stk < dnes() %} po-terminu{% endif %}"
+          {% if v.termin_stk < dnes() %}title="Po termínu"{% endif %}>{{ v.termin_stk|datum }}</span>
+        {% else %}<span class="udaj-hodnota prazdne">—</span>{% endif %}</div>
+      {{ udaj('Typ vozidla (TP)', v.cislo_motoru, 'cely', titulek='Typ / varianta / verze z technického průkazu') }}
+    </div>
+    <h3 class="nadpis-skupiny">Motor a provoz</h3>
+    <div class="skupina-udaju">
+      {{ udaj('Kód motoru', v.kod_motoru or v.motor, 'hlavni') }}{{ udaj('Objem', v.objem) }}{{ udaj('Výkon', v.vykon) }}
+      {{ udaj('Druh paliva', v.palivo) }}{{ udaj('Olej', v.olej) }}{{ udaj('Barva', v.barva) }}
+    </div>
   </section>
-  <section class="panel">
-    <h2 class="titulek-panelu">Technické údaje</h2>
-    <dl>
-      <dt>Objem</dt><dd>{{ v.objem or '—' }}</dd>
-      <dt>Výkon</dt><dd>{{ v.vykon or '—' }}</dd>
-      <dt>Palivo</dt><dd>{{ v.palivo or '—' }}</dd>
-      <dt>Olej</dt><dd>{{ v.olej or '—' }}</dd>
-      <dt>Barva</dt><dd>{{ v.barva or '—' }}</dd>
-    </dl>
-  </section>
-  <section class="panel">
-    <h2 class="titulek-panelu">Termíny a historie</h2>
-    {% set km = historie|selectattr('tachometr')|map(attribute='tachometr')|list %}
-    <dl>
-      <dt>STK</dt><dd {% if v.termin_stk and v.termin_stk < dnes() %}class="po-terminu" title="Po termínu"{% endif %}>{{ v.termin_stk|datum or '—' }}</dd>
-      <dt>Poslední km</dt><dd>{% if km %}{{ km[0]|cislo }} km{% else %}—{% endif %}</dd>
-      <dt>Návštěvy</dt><dd>{{ historie|length }}{% if historie %} · naposledy {{ historie[0].datum_prijeti|datum }}{% endif %}</dd>
-      <dt title="Součet platných (nestornovaných) dokladů">Vyfakturováno</dt><dd><strong>{{ vyfakturovano|penize }} {{ nast.mena }}</strong></dd>
-      {% if rozpracovano %}<dt title="Otevřené zakázky bez dokladu">Rozpracováno</dt><dd>{{ rozpracovano|penize }} {{ nast.mena }}</dd>{% endif %}
-    </dl>
-  </section>
+  <div class="karta-vozidla-vpravo">
   <section class="panel">
     <h2 class="titulek-panelu">Majitel</h2>
     {% set k = v.zakaznik %}
@@ -65,13 +66,25 @@
       {% if k.telefon %}<dt>Telefon</dt><dd><a href="tel:{{ k.telefon }}">{{ k.telefon }}</a></dd>{% endif %}
       {% if k.email %}<dt>E-mail</dt><dd>{{ k.email }}</dd>{% endif %}
       {% if k.ulice or k.mesto %}<dt>Adresa</dt><dd>{{ adresa(k.ulice, k.psc, k.mesto) }}</dd>{% endif %}
+      {% if k.ico %}<dt>IČO</dt><dd>{{ k.ico }}{% if k.dic %} · DIČ {{ k.dic }}{% endif %}</dd>{% endif %}
     </dl>
     {% else %}
     <p class="hlavni-udaj bez-zakaznika">Bez majitele</p>
     <p class="neni-tisk"><a href="/vozidla/{{ v.id }}/upravit" data-okno>Doplnit majitele</a></p>
     {% endif %}
-    {% if v.poznamka %}<p class="tlumene zachovat-radky">{{ v.poznamka }}</p>{% endif %}
   </section>
+  <section class="panel">
+    <h2 class="titulek-panelu">Termíny a historie</h2>
+    {% set km = historie|selectattr('tachometr')|map(attribute='tachometr')|list %}
+    <dl>
+      <dt>Poslední km</dt><dd>{% if km %}{{ km[0]|cislo }} km{% else %}—{% endif %}</dd>
+      <dt>Návštěvy</dt><dd>{{ historie|length }}{% if historie %} · naposledy {{ historie[0].datum_prijeti|datum }}{% endif %}</dd>
+      <dt title="Součet platných (nestornovaných) dokladů">Vyfakturováno</dt><dd><strong>{{ vyfakturovano|penize }} {{ nast.mena }}</strong></dd>
+      {% if rozpracovano %}<dt title="Otevřené zakázky bez dokladu">Rozpracováno</dt><dd>{{ rozpracovano|penize }} {{ nast.mena }}</dd>{% endif %}
+    </dl>
+    {% if v.poznamka %}<p class="tlumene zachovat-radky poznamka-vozidla">{{ v.poznamka }}</p>{% endif %}
+  </section>
+  </div>
 </div>
 
 {# historie vozidla jako ve starém systému: zakázky, nebo práce / materiál ze všech zakázek #}
