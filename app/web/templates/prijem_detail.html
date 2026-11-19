@@ -1,8 +1,10 @@
 {% extends "base.html" %}
 {% from "_makra.html" import spz %}
+{% from "_prijem_makra.html" import stav_db, hlavni_akce %}
 {# Detail příjmu (#51) – jen čtení; nejisté hodnoty označené, chybějící „Neuvedeno“. #}
 {% block title %}Příjem {{ navsteva.spz if navsteva and navsteva.spz else 'vozidla' }}{% endblock %}
 {% block akce %}
+  {% if shoda %}{{ hlavni_akce(shoda) }}{% endif %}
   <a href="/prijem" role="button" class="zpet">Zpět</a>
 {% endblock %}
 {% macro hodnota(text, nejiste=False) -%}
@@ -17,7 +19,9 @@
 {% set n = navsteva %}
 <div class="nadpis-radek">
   <h1 class="nadpis-spz">{{ n.spz or 'SPZ neuvedena' }}{% if n.je_nejiste('spz') %} <span class="nejiste">nejisté</span>{% endif %}</h1>
+  {{ stav_db(shoda) }}
 </div>
+{% if shoda.upozorneni %}<p class="chyba-text upozorneni-db">{{ shoda.upozorneni }}</p>{% endif %}
 <div class="karta-vozidla-panely">
   <section class="panel karta-vozidla">
     <h2 class="titulek-panelu">Vozidlo</h2>
@@ -27,6 +31,21 @@
       <dt>VIN</dt><dd class="vin-zakazky">{{ hodnota(n.vin, n.je_nejiste('vin')) }}</dd>
       <dt>Stav km</dt><dd>{{ hodnota(n.km|cislo ~ ' km' if n.km is not none else None, n.je_nejiste('odometer_km')) }}</dd>
     </dl>
+  </section>
+  <section class="panel">
+    <h2 class="titulek-panelu">V databázi</h2>
+    {% if shoda.stav == 'neni' %}
+    <p class="prazdny-udaj">Vozidlo podle SPZ ani VIN v databázi není.</p>
+    {% else %}
+    <dl>
+      <dt>Podle SPZ</dt><dd>{% if shoda.podle_spz %}<a href="/vozidla/{{ shoda.podle_spz.id }}">{{ spz(shoda.podle_spz.spz) }} {{ shoda.podle_spz.popis }}</a>{% else %}<span class="tlumene">nenalezeno</span>{% endif %}</dd>
+      <dt>Podle VIN</dt><dd>{% if shoda.podle_vin %}<a href="/vozidla/{{ shoda.podle_vin.id }}">{{ spz(shoda.podle_vin.spz) }} {{ shoda.podle_vin.popis }}</a>{% else %}<span class="tlumene">nenalezeno</span>{% endif %}</dd>
+      {% if shoda.vozidlo %}
+      <dt>Majitel</dt><dd>{% if shoda.vozidlo.zakaznik %}<a href="/zakaznici/{{ shoda.vozidlo.zakaznik.id }}">{{ shoda.vozidlo.zakaznik.nazev }}</a>{% else %}<span class="tlumene">Neuveden</span>{% endif %}</dd>
+      <dt>Otevřená zakázka</dt><dd>{% if shoda.otevrena %}<a href="/zakazky/{{ shoda.otevrena.id }}">{{ shoda.otevrena.cislo }}</a>{% else %}<span class="tlumene">žádná</span>{% endif %}</dd>
+      {% endif %}
+    </dl>
+    {% endif %}
   </section>
   <section class="panel">
     <h2 class="titulek-panelu">Příjem</h2>

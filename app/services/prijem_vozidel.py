@@ -11,8 +11,13 @@ import json
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote
+
+from sqlmodel import Session
 
 from app import config
+from app.models import Vozidlo, Zakazka
+from app.services import vozidla
 
 SCHEMA = "autoservis.visits.v1"
 
@@ -79,6 +84,7 @@ class Navsteva:
     km: int | None
     technicke: list[tuple[str, str]] = field(default_factory=list)
     nejiste: set[str] = field(default_factory=set)
+    registr: dict = field(default_factory=dict)  # technical_data tak, jak přišla (formát Registru vozidel)
 
     def _technicky(self, *nazvy: str) -> str | None:
         for nazev, hodnota in self.technicke:
@@ -124,6 +130,7 @@ def _navsteva(data) -> Navsteva:
         revision=_text(data.get("revision")), spz=_text(vozidlo.get("spz")), vin=_text(vozidlo.get("vin")), km=km,
         technicke=_ploche(technicke) if isinstance(technicke, dict) else [],
         nejiste=_nejiste(vozidlo.get("uncertain_fields")),
+        registr=technicke if isinstance(technicke, dict) else {},
     )
 
 
@@ -140,3 +147,61 @@ def nacti(cesta: str | Path | None = None) -> Prijmy:
     navstevy = [_navsteva(v) for v in data["visits"]]
     navstevy.sort(key=lambda n: n.created_at or datetime.min, reverse=True)
     return Prijmy(version=_text(data.get("version")), updated_at=_cas(data.get("updated_at")), navstevy=navstevy)
+
+
+# ---------------------------------------------------------------- návštěva × naše databáze vozidel
+
+@dataclass
+class Shoda:
+    """Je vozidlo z příjmu v databázi?
+
+    stav: „v_databazi“ (našlo se podle SPZ nebo VIN), „neni“, „konflikt“ (SPZ patří jednomu vozidlu
+    a VIN jinému – chyba v databázi nebo v příjmu, nic se nenabízí automaticky).
+    `upozorneni` = nesoulad u nalezeného vozidla (jiný VIN / jiná SPZ v databázi), akce zůstává.
+    """
+    navsteva: Navsteva
+    stav: str
+    vozidlo: Vozidlo | None = None
+    podle_spz: Vozidlo | None = None
+    podle_vin: Vozidlo | None = None
+    otevrena: Zakazka | None = None
+    upozorneni: str | None = None
+
+    @property
+    def akce(self) -> tuple[str, str, bool] | None:
+        """(text tlačítka, adresa, otevřít v okně) – hlavní akce řádku; konflikt = žádná."""
+        if self.stav == "neni":
+            return "Založit vozidlo", f"/vozidla/nove?prijem={quote(self.navsteva.id, safe='')}", True
+        if self.stav != "v_databazi":
+            return None
+        if self.otevrena:
+            return "Otevřít zakázku", f"/zakazky/{self.otevrena.id}", False
+        km = f"&tachometr={self.navsteva.km}" if self.navsteva.km is not None else ""
+        return "Nová zakázka", f"/zakazky/nova?vozidlo_id={self.vozidlo.id}{km}", True
+
+
+def _oznaceni(vozidlo: Vozidlo) -> str:
+    return " ".join(x for x in (vozidlo.spz, vozidlo.popis if (vozidlo.znacka or vozidlo.model) else "") if x)
+
+
+def sparuj(session: Session, navsteva: Navsteva) -> Shoda:
+    """Najde vozidlo návštěvy v databázi podle SPZ i VIN a zkontroluje, že obojí ukazuje na stejné vozidlo."""
+    spz = vozidla.normalizuj_spz(navsteva.spz)
+    vin = vozidla.normalizuj_vin(navsteva.vin)
+    podle_spz = vozidla.najdi_podle_spz(session, spz) if spz else None
+    podle_vin = vozidla.najdi_podle_vin(session, vin) if vin else None
+    if podle_spz and podle_vin and podle_spz.id != podle_vin.id:
+        return Shoda(navsteva, "konflikt", podle_spz=podle_spz, podle_vin=podle_vin, upozorneni=(
+            f"SPZ patří v databázi vozidlu {_oznaceni(podle_spz)}, VIN vozidlu {_oznaceni(podle_vin)}. "
+            "Ověřte údaje a opravte záznam v databázi."))
+    vozidlo = podle_spz or podle_vin
+    if vozidlo is None:
+        return Shoda(navsteva, "neni")
+    upozorneni = None
+    if not podle_vin and vin and vozidlo.vin and vozidla.normalizuj_vin(vozidlo.vin) != vin:
+        upozorneni = f"Nalezeno podle SPZ, ale v databázi má vozidlo jiný VIN: {vozidlo.vin}."
+    elif not podle_spz and spz and vozidlo.spz != spz:
+        upozorneni = f"Nalezeno podle VIN, ale v databázi má vozidlo jinou SPZ: {vozidlo.spz}."
+    otevrena = next((z for z in vozidla.historie(session, vozidlo.id) if z.je_otevrena), None)
+    return Shoda(navsteva, "v_databazi", vozidlo=vozidlo, podle_spz=podle_spz, podle_vin=podle_vin,
+                 otevrena=otevrena, upozorneni=upozorneni)

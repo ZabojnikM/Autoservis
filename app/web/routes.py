@@ -170,7 +170,7 @@ def _najdi(db, sluzba, hodnota):
 
 @router.get("/zakazky/nova", response_class=HTMLResponse)
 def zakazka_nova(request: Request, db: DB, vozidlo_id: int | None = None, spz: str = "", vin: str = "",
-                 zakaznik_id: int | None = None, okno: str = ""):
+                 zakaznik_id: int | None = None, okno: str = "", tachometr: str = ""):
     """Příjem vozidla – celá stránka, nebo s `okno=1` jen obsah okna (dialog nad seznamem).
     `spz` z hledání, které vypadá jako VIN (17 znaků), se bere jako VIN – nové vozidlo ho má v poli VIN."""
     if not vin and vozidla.je_vin(spz):
@@ -183,6 +183,8 @@ def zakazka_nova(request: Request, db: DB, vozidlo_id: int | None = None, spz: s
     hodnoty = {"spz": vozidla.normalizuj_spz(spz), "v_vin": vozidla.normalizuj_vin(vin) or ""} \
         | _hodnoty_vozidla(vozidlo) | _hodnoty_zakaznika(zakaznik)
     hodnoty |= {"datum_prijeti": datetime.now().strftime("%Y-%m-%dT%H:%M")}
+    if cisty_text(tachometr):  # stav km z Příjmu vozidel
+        hodnoty["tachometr"] = cisty_text(tachometr)
     return _prijem(request, db, hodnoty, okno=bool(okno))
 
 
@@ -525,9 +527,17 @@ def _formular_vozidla(request, vozidlo, hodnoty, zakaznik, okno=False, chyba=Non
 
 
 @router.get("/vozidla/nove", response_class=HTMLResponse)
-def vozidlo_nove(request: Request, db: DB, zakaznik_id: int | None = None, okno: str = ""):
+def vozidlo_nove(request: Request, db: DB, zakaznik_id: int | None = None, okno: str = "", prijem: str = ""):
+    """Nové vozidlo; s `prijem` (id návštěvy z Příjmu vozidel) předvyplněné SPZ, VIN a údaji z registru."""
     zakaznik = zakaznici.ziskej(db, zakaznik_id) if zakaznik_id else None
-    return _formular_vozidla(request, None, {}, zakaznik, okno=bool(okno))
+    hodnoty = {}
+    navsteva = _navsteva(prijem)[1] if prijem else None
+    if navsteva:
+        hodnoty = {k: v for k, v in registr_vozidel.na_pole_vozidla(navsteva.registr).items() if k in POLE_VOZIDLA}
+        hodnoty |= {"spz": vozidla.normalizuj_spz(navsteva.spz), "z_prijmu": "1"}
+        if navsteva.vin:
+            hodnoty["vin"] = vozidla.normalizuj_vin(navsteva.vin)
+    return _formular_vozidla(request, None, hodnoty, zakaznik, okno=bool(okno))
 
 
 @router.post("/vozidla/nove", response_class=HTMLResponse)
@@ -539,7 +549,10 @@ async def vozidlo_nove_uloz(request: Request, db: DB):
     except ChybaValidace as e:
         db.rollback()
         return _formular_vozidla(request, None, data, _zakaznik_z_formulare(db, data), okno, e)
-    return _po_ulozeni(okno, f"/vozidla/{vozidlo.id}", f"/vozidla/{vozidlo.id}", f"Vozidlo {vozidlo.spz} založeno.")
+    zprava = f"Vozidlo {vozidlo.spz} založeno."
+    if data.get("z_prijmu"):  # založeno z Příjmu vozidel → zpět na seznam příjmů (řádek už ukáže „V databázi“)
+        return _po_ulozeni(okno, "/prijem", None, zprava)
+    return _po_ulozeni(okno, f"/vozidla/{vozidlo.id}", f"/vozidla/{vozidlo.id}", zprava)
 
 
 def _data_vozidla(db, data: dict) -> dict:
@@ -645,18 +658,26 @@ def _prijmy():
         return None
 
 
+def _navsteva(navsteva_id: str):
+    """(příjmy, návštěva) – návštěva None, když v souboru není; příjmy None, když soubor nejde přečíst."""
+    prijmy = _prijmy()
+    return prijmy, next((n for n in prijmy.navstevy if n.id == navsteva_id), None) if prijmy else None
+
+
 @router.get("/prijem", response_class=HTMLResponse)
-def prijem_seznam(request: Request):
-    return _stranka(request, "prijem_seznam.html", aktivni="prijem", prijmy=_prijmy())
+def prijem_seznam(request: Request, db: DB):
+    prijmy = _prijmy()
+    shody = {n.id: prijem_vozidel.sparuj(db, n) for n in prijmy.navstevy} if prijmy else {}
+    return _stranka(request, "prijem_seznam.html", aktivni="prijem", prijmy=prijmy, shody=shody)
 
 
 @router.get("/prijem/{navsteva_id}", response_class=HTMLResponse)
-def prijem_detail(request: Request, navsteva_id: str):
-    prijmy = _prijmy()
-    navsteva = next((n for n in prijmy.navstevy if n.id == navsteva_id), None) if prijmy else None
+def prijem_detail(request: Request, db: DB, navsteva_id: str):
+    prijmy, navsteva = _navsteva(navsteva_id)
     if prijmy is not None and navsteva is None:
         return _stranka(request, "prijem_detail.html", 404, aktivni="prijem", prijmy=prijmy, navsteva=None)
-    return _stranka(request, "prijem_detail.html", aktivni="prijem", prijmy=prijmy, navsteva=navsteva)
+    shoda = prijem_vozidel.sparuj(db, navsteva) if navsteva else None
+    return _stranka(request, "prijem_detail.html", aktivni="prijem", prijmy=prijmy, navsteva=navsteva, shoda=shoda)
 
 
 @router.get("/zakaznici", response_class=HTMLResponse)

@@ -13,6 +13,7 @@
 </div>
 
 {{ zacatek_formulare(akce_url, 'formular-vozidla', okno) }}
+  {% if hodnoty.z_prijmu %}<input type="hidden" name="z_prijmu" value="1">{% endif %}
   <div class="uprava-panely">
     <fieldset class="panel">
       <legend>Vozidlo</legend>

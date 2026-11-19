@@ -1,0 +1,17 @@
+{# Příjem vozidel: je vozidlo v naší databázi (podle SPZ nebo VIN)? Stav a tlačítka řádku / detailu. #}
+{% macro stav_db(shoda) -%}
+{%- if shoda.stav == 'v_databazi' -%}
+<span class="stav-db v-db" title="Nalezeno podle {{ 'SPZ i VIN' if shoda.podle_spz and shoda.podle_vin else ('SPZ' if shoda.podle_spz else 'VIN') }}">V databázi</span>
+{%- if shoda.upozorneni %} <span class="stav-db konflikt-db" title="{{ shoda.upozorneni }}">nesoulad</span>{% endif -%}
+{%- elif shoda.stav == 'konflikt' -%}
+<span class="stav-db konflikt-db" title="{{ shoda.upozorneni }}">Konflikt SPZ / VIN</span>
+{%- else -%}
+<span class="stav-db mimo-db">Není v databázi</span>
+{%- endif -%}
+{%- endmacro %}
+
+{% macro hlavni_akce(shoda, trida='') -%}
+{%- set a = shoda.akce -%}
+{%- if a %}<a href="{{ a[1] }}" role="button" class="hlavni-akce {{ trida }}"{% if a[2] %} data-okno{% endif %}>{{ a[0] }}</a>
+{%- elif trida %}<span class="hlavni-akce misto-akce"></span>{% endif -%}
+{%- endmacro %}

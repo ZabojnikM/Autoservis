@@ -6,7 +6,7 @@ import re
 import pytest
 
 from app import config
-from app.services import prijem_vozidel
+from app.services import prijem_vozidel, vozidla, zakazky
 from tests.test_web import client
 
 
@@ -39,7 +39,7 @@ def test_seznam_od_nejnovejsiho_a_dve_navstevy_stejneho_auta(soubor):
     prijmy = prijem_vozidel.nacti()
     assert [n.id for n in prijmy.navstevy] == ["a2", "a1", "b1"]  # od nejnovějšího
     text = client.get("/prijem").text
-    assert ">Příjem vozidel</a>" in text and 'class="striped klik-otevre"' in text
+    assert ">Příjem vozidel</a>" in text and 'class="striped klik-otevre prijem-seznam"' in text
     km = [t.replace(" ", " ") for t in re.findall(r"12\d.\d00", text)]
     assert text.count("1AB2345") == 2 and km[:2] == ["120 500", "120 000"]  # dvě návštěvy stejného auta
     assert "ŠKODA OCTAVIA" in text and "Neuvedeno" in text  # chybějící VIN / km / značka
@@ -78,3 +78,67 @@ def test_nova_navsteva_bez_restartu(soubor):
     soubor([_navsteva("a1", "2026-11-18T08:00:00Z"), _navsteva("n1", "2026-11-19T11:00:00Z", spz="5N55555")])
     text = client.get("/prijem").text  # Obnovit = nové načtení, soubor se otevře znovu
     assert "Příjmů: 2" in text and "5N55555" in text
+
+
+# ---------------------------------------------------------------- je vozidlo v databázi?
+
+def _radek(text, id_):
+    return next(r for r in text.split("<tr ") if f'href="/prijem/{id_}"' in r).split("</tr>")[0]
+
+
+def test_v_databazi_podle_spz_nebo_vin_a_konflikt(soubor, session):
+    a = vozidla.vytvor(session, {"spz": "1AB2345", "vin": "TMBAA000000000001", "znacka": "Škoda"})
+    b = vozidla.vytvor(session, {"spz": "2BB2222", "vin": "WVWZZZ00000000002"})
+    soubor([_navsteva("spz", "2026-11-19T10:00:00Z", vin=""),
+            _navsteva("vin", "2026-11-19T09:00:00Z", spz="1AB 2345", vin="tmbaa000000000001"),
+            _navsteva("nova", "2026-11-19T08:00:00Z", spz="7X77777", vin="ZZZ00000000000007"),
+            _navsteva("konf", "2026-11-19T07:00:00Z", spz="1AB2345", vin="WVWZZZ00000000002"),
+            _navsteva("zmena", "2026-11-19T06:00:00Z", spz="3C33333", vin="WVWZZZ00000000002"),
+            _navsteva("jinyvin", "2026-11-19T05:00:00Z", spz="2BB2222", vin="XXX00000000000009")])
+    prijmy = prijem_vozidel.nacti()
+    s = {n.id: prijem_vozidel.sparuj(session, n) for n in prijmy.navstevy}
+    assert s["spz"].stav == "v_databazi" and s["spz"].vozidlo.id == a.id and not s["spz"].upozorneni
+    assert s["vin"].stav == "v_databazi" and s["vin"].podle_spz and s["vin"].podle_vin  # normalizace SPZ i VIN
+    assert s["nova"].stav == "neni"
+    assert s["konf"].stav == "konflikt" and "1AB2345" in s["konf"].upozorneni and "2BB2222" in s["konf"].upozorneni
+    assert s["zmena"].stav == "v_databazi" and "jinou SPZ: 2BB2222" in s["zmena"].upozorneni  # nová SPZ
+    assert s["jinyvin"].stav == "v_databazi" and "jiný VIN" in s["jinyvin"].upozorneni
+
+    text = client.get("/prijem").text
+    radek = _radek(text, "spz")
+    assert f'data-otevrit="/zakazky/nova?vozidlo_id={a.id}&amp;tachometr=120000" data-okno' in radek
+    assert ">Nová zakázka</a>" in radek and "V databázi" in radek and ">Podrobnosti</a>" in radek
+    radek = _radek(text, "nova")
+    assert 'data-otevrit="/vozidla/nove?prijem=nova" data-okno' in radek and ">Založit vozidlo</a>" in radek
+    assert "Není v databázi" in radek
+    radek = _radek(text, "konf")
+    assert 'data-otevrit="/prijem/konf"' in radek and "Konflikt SPZ / VIN" in radek
+    assert "Nová zakázka" not in radek and "Založit vozidlo" not in radek
+    assert "nesoulad" in _radek(text, "zmena")
+
+    detail = client.get("/prijem/konf").text
+    assert f'href="/vozidla/{a.id}"' in detail and f'href="/vozidla/{b.id}"' in detail
+    assert "Ověřte údaje" in detail
+
+
+def test_otevrena_zakazka_a_zalozeni_vozidla_z_prijmu(soubor, session):
+    a = vozidla.vytvor(session, {"spz": "1AB2345", "vin": "TMBAA000000000001"})
+    zak = zakazky.prijem_z_formulare(session, {"pozadavek": "Servis"}, {"vozidlo_id": str(a.id), "spz": "1AB2345"},
+                                     {})
+    soubor([_navsteva("a1", "2026-11-19T10:00:00Z", vin="TMBAA000000000001"),
+            _navsteva("n1", "2026-11-19T09:00:00Z", spz="7X77777", vin="ZZZ00000000000007",
+                      technicke={"TovarniZnacka": "ŠKODA", "ObchodniOznaceni": "FABIA", "VIN": "ZZZ00000000000007"})])
+    radek = _radek(client.get("/prijem").text, "a1")
+    assert f'data-otevrit="/zakazky/{zak.id}"' in radek and ">Otevřít zakázku</a>" in radek
+    assert "data-okno" not in radek.split(">")[0]  # existující zakázka = celá stránka
+    # nová zakázka převezme stav km
+    assert 'value="120000"' in client.get("/zakazky/nova", params={"vozidlo_id": a.id, "tachometr": "120000"}).text
+    # založení vozidla: předvyplněné z příjmu, po uložení zpět na příjem
+    form = client.get("/vozidla/nove", params={"prijem": "n1", "okno": "1"}).text
+    assert 'value="7X77777"' in form and 'value="ZZZ00000000000007"' in form and 'name="z_prijmu"' in form
+    assert "FABIA" in form.upper()
+    r = client.post("/vozidla/nove", data={"spz": "7X77777", "vin": "ZZZ00000000000007", "z_prijmu": "1"},
+                    follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"].startswith("/prijem")
+    radek = _radek(client.get("/prijem").text, "n1")
+    assert "V databázi" in radek and ">Nová zakázka</a>" in radek
