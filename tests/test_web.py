@@ -1016,3 +1016,15 @@ def test_zakazka_kopirovat_vin():
     r = _prijem(spz="7K45454", v_vin="TMBJJ7NE8J0123456")
     detail = client.get(r.headers["location"].split("?")[0]).text
     assert 'data-kopirovat="TMBJJ7NE8J0123456"' in detail
+
+
+def test_formulare_ceniku_dph_pod_cenami():
+    """#42 a #43: sazba DPH (u materiálu i jednotka) je až pod cenami."""
+    prace = client.get("/prace/nova").text
+    material = client.get("/cenik/nova").text
+    if 'name="sazba_dph"' in prace:  # plátce DPH
+        assert prace.index('name="cena_s"') < prace.index('name="sazba_dph"')
+        assert material.index('name="nakupni_cena_s"') < material.index('name="sazba_dph"')
+    assert material.index('name="nakupni_cena') < material.index('name="jednotka"')
+    assert material.index('name="nazev"') < material.index("<legend>Ceny za jednotku</legend>") \
+        < material.index('name="jednotka"')

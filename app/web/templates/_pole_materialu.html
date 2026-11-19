@@ -10,19 +10,6 @@
       <div data-jen-cenik>{{ pole('zamenitelny_dil', 'Zaměnitelný díl', hodnoty, placeholder='kód náhradního dílu') }}</div>
     </div>
     {{ pole('nazev', 'Název', hodnoty, povinne=True) }}
-    {% set jednotka = hodnoty.get('jednotka') or 'ks' %}
-    {% set jednotky = ['ks', 'l', 'm', 'cm', 'g', 'kg', 'sada'] %}
-    <div class="mrizka">
-      <label>Jednotka
-        <select name="jednotka">
-          {% for j in jednotky %}<option {% if jednotka == j %}selected{% endif %}>{{ j }}</option>{% endfor %}
-          {% if jednotka not in jednotky %}<option selected>{{ jednotka }}</option>{% endif %}
-        </select>
-      </label>
-      {% if nast.platce_dph %}
-        {{ pole('sazba_dph', 'Sazba DPH %', hodnoty, extra='inputmode="decimal" list="sazby" data-sazba-dph') }}
-      {% endif %}
-    </div>
   </fieldset>
 
   <fieldset class="panel">
@@ -39,6 +26,20 @@
       {% endif %}
     </div>
     {% endfor %}
+    {# jednotka a sazba DPH pod nákupními cenami (#43) #}
+    {% set jednotka = hodnoty.get('jednotka') or 'ks' %}
+    {% set jednotky = ['ks', 'l', 'm', 'cm', 'g', 'kg', 'sada'] %}
+    <div class="mrizka">
+      <label>Jednotka
+        <select name="jednotka">
+          {% for j in jednotky %}<option {% if jednotka == j %}selected{% endif %}>{{ j }}</option>{% endfor %}
+          {% if jednotka not in jednotky %}<option selected>{{ jednotka }}</option>{% endif %}
+        </select>
+      </label>
+      {% if nast.platce_dph %}
+        {{ pole('sazba_dph', 'Sazba DPH %', hodnoty, extra='inputmode="decimal" list="sazby" data-sazba-dph') }}
+      {% endif %}
+    </div>
   </fieldset>
 
   <fieldset class="panel" data-jen-cenik>

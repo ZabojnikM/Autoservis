@@ -20,11 +20,6 @@
 
   <fieldset class="panel">
     <legend>Cena</legend>
-    {% if nast.platce_dph %}
-    <div class="mrizka">
-      {{ pole('sazba_dph', 'Sazba DPH %', hodnoty, extra='inputmode="decimal" list="sazby" data-sazba-dph') }}
-    </div>
-    {% endif %}
     <div class="mrizka dvojice-cen" data-dvojice="cena">
       {% if nast.platce_dph %}
         {{ pole('cena', 'Cena bez DPH', hodnoty, extra='inputmode="decimal" data-cena="bez"') }}
@@ -34,6 +29,12 @@
         {{ pole('cena', 'Cena', hodnoty, extra='inputmode="decimal"') }}
       {% endif %}
     </div>
+    {# sazba DPH pod cenami (#42) #}
+    {% if nast.platce_dph %}
+    <div class="mrizka">
+      {{ pole('sazba_dph', 'Sazba DPH %', hodnoty, extra='inputmode="decimal" list="sazby" data-sazba-dph') }}
+    </div>
+    {% endif %}
   </fieldset>
 
   <fieldset class="panel" data-jen-cenik>
