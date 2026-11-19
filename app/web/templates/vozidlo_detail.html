@@ -63,7 +63,7 @@
     <dl>
       <dt>Poslední km</dt><dd>{% if km %}{{ km[0]|cislo }} km{% else %}—{% endif %}</dd>
       <dt>Návštěvy</dt><dd>{{ historie|length }}{% if historie %} · naposledy {{ historie[0].datum_prijeti|datum }}{% endif %}</dd>
-      <dt title="Součet platných (nestornovaných) dokladů">Vyfakturováno</dt><dd><strong>{{ vyfakturovano|penize }} {{ nast.mena }}</strong></dd>
+      <dt title="Součet vystavených dokladů">Vyfakturováno</dt><dd><strong>{{ vyfakturovano|penize }} {{ nast.mena }}</strong></dd>
       {% if rozpracovano %}<dt title="Otevřené zakázky bez dokladu">Rozpracováno</dt><dd>{{ rozpracovano|penize }} {{ nast.mena }}</dd>{% endif %}
     </dl>
     {% if v.poznamka %}<p class="tlumene zachovat-radky poznamka-vozidla">{{ v.poznamka }}</p>{% endif %}

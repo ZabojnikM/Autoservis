@@ -31,6 +31,14 @@
   </tr></thead>
   <tbody>
   {% for f in faktury %}
+    {% if f.je_volne_misto %}
+    {# #15: místo smazaného dokladu – číslo jde znovu použít při vystavení #}
+    <tr class="volne-misto" title="Doklad s tímto číslem byl smazán – číslo jde ručně použít při vystavení">
+      <td><strong>{{ f.cislo }}</strong>{% if f.typ == 'vyuctovani' %} <span class="tlumene">vyúčt.</span>{% endif %}</td>
+      <td>{{ f.datum_vystaveni|datum }}</td>
+      <td colspan="6" class="tlumene">Volné po smazání</td>
+    </tr>
+    {% else %}
     <tr class="doklad-{{ f.stav }}" data-otevrit="/faktury/{{ f.id }}">
       <td><a href="/faktury/{{ f.id }}"><strong>{{ f.cislo }}</strong></a>
         {% if f.typ == 'vyuctovani' %}<span class="tlumene">vyúčt.</span>{% endif %}</td>
@@ -39,9 +47,10 @@
       <td>{{ f.odb_nazev }}</td>
       <td>{% if f.spz %}{{ spz(f.spz) }}{% endif %}</td>
       <td class="cislo">{{ f.celkem|penize }}</td>
-      <td class="cislo">{% if f.zbyva and not f.stornovano %}<strong>{{ f.zbyva|penize }}</strong>{% endif %}</td>
+      <td class="cislo">{% if f.zbyva %}<strong>{{ f.zbyva|penize }}</strong>{% endif %}</td>
       <td><span class="stav-dokladu stav-dokladu-{{ f.stav }}">{{ f.nazev_stavu }}</span></td>
     </tr>
+    {% endif %}
   {% endfor %}
   </tbody>
   <tfoot><tr>

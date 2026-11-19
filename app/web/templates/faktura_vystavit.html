@@ -46,8 +46,23 @@
           {{ TypDokladu.NAZVY[t] }}</label>
         {% endfor %}
       </div>
+      {# #15: předpona řady je pevná (rok podle data vystavení), přepsat jde jen pořadové číslo #}
+      <label>Číslo dokladu
+        <span class="cislo-dokladu-pole">
+          <span class="predpona-dokladu" id="predpona-dokladu" data-vzor="{{ vzor_rady }}">{{ predpona }}</span>
+          <input type="text" name="poradi" value="{{ hodnoty.get('poradi') or '' }}" required
+                 inputmode="numeric" pattern="[0-9]{1,{{ nast.cifry_cisla }}}" maxlength="{{ nast.cifry_cisla }}"
+                 title="Pořadové číslo – nejvýš {{ nast.cifry_cisla }} číslice" {% if chyba and chyba.pole == 'poradi' %}aria-invalid="true"{% endif %}>
+        </span></label>
+      {% if volna %}
+      <p class="tlumene napoveda">Volná čísla po smazaných dokladech:
+        {% for c in volna %}<button type="button" class="odkaz" title="Použít číslo {{ c }}"
+          onclick="this.form.poradi.value = '{{ c[predpona_volnych:] }}'">{{ c }}</button>{% if not loop.last %}, {% endif %}{% endfor %}</p>
+      {% endif %}
       <div class="mrizka">
-        <label>Datum vystavení <input type="date" name="datum_vystaveni" value="{{ hodnoty.get('datum_vystaveni')|iso }}" required></label>
+        <label>Datum vystavení <input type="date" name="datum_vystaveni" value="{{ hodnoty.get('datum_vystaveni')|iso }}" required
+          onchange="const r = (this.value || '').slice(0, 4), p = document.getElementById('predpona-dokladu');
+                    if (r.length === 4) p.textContent = p.dataset.vzor.replace('{RRRR}', r).replace('{RR}', r.slice(2));"></label>
         {% if nast.platce_dph and typ == 'faktura' %}
         <label>DUZP <input type="date" name="duzp" value="{{ hodnoty.get('duzp')|iso }}"></label>
         {% endif %}
@@ -92,6 +107,6 @@
       <p class="tlumene napoveda">Údaje se vezmou ze zákazníka; změna tady platí jen pro tento doklad.</p>
     </fieldset>
   </div>
-  <p class="tlumene napoveda">Po vystavení se zakázka uzavře (stav Uzavřeno). Doklad už nejde měnit – jen stornovat.</p>
+  <p class="tlumene napoveda">Po vystavení se zakázka uzavře (stav Uzavřeno). Doklad už nejde měnit – při chybě se smaže a vystaví znovu.</p>
 </form>
 {% endblock %}

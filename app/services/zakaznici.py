@@ -115,7 +115,7 @@ def duvod_proc_nesmazat(session: Session, zakaznik: Zakaznik) -> str | None:
     if zakaznik.vozidla or zakaznik.zakazky:
         return "Zákazníka nelze smazat – má vozidla nebo zakázky."
     if session.exec(select(Faktura.id).where(Faktura.zakaznik_id == zakaznik.id)).first():
-        return "Zákazníka nelze smazat – jsou na něj vystavené doklady (i stornované)."
+        return "Zákazníka nelze smazat – jsou na něj vystavené doklady."
     return None
 
 

@@ -921,3 +921,10 @@ dd .vedle { margin-left: 1rem; margin-right: .35rem; }
 .prijem-seznam td.tlacitka-prijmu [role=button] { margin: 0 4px 0 0; width: auto; }
 .upozorneni-db { margin: 0 0 .75rem; }
 .prijem-seznam td.tlacitka-prijmu .hlavni-akce { display: inline-block; min-width: 8.5rem; text-align: center; }
+
+/* #15: číslo dokladu při vystavení – pevná předpona řady + přepisovatelné pořadové číslo */
+.cislo-dokladu-pole { display: flex; align-items: center; gap: 6px; }
+.cislo-dokladu-pole .predpona-dokladu { font-weight: 700; font-size: 1.05rem; letter-spacing: .02em; white-space: nowrap; }
+.cislo-dokladu-pole input { width: 7rem; margin: 0; font-weight: 700; }
+/* #15: místo smazaného dokladu v přehledu */
+tr.volne-misto td { color: var(--tlumene, #64748b); font-style: italic; background: repeating-linear-gradient(135deg, transparent 0 8px, rgba(148,163,184,.08) 8px 16px); }

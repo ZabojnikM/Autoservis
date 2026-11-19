@@ -3,7 +3,9 @@ from decimal import Decimal
 
 import pytest
 
-from app.models import StavZakazky, TypDokladu
+from sqlmodel import select
+
+from app.models import Faktura, StavZakazky, TypDokladu, Uhrada
 from app.services import ChybaValidace, cenik, faktury, nastaveni, polozky, zakazky
 
 
@@ -102,24 +104,24 @@ def test_po_splatnosti(session, zakazka):
     assert faktury.seznam(session, "uhrazene") == []
 
 
-def test_storno_otevre_zakazku(session, zakazka):
+def test_smazani_otevre_zakazku(session, zakazka):
     f = _vystav(session, zakazka)
     with pytest.raises(ChybaValidace):
         zakazky.zmen_stav(session, zakazka.id, StavZakazky.V_OPRAVE)  # vyfakturovaná
     faktury.pridej_uhradu(session, f.id, {"castka": "100"})
     session.refresh(f)
     assert f.stav == "castecne" and f.nazev_stavu == "Částečně uhrazeno"
-    # storno s úhradou: úhrada se zruší, ale zůstane v historii
-    f = faktury.storno(session, f.id)
-    assert f.stornovano and f.zbyva == 0 and f.stav == "stornovano"
-    assert len(f.uhrady) == 1 and f.uhrady[0].zruseno and f.uhrazeno == 0
-    assert "zrušeno stornem" in f.uhrady[0].poznamka
+    # smazání s úhradou: doklad i úhrady zmizí, číslo zůstane jako volné (#15)
+    fid, cislo = f.id, f.cislo
+    assert faktury.smaz(session, fid) == (cislo, zakazka.id)
+    assert session.get(Faktura, fid) is None and not session.exec(select(Uhrada)).all()
+    assert [c.cislo for c in faktury.volna_cisla(session, TypDokladu.FAKTURA)] == [cislo]
     session.refresh(zakazka)
-    assert zakazka.stav == StavZakazky.PRIJATO and zakazka.platna_faktura is None
+    assert zakazka.stav == StavZakazky.PRIJATO and zakazka.platna_faktura is None and not zakazka.uzavreno
     nova = _vystav(session, zakazka)
-    assert nova.cislo.endswith("0002")  # číslo stornovaného zůstává obsazené
+    assert nova.cislo.endswith("0002")  # smazané číslo se automaticky znovu nenabídne
     with pytest.raises(ChybaValidace):
-        zakazky.smaz(session, zakazka.id)  # zakázka s doklady nejde smazat
+        zakazky.smaz(session, zakazka.id)  # zakázka s dokladem nejde smazat
 
 
 def test_zruseni_uhrady_zustane_v_historii(session, zakazka):
@@ -148,11 +150,12 @@ def test_faktura_vyzaduje_udaje_servisu_a_ucet(session, zakazka):
 
 def test_variabilni_symbol_faktury_a_vyuctovani_se_lisi(session, zakazka):
     f = _vystav(session, zakazka)
-    faktury.storno(session, f.id)
+    vs_faktury = f.variabilni_symbol
+    faktury.smaz(session, f.id)
     session.refresh(zakazka)
     v = _vystav(session, zakazka, typ=TypDokladu.VYUCTOVANI)
     rok = date.today().year
-    assert f.variabilni_symbol == f"{rok}0001" and v.variabilni_symbol == f"9{rok}0001"
+    assert vs_faktury == f"{rok}0001" and v.variabilni_symbol == f"9{rok}0001"
     assert faktury.variabilni_symbol("VY20260002", TypDokladu.VYUCTOVANI) == "920260002"
 
 
@@ -221,11 +224,11 @@ def test_platce_dph_potrebuje_dic_a_hotove_splatnost_dnes(session, zakazka):
     assert vychozi["forma_uhrady"] == "hotove" and vychozi["datum_splatnosti"] == date.today()
 
 
-def test_storno_vrati_stav_pred_vystavenim(session, zakazka):
+def test_smazani_vrati_stav_pred_vystavenim(session, zakazka):
     zakazky.zmen_stav(session, zakazka.id, StavZakazky.PRIJATO)
     f = _vystav(session, zakazka)
     assert f.stav_zakazky_pred == StavZakazky.PRIJATO
-    faktury.storno(session, f.id)
+    faktury.smaz(session, f.id)
     session.refresh(zakazka)
     assert zakazka.stav == StavZakazky.PRIJATO  # ne „Předáno“
 

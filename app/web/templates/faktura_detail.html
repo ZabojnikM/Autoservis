@@ -1,24 +1,20 @@
 {% extends "base.html" %}
-{% from "_makra.html" import spz, adresa %}
+{% from "_makra.html" import spz, adresa, tlacitko_smazat %}
 {% block title %}{{ f.nazev_typu }} {{ f.cislo }}{% endblock %}
 {% block akce %}
   <a href="/faktury/{{ f.id }}/tisk" target="_blank" role="button">Tisk / PDF</a>
   {% if f.zakazka_id %}<a href="/zakazky/{{ f.zakazka_id }}" role="button" class="secondary">Zakázka</a>{% endif %}
-  {% if not f.stornovano and f.zbyva != 0 %}
+  {% if f.zbyva != 0 %}
   <a href="/faktury/{{ f.id }}/uhrady/nova" role="button" data-okno>Zapsat úhradu</a>
   {% endif %}
-  {% if not f.stornovano %}
+  {# #15: chybný doklad se smaže – číslo zůstane v přehledu jako „Volné po smazání“ #}
+  {% set co = 'fakturu' if f.typ == 'faktura' else 'vyúčtování' %}
   <hr>
-  {% if f.uhrazeno %}
-    {% set potvrzeni = 'Stornovat %s?\n\nNa dokladu je uhrazeno %s %s. Storno úhrady zruší (zůstanou v historii přeškrtnuté) – peníze zákazníkovi vraťte, nebo je započtěte na nový doklad.\n\nČíslo dokladu zůstane obsazené a zakázka se znovu otevře k úpravám.'|format(f.cislo, f.uhrazeno|penize, f.mena) %}
-  {% else %}
-    {% set potvrzeni = 'Stornovat %s? Číslo zůstane obsazené a zakázka se znovu otevře k úpravám.'|format(f.cislo) %}
-  {% endif %}
-  <form method="post" action="/faktury/{{ f.id }}/storno" data-potvrdit="{{ potvrzeni }}" data-potvrdit-ano="Stornovat">
-    <button type="submit" class="secondary outline">Stornovat doklad</button>
-  </form>
-  <p class="tlumene poznamka">Při chybě: storno, oprava zakázky a nový doklad.{% if f.uhrazeno %} Úhrady storno zruší.{% endif %}</p>
-  {% endif %}
+  {% set potvrzeni = 'Smazat %s %s?'|format(co, f.cislo) %}
+  {% if f.uhrazeno %}{% set potvrzeni = potvrzeni ~ '\n\nNa dokladu je uhrazeno %s %s – úhrady se smažou s ním.'|format(f.uhrazeno|penize, f.mena) %}{% endif %}
+  {% set potvrzeni = potvrzeni ~ '\n\nČíslo zůstane v přehledu jako volné, zakázka se znovu otevře k úpravám.' %}
+  {{ tlacitko_smazat('/faktury/%d/smazat' % f.id, 'Smazat ' ~ co, potvrzeni) }}
+  <p class="tlumene poznamka">Při chybě: smazat, opravit zakázku a vystavit znovu (i se stejným číslem).</p>
   <hr>
   <a href="/faktury" role="button" class="zpet">Zpět</a>
 {% endblock %}
@@ -72,7 +68,7 @@
         <td>{{ u.datum|datum }}</td><td>{{ u.nazev_zpusobu }}</td>
         <td class="cislo">{{ u.castka|penize }}</td>
         <td class="tlumene">{{ u.poznamka or '' }}{% if u.zruseno %} <span class="zruseno">zrušeno {{ u.zruseno|datumcas }}</span>{% endif %}</td>
-        <td class="akce-radku">{% if not u.zruseno and not f.stornovano %}<form method="post" action="/uhrady/{{ u.id }}/smazat"
+        <td class="akce-radku">{% if not u.zruseno %}<form method="post" action="/uhrady/{{ u.id }}/smazat"
           data-potvrdit="Zrušit úhradu {{ u.castka|penize }} {{ f.mena }} ze {{ u.datum|datum }}? Zůstane v historii přeškrtnutá." data-potvrdit-ano="Zrušit úhradu">
           <button type="submit" class="odkaz" title="Zrušit úhradu">✕</button></form>{% endif %}</td>
       </tr>
@@ -81,7 +77,7 @@
   </table>
   {% else %}<p class="tlumene">Zatím žádné úhrady.</p>{% endif %}
 
-  {% if not f.stornovano and f.zbyva != 0 %}
+  {% if f.zbyva != 0 %}
   <p class="neni-tisk"><a href="/faktury/{{ f.id }}/uhrady/nova" data-okno>+ Zapsat úhradu</a>
     <span class="tlumene">(zbývá {{ f.zbyva|penize }} {{ f.mena }})</span></p>
   {% endif %}

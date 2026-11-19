@@ -355,7 +355,7 @@ def pocty_podle_stavu(session: Session) -> dict[str, int]:
 def duvod_proc_nesmazat(zakazka: Zakazka) -> str | None:
     """Proč zakázku nejde smazat (None = smazat jde). Stejný text ukáže i zašedlé tlačítko."""
     if zakazka.faktury:
-        return "Zakázka má doklad (i stornovaný) – její číslo je na dokladu, proto ji nejde smazat."
+        return "Zakázka má vystavený doklad – její číslo je na dokladu, proto ji nejde smazat."
     if not zakazka.je_otevrena:
         return "Uzavřenou zakázku nelze smazat."
     return None

@@ -59,7 +59,7 @@ def _presmeruj(url: str, zprava: str | None = None, chyba: bool = False) -> Redi
 
 
 def _presmeruj_s_chybou(url: str, e: Exception) -> RedirectResponse:
-    """Chyba akce bez formuláře (smazání, storno): zpět na stránku s červenou hláškou.
+    """Chyba akce bez formuláře (smazání): zpět na stránku s červenou hláškou.
     Stránka tak nezůstane na adrese POST požadavku (F5 by akci odeslal znovu)."""
     return _presmeruj(url, str(e), chyba=True)
 
@@ -998,10 +998,22 @@ async def nastaveni_uloz(request: Request, db: DB):
 # ---------------------------------------------------------------- faktury a vyúčtování
 
 def _formular_vystaveni(request, db, zakazka, hodnoty, okno=False, chyba=None):
+    """Formulář vystavení. Číslo dokladu (#15): předpona řady pevná, pořadové číslo předvyplněné dalším
+    v řadě a přepisovatelné (i na volné číslo po smazaném dokladu)."""
+    nast = nastaveni.nacti(db)
+    typ = hodnoty.get("typ") or TypDokladu.FAKTURA
+    vystaveni = zakazky.parsuj_datum(hodnoty.get("datum_vystaveni")) if isinstance(
+        hodnoty.get("datum_vystaveni"), str) else hodnoty.get("datum_vystaveni")
+    rok = (vystaveni or date.today()).year
+    predpona = faktury.predpona_dokladu(db, typ, rok)
+    if not cisty_text(hodnoty.get("poradi")):
+        hodnoty = dict(hodnoty) | {"poradi": faktury.dalsi_cislo(db, typ, rok)[len(predpona):]}
+    volna = [c.cislo for c in faktury.volna_cisla(db, typ, rok)]
     return _stranka(request, "faktura_vystavit.html", _status_formulare(okno, chyba), aktivni="faktury",
-                    zakazka=zakazka, hodnoty=hodnoty, nast=nastaveni.nacti(db),
+                    zakazka=zakazka, hodnoty=hodnoty, nast=nast,
                     rek=polozky.rekapitulace(zakazka), FormaUhrady=FormaUhrady, TypDokladu=TypDokladu,
-                    okno=okno, chyba=chyba)
+                    okno=okno, chyba=chyba, predpona=predpona, volna=volna, predpona_volnych=len(predpona),
+                    vzor_rady=nast.rada_faktura if typ == TypDokladu.FAKTURA else nast.rada_vyuctovani)
 
 
 @router.get("/zakazky/{zakazka_id}/vystavit", response_class=HTMLResponse)
@@ -1104,14 +1116,13 @@ def uhrada_smazat(db: DB, uhrada_id: int):
     return _presmeruj(f"/faktury/{faktura_id}", "Úhrada zrušena (zůstává v historii přeškrtnutá).")
 
 
-@router.post("/faktury/{faktura_id}/storno", response_class=HTMLResponse)
-def faktura_storno(request: Request, db: DB, faktura_id: int):
-    try:
-        f = faktury.storno(db, faktura_id)
-    except ChybaValidace as e:
-        return _presmeruj_s_chybou(f"/faktury/{faktura_id}", e)
-    zrusene = [u for u in f.uhrady if u.zruseno and "stornem" in (u.poznamka or "")]
-    zprava = "Doklad stornován, zakázka je znovu otevřená (stav Předáno)."
-    if zrusene:
-        zprava += " Úhrady dokladu jsou zrušené – peníze vraťte, nebo je započtěte na nový doklad."
-    return _presmeruj(f"/faktury/{faktura_id}", zprava)
+@router.post("/faktury/{faktura_id}/smazat", response_class=HTMLResponse)
+def faktura_smazat(request: Request, db: DB, faktura_id: int):
+    """Smazání dokladu (#15): číslo zůstane v přehledu jako „Volné po smazání“, zakázka se znovu otevře."""
+    doklad = faktury.ziskej(db, faktura_id)
+    smazano = "smazána" if doklad.typ == TypDokladu.FAKTURA else "smazáno"
+    nazev = doklad.nazev_typu
+    cislo, zakazka_id = faktury.smaz(db, faktura_id)
+    if zakazka_id:
+        return _presmeruj(f"/zakazky/{zakazka_id}", f"{nazev} {cislo} {smazano}, zakázka je znovu otevřená.")
+    return _presmeruj("/faktury", f"{nazev} {cislo} {smazano}.")

@@ -218,16 +218,6 @@ def test_faktura_cely_tok():
     r = client.post(f"/uhrady/{uid}/smazat", follow_redirects=True)
     assert "zrusena-uhrada" in r.text and "Neuhrazeno" in r.text
     client.post(f"/faktury/{fid}/uhrady", data={"castka": "1210", "zpusob": "prevod"})
-    # storno s úhradou: potvrzení na úhradu upozorní, storno ji zruší
-    assert "Storno úhrady zruší" in client.get(f"/faktury/{fid}").text
-    r = client.post(f"/faktury/{fid}/storno", follow_redirects=False)
-    assert r.status_code == 303 and r.headers["location"] == f"/faktury/{fid}"
-    r = client.get(f"/faktury/{fid}")
-    assert "Stornováno" in r.text and "zrušeno stornem dokladu" in r.text
-    assert "Vystavit fakturu" in client.get(loc).text
-    # znovu storno → chyba jako červená hláška a zpět na detail (ne stránka na adrese POST)
-    r = client.post(f"/faktury/{fid}/storno", follow_redirects=False)
-    assert r.status_code == 303 and r.cookies.get("zprava").startswith("%21")
     # zakázka s dokladem nejde smazat a doklad je vidět v detailu zakázky
     detail = client.get(loc).text
     assert "Doklady" in detail and f"/faktury/{fid}" in detail and "nejde smazat" in detail
@@ -237,6 +227,13 @@ def test_faktura_cely_tok():
     zid = re.search(r'href="/zakaznici/(\d+)"', detail).group(1)
     r = client.post(f"/zakaznici/{zid}/smazat", follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"] == f"/zakaznici/{zid}"
+    # smazání dokladu s úhradou (#15): potvrzení na úhradu upozorní, zakázka se znovu otevře
+    doklad = client.get(f"/faktury/{fid}").text
+    assert "Smazat fakturu" in doklad and "úhrady se smažou s ním" in doklad and "Stornovat" not in doklad
+    r = client.post(f"/faktury/{fid}/smazat", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"] == loc
+    assert client.get(f"/faktury/{fid}").status_code == 404
+    assert "Vystavit fakturu" in client.get(loc).text
 
 
 def test_vystaveni_chyba_a_prazdna_zakazka():
@@ -256,12 +253,12 @@ def test_filtry_a_odebrane_doklady():
     assert "Další doklad" not in client.get(loc).text
     client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "odb_nazev": "Jana", "forma_uhrady": "hotove",
                                          "uhrazeno_ihned": "1"})
-    for filtr in ["vyuctovani", "faktury", "stornovane", "vse", "neuhrazene"]:  # neuhrazene = starý odkaz
+    for filtr in ["vyuctovani", "faktury", "stornovane", "vse", "neuhrazene"]:  # starší odkazy dál fungují
         assert client.get("/faktury", params={"filtr": filtr, "rok": "2026"}).status_code == 200
-    # záložky Vyúčtování / Faktury / Stornované / Všechny, bez výběru typu dokladu
+    # záložky Vyúčtování / Faktury / Všechny (Stornované zrušené, #15), bez výběru typu dokladu
     prehled = client.get("/faktury").text
     zalozky = re.findall(r'href="/faktury\?filtr=(\w+)&', prehled)
-    assert zalozky == ["vyuctovani", "faktury", "stornovane", "vse"]
+    assert zalozky == ["vyuctovani", "faktury", "vse"]
     assert 'name="typ"' not in prehled and "faktury i vyúčtování" not in prehled
     assert "Neuhrazené" not in prehled and "Po splatnosti</a>" not in prehled
     assert "Export CSV" not in client.get("/faktury").text

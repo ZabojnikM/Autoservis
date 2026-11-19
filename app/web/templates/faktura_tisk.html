@@ -5,7 +5,6 @@
   <div class="hlava">
     <div>
       <h1>{{ f.nadpis }}</h1>
-      {% if f.stornovano %}<div class="storno">STORNO</div>{% endif %}
     </div>
     <div class="cislo-dokladu">č. {{ f.cislo }}</div>
   </div>
@@ -51,7 +50,7 @@
 
   {% if f.poznamka %}<div class="poznamka">{{ f.poznamka }}</div>{% endif %}
   {% if nast.text_pod_fakturou %}<div class="poznamka tlumene">{{ nast.text_pod_fakturou }}</div>{% endif %}
-  {% if f.je_uhrazena and not f.stornovano %}<div class="uhrazeno">Uhrazeno – neplaťte.</div>{% endif %}
+  {% if f.je_uhrazena %}<div class="uhrazeno">Uhrazeno – neplaťte.</div>{% endif %}
 
   <div class="paticka">
     <div>

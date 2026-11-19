@@ -231,7 +231,7 @@ class FormaUhrady:
 
 
 class Faktura(SQLModel, table=True):
-    """Vystavený doklad (faktura / vyúčtování). Po vystavení se už nemění – jen úhrady a storno."""
+    """Vystavený doklad (faktura / vyúčtování). Po vystavení se už nemění – jen úhrady; jde smazat (#15)."""
 
     id: Optional[int] = Field(default=None, primary_key=True)
     cislo: str = Field(index=True, unique=True)
@@ -259,10 +259,11 @@ class Faktura(SQLModel, table=True):
     tachometr: Optional[int] = None
     cislo_zakazky: Optional[str] = None
     stav_zakazky_pred: Optional[str] = Field(
-        default=None, description="Stav zakázky před vystavením dokladu – storno ho vrátí")
+        default=None, description="Stav zakázky před vystavením dokladu – smazání dokladu ho vrátí")
     poznamka: Optional[str] = None
     zaokrouhleni: Decimal = Field(default=Decimal("0"), sa_type=DesetinneCislo)
     celkem: Decimal = Field(default=Decimal("0"), sa_type=DesetinneCislo, description="K úhradě vč. DPH a zaokrouhlení")
+    # storno zrušeno (#15) – doklad se maže; sloupec zůstal kvůli starším databázím, nové doklady mají vždy False
     stornovano: bool = Field(default=False, index=True)
     vytvoreno: NaiveDatetime = Field(default_factory=datetime.now)
 
@@ -313,8 +314,6 @@ class Faktura(SQLModel, table=True):
 
     @property
     def stav(self) -> str:
-        if self.stornovano:
-            return "stornovano"
         if self.je_uhrazena:
             return "uhrazena"
         if self.po_splatnosti:
@@ -323,7 +322,7 @@ class Faktura(SQLModel, table=True):
 
     @property
     def nazev_stavu(self) -> str:
-        return {"stornovano": "Stornováno", "uhrazena": "Uhrazeno", "po_splatnosti": "Po splatnosti",
+        return {"uhrazena": "Uhrazeno", "po_splatnosti": "Po splatnosti",
                 "castecne": "Částečně uhrazeno", "neuhrazena": "Neuhrazeno"}[self.stav]
 
 
@@ -357,6 +356,16 @@ class Uhrada(SQLModel, table=True):
     @property
     def nazev_zpusobu(self) -> str:
         return FormaUhrady.NAZVY.get(self.zpusob, self.zpusob)
+
+
+class SmazaneCislo(SQLModel, table=True):
+    """Číslo smazaného dokladu (#15). V přehledu dokladů „Volné po smazání“, dokud se při vystavení ručně
+    znovu nepoužije. Počítá se do číselné řady, aby se automaticky znovu nenabízelo."""
+    id: Optional[int] = Field(default=None, primary_key=True)
+    cislo: str = Field(index=True, unique=True)
+    typ: str = Field(default=TypDokladu.FAKTURA, index=True)
+    datum_vystaveni: date = Field(description="Datum vystavení smazaného dokladu – místo v přehledu")
+    smazano: NaiveDatetime = Field(default_factory=datetime.now)
 
 
 class ImportMapa(SQLModel, table=True):
