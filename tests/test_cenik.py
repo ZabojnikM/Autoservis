@@ -2,7 +2,7 @@ from decimal import Decimal
 
 import pytest
 
-from app.models import TypPolozky
+from app.models import PolozkaZakazky, TypPolozky
 from app.services import ChybaValidace, cenik, nastaveni, polozky, zakazky
 
 
@@ -102,11 +102,9 @@ def test_neplatce_dph(session, zakazka):
     assert rek.dph == 0 and rek.celkem == 100
 
 
-def test_predanou_zakazku_nelze_menit_ani_smazat_plnou(session, zakazka):
+def test_predanou_zakazku_nelze_menit(session, zakazka):
     p = cenik.vytvor(session, {"nazev": "Filtr", "cena": "100"})
     r = polozky.pridej_z_ceniku(session, zakazka.id, p.id)
-    with pytest.raises(ChybaValidace):
-        zakazky.smaz(session, zakazka.id)
     zakazky.zmen_stav(session, zakazka.id, "predano")
     with pytest.raises(ChybaValidace):
         polozky.pridej_z_ceniku(session, zakazka.id, p.id)
@@ -149,3 +147,13 @@ def test_vloz_z_ceniku_vse_nebo_nic(session):
     zakazky.zmen_stav(session, z.id, "predano")
     with pytest.raises(ChybaValidace):
         polozky.vloz_z_ceniku(session, z.id, [(a.id, "1")])
+
+def test_smazani_zakazky_s_materialem_a_praci(session, zakazka):
+    """#24: otevřenou zakázku jde smazat i s položkami – smažou se s ní; ceník zůstane."""
+    p = cenik.vytvor(session, {"nazev": "Filtr", "cena": "100"})
+    r = polozky.pridej_z_ceniku(session, zakazka.id, p.id)
+    polozky.pridej_rucne(session, zakazka.id, {"typ": "prace", "nazev": "Výměna", "cena": "300"})
+    assert zakazky.duvod_proc_nesmazat(zakazka) is None
+    zakazky.smaz(session, zakazka.id)
+    assert session.get(PolozkaZakazky, r.id) is None
+    assert cenik.ziskej(session, p.id).nazev == "Filtr"

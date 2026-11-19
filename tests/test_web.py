@@ -968,3 +968,14 @@ def test_rucni_polozka_jako_karta_ceniku():
     detail = client.get(loc).text
     assert "Odtah" in detail and "1 000,00" in detail
     assert "Nic nenalezeno" in client.get("/prace", params={"q": "Odtah"}).text  # do ceníku se neuložila
+
+
+def test_smazani_zakazky_s_polozkami_s_potvrzenim():
+    loc = _zakazka_s_polozkou()  # 1 položka práce
+    client.post(f"{loc}/polozky", data={"typ": "material", "nazev": "Těsnění", "cena": "50"})
+    detail = client.get(loc).text
+    assert f'action="{loc}/smazat" data-potvrdit=' in detail and "nejdřív odeberte" not in detail
+    assert "Smaže se i materiál a práce na zakázce (2 položky)." in detail
+    r = client.post(f"{loc}/smazat", follow_redirects=False)
+    assert r.status_code == 303 and r.headers["location"].startswith("/zakazky")
+    assert client.get(loc).status_code == 404

@@ -22,8 +22,11 @@
   {% endif %}
   {% if zakazka.je_otevrena or zakazka.faktury %}
     <hr>
+    {% set pocet = zakazka.polozky|length %}
     {{ tlacitko_smazat('/zakazky/%d/smazat' % zakazka.id, 'Smazat zakázku',
-                       'Opravdu smazat zakázku %s? Smazání nejde vrátit.' % zakazka.cislo, nelze_smazat) }}
+                       ('Opravdu smazat zakázku %s?' % zakazka.cislo)
+                       ~ ((' Smaže se i materiál a práce na zakázce (%d %s).' % (pocet, 'položka' if pocet == 1 else 'položky' if pocet < 5 else 'položek')) if pocet else '')
+                       ~ ' Smazání nejde vrátit.', nelze_smazat) }}
   {% endif %}
   <hr>
   <a href="/zakazky" role="button" class="zpet">Zpět</a>

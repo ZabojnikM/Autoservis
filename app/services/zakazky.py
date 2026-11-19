@@ -346,13 +346,12 @@ def duvod_proc_nesmazat(zakazka: Zakazka) -> str | None:
         return "Zakázka má doklad (i stornovaný) – její číslo je na dokladu, proto ji nejde smazat."
     if not zakazka.je_otevrena:
         return "Uzavřenou zakázku nelze smazat."
-    if zakazka.polozky:
-        return "Zakázku nelze smazat – nejdřív odeberte materiál a práce."
     return None
 
 
 def smaz(session: Session, zakazka_id: int) -> None:
-    """Smazat lze jen otevřenou zakázku bez položek a bez dokladů (jako ve starém systému)."""
+    """Smazat lze otevřenou zakázku bez dokladů – i s materiálem a prací (smažou se s ní).
+    Web se před smazáním zeptá a napíše, kolik položek se smaže."""
     zakazka = ziskej(session, zakazka_id)
     duvod = duvod_proc_nesmazat(zakazka)
     if duvod:
