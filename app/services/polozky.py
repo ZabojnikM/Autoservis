@@ -288,7 +288,9 @@ def _odpovida(radek: PolozkaZakazky, hledat: str) -> bool:
 
 
 def historie_vozidla(session: Session, zakazka: Zakazka, hledat: str | None = None) -> list[RadekHistorie]:
-    """Materiál ze starších zakázek vozidla aktuální zakázky (bez ní samé), nejnovější nahoře."""
+    """Materiál ze starších zakázek vozidla aktuální zakázky (bez ní samé).
+    Řazení (#115): přesná shoda kódu s hledáním nahoře, pak podle počtu použití na vozidle,
+    při stejném počtu novější výš."""
     if not zakazka.vozidlo_id:
         return []
     dotaz = (select(PolozkaZakazky, Zakazka).join(Zakazka, PolozkaZakazky.zakazka_id == Zakazka.id)
@@ -306,7 +308,13 @@ def historie_vozidla(session: Session, zakazka: Zakazka, hledat: str | None = No
         else:
             vzor = cenik_sluzba.najdi(session, radek.polozka_ceniku_id) if radek.polozka_ceniku_id else None
             vysledek[klic] = RadekHistorie(radek, z, vzor)
-    return list(vysledek.values())
+    hledany_kod = "".join(z for z in (hledat or "").casefold() if z not in " .-/")
+
+    def presne(h: RadekHistorie) -> bool:
+        return bool(hledany_kod) and "".join(z for z in (h.radek.kod or "").casefold() if z not in " .-/") == hledany_kod
+
+    # řádky jsou od nejnovějšího – stabilní řazení zachová novější výš při stejném počtu
+    return sorted(vysledek.values(), key=lambda h: (not presne(h), -h.pocet))
 
 
 def pridej_z_historie(session: Session, zakazka_id: int, radek_id: int, mnozstvi="1") -> PolozkaZakazky:
