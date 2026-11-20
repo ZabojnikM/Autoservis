@@ -330,6 +330,9 @@ def _okno_ceniku(request, db, zakazka_id, q="", okno=False, chyba=None, zprava=N
 def _vysledky_okna(db, zakazka, q, typ, katalog, historie) -> dict:
     if historie:
         return {"radky_historie": polozky.historie_vozidla(db, zakazka, q), "nalezene": [], "limit": LIMIT_CENIKU}
+    if typ == TypPolozky.MATERIAL:  # #102: nejpoužívanější díly a řazení podle počtu použití
+        nalezene, pouziti, nejpouzivanejsi = cenik.vyber_pro_zakazku(db, q, typ, katalog.id, LIMIT_CENIKU)
+        return {"nalezene": nalezene, "pouziti": pouziti, "nejpouzivanejsi": nejpouzivanejsi, "limit": LIMIT_CENIKU}
     return {"nalezene": cenik.seznam(db, q, typ=typ, jen_aktivni=True, limit=LIMIT_CENIKU, podle_kodu=True,
                                      katalog_id=katalog.id), "limit": LIMIT_CENIKU}
 

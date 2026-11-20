@@ -56,6 +56,7 @@ powershell -ExecutionPolicy Bypass -File nastroje\zastupce-autoservis.ps1 -Adres
   nad stránkou; Esc = Zrušit (při neuložených změnách se zeptá).
   Ctrl+klik otevře formulář jako celou stránku.
 - Ve formulářích **Enter přejde na další pole**, **Ctrl+Enter uloží**. Ve víceřádkovém popisu je Enter nový řádek (Tab = další pole).
+- Okno **Přidat materiál z ceníku** po otevření ukáže **30 nejpoužívanějších dílů** (sloupec Použito). Při hledání je přesná shoda kódu nahoře, pak díly podle počtu použití (světle podbarvené) a pod oddělovačem „Ostatní díly – zatím nepoužité“ zbytek.
 - V okně **Přidat materiál z ceníku** Enter v hledání **vloží díl**, když se text přesně shoduje s jeho kódem (velikost písmen a mezery nevadí). Jinak otevře **Nový materiál** s kódem z hledání. Řádek vybraný šipkami vloží Enter jako dřív.
 - V mřížce položek **Delete** odebere vybraný řádek (s potvrzením).
 - Chyba ve formuláři přesune kurzor na pole, kterého se týká, a zvýrazní ho.

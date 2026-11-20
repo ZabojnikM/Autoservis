@@ -5,7 +5,10 @@
 {# typ_okna = material / prace: jen jeden ceník se sloupci jako karta Materiál / Práce (bez sloupce Typ);
    bez typu oba ceníky se sloupcem Typ. #}
 {% set ukaz_typ = not typ_okna %}
-{% set ukaz_zamenitelny = typ_okna == 'material' %}
+{# #102: sloupec Zaměnitelný díl jen když je u některého nalezeného dílu vyplněný #}
+{% set ukaz_zamenitelny = typ_okna == 'material' and (nalezene|default([])|selectattr('zamenitelny_dil')|list) %}
+{# #102: materiál – počet použití na zakázkách; používané díly podbarvené, před nepoužitými oddělovací řádek #}
+{% set s_pouzitim = pouziti is defined %}
 {% if historie %}
 {# #69: materiál dříve vydaný na vozidlo zakázky – jeden řádek na díl (poslední použití, počet použití).
    Cena: díl v ceníku = aktuální cena z ceníku, jinak cena ze starší zakázky. #}
@@ -52,20 +55,29 @@
 <p class="tlumene" style="padding:.5rem .6rem">Na vozidlo {{ zakazka.vozidlo.spz or '' }} zatím nebyl ve starších zakázkách vydán žádný materiál.</p>
 {% endif %}
 {% elif nalezene %}
+{% if nejpouzivanejsi %}<p class="nadpis-nejpouzivanejsi">Nejpoužívanější díly – pište kód nebo název pro hledání ve všech dílech</p>{% endif %}
 <table class="vyber-cenik striped vyber-{{ typ_okna or 'vse' }}">
-  <colgroup>{% if ukaz_typ %}<col class="sl-typ">{% endif %}<col class="sl-kod"><col>{% if ukaz_zamenitelny %}<col class="sl-zamenitelny">{% endif %}<col class="sl-cena-mj"><col class="sl-cena"><col class="sl-mnozstvi"></colgroup>
+  <colgroup>{% if ukaz_typ %}<col class="sl-typ">{% endif %}<col class="sl-kod"><col>{% if ukaz_zamenitelny %}<col class="sl-zamenitelny">{% endif %}{% if s_pouzitim %}<col class="sl-pocet">{% endif %}<col class="sl-cena-mj"><col class="sl-cena"><col class="sl-mnozstvi"></colgroup>
   <thead><tr>{% if ukaz_typ %}<th>Typ</th>{% endif %}<th>Kód</th><th>Název</th>{% if ukaz_zamenitelny %}<th>Zaměnitelný díl</th>{% endif %}
+    {% if s_pouzitim %}<th class="cislo" title="Kolikrát byl díl použitý na zakázkách">Použito</th>{% endif %}
     <th class="cislo">Cena bez DPH</th>
     <th class="cislo">{% if nast.platce_dph %}Cena s DPH{% endif %}</th><th class="cislo">Množství</th></tr></thead>
   <tbody>
+  {% set stav_pouziti = namespace(predchozi=False) %}
   {% for p in nalezene %}
     {% set cena = p.cena %}
-    <tr data-pridat data-kod="{{ p.kod or '' }}" title="Dvojklik nebo Enter = vložit do zakázky">
+    {% set pouzito = pouziti.get(p.id) if s_pouzitim else none %}
+    {% if s_pouzitim and stav_pouziti.predchozi and not pouzito %}
+    <tr class="oddelovac-pouziti"><td colspan="{{ 6 + (1 if ukaz_typ else 0) + (1 if ukaz_zamenitelny else 0) }}">Ostatní díly – zatím nepoužité</td></tr>
+    {% endif %}
+    {% set stav_pouziti.predchozi = pouzito is not none %}
+    <tr data-pridat data-kod="{{ p.kod or '' }}" {% if pouzito %}class="pouzivany"{% endif %} title="Dvojklik nebo Enter = vložit do zakázky">
       {% if ukaz_typ %}<td><span class="typ typ-{{ p.typ }}">{{ p.nazev_typu }}</span></td>{% endif %}
       {# kód je hlavní údaj – tučně, seznam je podle něj seřazený (#28) #}
       <td class="zkratit kod-polozky-okna" title="{{ p.kod or '' }}"><strong>{{ p.kod or '' }}</strong></td>
       <td title="{{ p.nazev }}{% if p.poznamka %} – {{ p.poznamka }}{% endif %}">{{ p.nazev }}</td>
       {% if ukaz_zamenitelny %}<td class="tlumene zkratit" title="{{ p.zamenitelny_dil or '' }}">{{ p.zamenitelny_dil or '' }}</td>{% endif %}
+      {% if s_pouzitim %}<td class="cislo tlumene"{% if pouzito %} title="Naposledy {{ pouzito[1]|datum }}"{% endif %}>{{ (pouzito[0] ~ '×') if pouzito else '–' }}</td>{% endif %}
       <td class="cislo">{{ cena|penize }} <span class="tlumene">/ {{ p.jednotka }}</span></td>
       <td class="cislo tlumene">{% if nast.platce_dph %}{{ (cena * (100 + p.sazba_dph) / 100)|penize }}{% endif %}</td>
       <td class="bunka-pridat"><div>
