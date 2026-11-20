@@ -69,6 +69,21 @@ def _iso(hodnota) -> str:
     return hodnota or ""
 
 
+def _datum_pole(hodnota, cas: bool = False) -> str:
+    """Hodnota textového pole s datem (#94): 20.11.2026, s časem 20.11.2026 14:30.
+    Přijme date/datetime i ISO text; jiný text (co uživatel napsal) vrátí beze změny."""
+    if hodnota is None or hodnota == "":
+        return ""
+    if isinstance(hodnota, str):
+        try:
+            hodnota = datetime.fromisoformat(hodnota) if cas or "T" in hodnota else date.fromisoformat(hodnota)
+        except ValueError:
+            return hodnota
+    if isinstance(hodnota, datetime):
+        return hodnota.strftime("%d.%m.%Y %H:%M" if cas else "%d.%m.%Y")
+    return hodnota.strftime("%d.%m.%Y")
+
+
 def _url_s(request, **zmeny) -> str:
     """Adresa aktuální stránky se změněnými parametry (None / '' parametr odebere).
     Např. url_s(request, razeni='-spz', od=None) – pro řazení a načítání dalších řádků seznamu."""
@@ -92,6 +107,7 @@ templates.env.filters["datum"] = _datum
 templates.env.filters["datumcas"] = _datumcas
 templates.env.filters["cislo"] = _cislo
 templates.env.filters["iso"] = _iso
+templates.env.filters["datum_pole"] = _datum_pole
 templates.env.filters["penize"] = _penize
 templates.env.filters["mnozstvi"] = _mnozstvi
 templates.env.filters["psc"] = _psc

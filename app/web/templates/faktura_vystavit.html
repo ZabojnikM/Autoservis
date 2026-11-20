@@ -1,5 +1,5 @@
 {% extends "_okno.html" if okno else "base.html" %}
-{% from "_makra.html" import spz, zacatek_formulare, tlacitka_formulare %}
+{% from "_makra.html" import spz, zacatek_formulare, tlacitka_formulare, pole_datum %}
 {% set typ = hodnoty.get('typ') or 'faktura' %}
 {% set nazev = 'vyúčtování' if typ == 'vyuctovani' else 'fakturu' %}
 {% set url = '/zakazky/%d/vystavit' % zakazka.id %}
@@ -63,23 +63,23 @@
           onclick="this.form.poradi.value = '{{ c[predpona_volnych:] }}'">{{ c }}</button>{% if not loop.last %}, {% endif %}{% endfor %}</p>
       {% endif %}
       <div class="mrizka">
-        <label>Datum vystavení <input type="date" name="datum_vystaveni" value="{{ hodnoty.get('datum_vystaveni')|iso }}" required
-          onchange="const r = (this.value || '').slice(0, 4), p = document.getElementById('predpona-dokladu');
-                    if (r.length === 4) p.textContent = p.dataset.vzor.replace('{RRRR}', r).replace('{RR}', r.slice(2));"></label>
+        <label>Datum vystavení {{ pole_datum('datum_vystaveni', hodnoty.get('datum_vystaveni'), povinne=True,
+          extra='onchange="const d = ctiDatum(this.value), p = document.getElementById(\'predpona-dokladu\');
+                 if (d) { const r = String(d.getFullYear()); p.textContent = p.dataset.vzor.replace(\'{RRRR}\', r).replace(\'{RR}\', r.slice(2)); }"') }}</label>
         {% if nast.platce_dph and typ == 'faktura' %}
-        <label>DUZP <input type="date" name="duzp" value="{{ hodnoty.get('duzp')|iso }}"></label>
+        <label>DUZP {{ pole_datum('duzp', hodnoty.get('duzp')) }}</label>
         {% endif %}
         {% if typ == 'faktura' %}{# #58: vyúčtování splatnost nemá #}
-        <label>Splatnost <input type="date" name="datum_splatnosti" value="{{ hodnoty.get('datum_splatnosti')|iso }}" required></label>
+        <label>Splatnost {{ pole_datum('datum_splatnosti', hodnoty.get('datum_splatnosti'), povinne=True) }}</label>
         {% endif %}
       </div>
       {% if typ == 'faktura' %}
       <label>Forma úhrady
         {# hotově = splatnost v den vystavení, převodem = + splatnost z Nastavení #}
         <select name="forma_uhrady" data-splatnost-dni="{{ nast.splatnost_dni }}" onchange="
-          const f = this.form, v = f.datum_vystaveni.value;
-          if (v) { const d = new Date(v + 'T12:00'); if (this.value === 'prevod') d.setDate(d.getDate() + +this.dataset.splatnostDni);
-                   f.datum_splatnosti.value = d.toISOString().slice(0, 10); }">
+          const f = this.form, d = ctiDatum(f.datum_vystaveni.value);
+          if (d) { if (this.value === 'prevod') d.setDate(d.getDate() + +this.dataset.splatnostDni);
+                   f.datum_splatnosti.value = pisDatum(d); }">
           {% for fu in FormaUhrady.VSECHNY %}
           <option value="{{ fu }}" {% if hodnoty.get('forma_uhrady') == fu %}selected{% endif %}>{{ FormaUhrady.NAZVY[fu] }}</option>
           {% endfor %}

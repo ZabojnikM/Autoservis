@@ -6,7 +6,7 @@ from sqlalchemy import or_
 from sqlmodel import Session, col, func, select
 
 from app.models import PolozkaZakazky, Vozidlo, Zakazka, Zakaznik
-from app.services import ChybaValidace, NenalezenoError, cislo_nebo_none, cisty_text
+from app.services import ChybaValidace, NenalezenoError, cislo_nebo_none, cisty_text, cti_datum
 from app.services.strankovani import VELIKOST_STRANKY, Stranka, strankuj_dotaz
 from app.services import zakaznici
 
@@ -81,12 +81,10 @@ def _datum(hodnota, nazev: str, pole: str | None = None) -> date | None:
     hodnota = cisty_text(hodnota)
     if hodnota is None:
         return None
-    for fmt in ("%Y-%m-%d", "%d.%m.%Y"):
-        try:
-            return datetime.strptime(hodnota.replace(" ", ""), fmt).date()
-        except ValueError:
-            pass
-    raise ChybaValidace(f"{nazev}: neplatné datum „{hodnota}“.", pole)
+    try:
+        return cti_datum(hodnota)
+    except ValueError:
+        raise ChybaValidace(f"{nazev}: neplatné datum „{hodnota}“ – zadejte ho jako 20.11.2026.", pole) from None
 
 
 def vytvor(session: Session, data: dict, commit: bool = True) -> Vozidlo:

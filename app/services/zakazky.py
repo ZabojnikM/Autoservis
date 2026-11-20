@@ -5,40 +5,37 @@ from sqlalchemy import case, extract, or_
 from sqlmodel import Session, col, func, select
 
 from app.models import Faktura, StavZakazky, STAVY_PALIVA, Vozidlo, Zakaznik, Zakazka
-from app.services import ChybaValidace, NenalezenoError, cislo_nebo_none, cisty_text, id_nebo_none
+from app.services import (ChybaValidace, NenalezenoError, cislo_nebo_none, cisty_text, cti_datum, cti_datum_cas,
+                          id_nebo_none)
 from app.services.strankovani import VELIKOST_STRANKY, Stranka, strankuj_dotaz
 from app.services import vozidla as vozidla_sluzba
 from app.services import zakaznici as zakaznici_sluzba
 
 
 def parsuj_datum(hodnota) -> date | None:
-    """Přijme 'RRRR-MM-DD' (z formuláře) i 'DD.MM.RRRR'."""
+    """Přijme 'DD.MM.RRRR' (pole formuláře), zkrácené zápisy (20.11., 20112026) i 'RRRR-MM-DD' (#94)."""
+    if isinstance(hodnota, date):
+        return hodnota
     hodnota = cisty_text(hodnota)
     if hodnota is None:
         return None
-    if isinstance(hodnota, date):
-        return hodnota
-    for fmt in ("%Y-%m-%d", "%d.%m.%Y", "%d.%m.%y"):
-        try:
-            return datetime.strptime(hodnota.replace(" ", ""), fmt).date()
-        except ValueError:
-            pass
-    raise ChybaValidace(f"Neplatné datum: {hodnota}")
+    try:
+        return cti_datum(hodnota)
+    except ValueError:
+        raise ChybaValidace(f"Neplatné datum „{hodnota}“ – zadejte ho jako 20.11.2026.") from None
 
 
 def parsuj_datum_cas(hodnota) -> datetime | None:
-    """'RRRR-MM-DDTHH:MM' (pole datetime-local), 'RRRR-MM-DD HH:MM' nebo 'DD.MM.RRRR HH:MM'."""
+    """'DD.MM.RRRR HH:MM' (pole formuláře, #94), bez času 0:00, nebo ISO 'RRRR-MM-DDTHH:MM'."""
+    if isinstance(hodnota, datetime):
+        return hodnota
     hodnota = cisty_text(hodnota)
     if hodnota is None:
         return None
-    if isinstance(hodnota, datetime):
-        return hodnota
-    for fmt in ("%Y-%m-%dT%H:%M", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M", "%d.%m.%Y %H:%M", "%Y-%m-%d"):
-        try:
-            return datetime.strptime(hodnota, fmt)
-        except ValueError:
-            pass
-    raise ChybaValidace(f"Neplatné datum a čas: {hodnota}")
+    try:
+        return cti_datum_cas(hodnota)
+    except ValueError:
+        raise ChybaValidace(f"Neplatné datum a čas „{hodnota}“ – zadejte je jako 20.11.2026 14:30.") from None
 
 
 def dalsi_cislo(session: Session, rok: int | None = None) -> str:
