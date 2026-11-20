@@ -166,3 +166,112 @@ def test_bez_znacky_se_do_slozky_nezapisuje(prostredi, tmp_path):
     assert "chybí značka" in zalohy.nacti_stav(prostredi["server"])["tydenni"]["chyba"]
     # denní záloha na serveru běží dál
     assert len(zalohy.naplanovane(str(prazdny), prostredi["db"], prostredi["server"])) == 1
+
+
+# --- obnova (#77) ---
+
+@pytest.fixture
+def aplikacni_db(tmp_path, monkeypatch):
+    """Skutečná souborová databáze Autoservisu v dočasné složce (ne ostrá)."""
+    from sqlmodel import Session as S
+
+    from app import db as databaze
+    from app.models import Zakaznik
+    soubor = tmp_path / "app" / "autoservis.db"
+    soubor.parent.mkdir()
+    eng = databaze.vytvor_engine(f"sqlite:///{soubor}")
+    databaze.init_db(eng)
+    with S(eng) as s:
+        s.add(Zakaznik(nazev="TEST Původní"))
+        s.commit()
+    server = tmp_path / "app" / "backups"
+    monkeypatch.setattr(zalohy, "ZALOHY", server)
+    monkeypatch.setattr(zalohy.config, "DB_PATH", soubor)
+    monkeypatch.setattr(databaze, "engine", eng)
+    yield {"db": soubor, "server": server, "eng": eng}
+    eng.dispose()
+
+
+def _zakaznici(eng):
+    from sqlmodel import Session as S, select
+
+    from app.models import Zakaznik
+    with S(eng) as s:
+        return sorted(z.nazev for z in s.exec(select(Zakaznik)))
+
+
+def _pridej(eng, nazev):
+    from sqlmodel import Session as S
+
+    from app.models import Zakaznik
+    with S(eng) as s:
+        s.add(Zakaznik(nazev=nazev))
+        s.commit()
+
+
+def test_obnova_vrati_stav_zalohy_a_zazalohuje_soucasny(aplikacni_db):
+    zaloha = zalohy.rucni(aplikacni_db["db"], aplikacni_db["server"])
+    _pridej(aplikacni_db["eng"], "TEST Později")
+    vysledek = zalohy.obnov(zaloha, aplikacni_db["db"], aplikacni_db["server"], aplikacni_db["eng"])
+    assert _zakaznici(aplikacni_db["eng"]) == ["TEST Původní"]
+    assert vysledek["pocty"]["zakaznik"] == 1
+    pred = aplikacni_db["server"] / vysledek["pred_obnovou"]
+    assert pred.name.startswith("pred-obnovou-autoservis-")
+    c = sqlite3.connect(pred)
+    assert c.execute("select count(*) from zakaznik").fetchone()[0] == 2  # stav před obnovou zachován
+    c.close()
+    assert zalohy.nacti_stav(aplikacni_db["server"])["obnova"]["pred_obnovou"] == pred.name
+
+
+def test_obnova_starsi_zalohy_doplni_sloupce(aplikacni_db):
+    zaloha = zalohy.rucni(aplikacni_db["db"], aplikacni_db["server"])
+    c = sqlite3.connect(zaloha)
+    c.execute("alter table zakaznik drop column poznamka")  # záloha ze starší verze bez sloupce
+    c.commit()
+    c.close()
+    zalohy.obnov(zaloha, aplikacni_db["db"], aplikacni_db["server"], aplikacni_db["eng"])
+    c = sqlite3.connect(aplikacni_db["db"])
+    assert "poznamka" in [r[1] for r in c.execute("pragma table_info(zakaznik)")]
+    c.close()
+
+
+def test_obnova_odmitne_neplatny_soubor(aplikacni_db, tmp_path):
+    aplikacni_db["server"].mkdir(exist_ok=True)
+    spatna = aplikacni_db["server"] / "rucni-x-20260101-000000.db"
+    spatna.write_bytes(b"neni databaze")
+    jina = aplikacni_db["server"] / "rucni-y-20260101-000000.db"
+    c = sqlite3.connect(jina)
+    c.execute("create table t (x)")
+    c.commit()
+    c.close()
+    for soubor, text in ((spatna, "není databáze"), (jina, "není záloha Autoservisu")):
+        with pytest.raises(zalohy.ChybaZalohy, match=text):
+            zalohy.obnov(soubor, aplikacni_db["db"], aplikacni_db["server"], aplikacni_db["eng"])
+    assert _zakaznici(aplikacni_db["eng"]) == ["TEST Původní"]  # nic se nezměnilo
+    assert not list(aplikacni_db["server"].glob("pred-obnovou-*"))
+
+
+def test_obnova_ze_sdilene_slozky(aplikacni_db, tmp_path):
+    sdilena = tmp_path / "nas"
+    sdilena.mkdir()
+    (sdilena / zalohy.ZNACKA).write_text("")
+    cil = zalohy.tydenni(str(sdilena), aplikacni_db["db"], aplikacni_db["server"])
+    _pridej(aplikacni_db["eng"], "TEST Později")
+    soubor = zalohy.soubor_zalohy(cil.name, "slozka", str(sdilena), aplikacni_db["server"])
+    zalohy.obnov(soubor, aplikacni_db["db"], aplikacni_db["server"], aplikacni_db["eng"])
+    assert _zakaznici(aplikacni_db["eng"]) == ["TEST Původní"]
+    assert cil.exists() and not list((aplikacni_db["server"] / ".obnova").glob("*.db"))
+    with pytest.raises(zalohy.ChybaZalohy):
+        zalohy.soubor_zalohy("../autoservis.db", "slozka", str(sdilena), aplikacni_db["server"])
+
+
+def test_web_obnova(aplikacni_db):
+    zaloha = zalohy.rucni(aplikacni_db["db"], aplikacni_db["server"])
+    _pridej(aplikacni_db["eng"], "TEST Později")
+    r = client.get("/nastaveni/zalohy")
+    assert 'hx-post="/nastaveni/zalohy/obnovit"' in r.text
+    r = client.post("/nastaveni/zalohy/obnovit", data={"nazev": zaloha.name, "zdroj": "server"})
+    assert r.status_code == 200 and "Obnoveno ze zálohy" in r.text and "pred-obnovou-" in r.text
+    assert _zakaznici(aplikacni_db["eng"]) == ["TEST Původní"]
+    r = client.post("/nastaveni/zalohy/obnovit", data={"nazev": "neni.db", "zdroj": "server"})
+    assert "neexistuje" in r.text
