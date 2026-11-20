@@ -5,7 +5,7 @@
 {% set zobrazit_splatnost = filtr != "vyuctovani" %}
 <div class="lista-filtru-seznamu">
   <form method="get" class="filtr">
-    {{ hledani_seznamu('Číslo, odběratel, IČO, SPZ…', autofocus=False) }}
+    {{ hledani_seznamu('Číslo, odběratel, IČO, SPZ…', autofocus=False, napoveda='číslo dokladu, odběratel, IČO, SPZ') }}
     <select name="filtr" onchange="this.form.submit()" aria-label="Typ dokladu">
       {% if filtr not in filtry %}<option value="{{ filtr }}" selected hidden>Původní filtr</option>{% endif %}
       {% for klic, nazev in filtry.items() %}

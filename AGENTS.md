@@ -55,7 +55,7 @@ commitů, issues ani release notes **nepiš**:
 ## Vzhled a UX
 - Aplikace je **jen pro počítač**, cílové okno má 1920×1080. Mobil a tablet se neřeší (byla by to samostatná
   větev vývoje). Mobilní nálezy do issues nezakládej.
-- Desktopové ovládání podle starého systému: menu nahoře, akce ve sloupci vlevo, výběr klikem, otevření dvojklikem,
+- Desktopové ovládání podle starého systému: menu nahoře, akce ve sloupci vlevo, v seznamech otevře záznam jeden klik na řádek (#39, #89),
   formuláře v okně nad stránkou, Enter přejde na další pole, Ctrl+Enter uloží a Esc zavře okno. Podrobnosti jsou
   v `VZHLED.md`, `UX_PROBLEMY.md` a v README v části „Ovládání“.
 - Změnu UI ověř v prohlížeči (náhled nad kopií DB), ne jen testy.

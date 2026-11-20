@@ -32,7 +32,8 @@
     <div class="lista-vpravo">
       <form action="/hledat" method="get" class="hledani" role="search">
         <input type="search" name="q" value="{{ hledany_text if hledany_text is defined else '' }}"
-               placeholder="Hledat SPZ, VIN, jméno, číslo zakázky…" aria-label="Hledat"
+               placeholder="Celý servis: SPZ, VIN, jméno, zakázka…" aria-label="Hledat v celém servisu"
+               title="Hledá v celém servisu: vozidla (SPZ, VIN), zákazníci a zakázky"
                accesskey="f">
       </form>
       <a href="/nastaveni" class="ozubene-kolo{% if aktivni == 'nastaveni' %} aktivni{% endif %}" aria-label="Nastavení"
@@ -164,7 +165,7 @@
     });
     document.addEventListener("htmx:sendError", () => upozorni("Aplikace neodpovídá – je spuštěná?"));
 
-    // Datová mřížka jako v desktopovém programu: klik vybere řádek, dvojklik otevře záznam
+    // Datová mřížka: klik vybere řádek, v seznamech (table.klik-otevre) ho rovnou otevře (#39, #89)
     // (řádek s atributem data-otevrit, nebo první odkaz v řádku).
     // Tlačítka v pravém sloupci s data-radek="otevrit|upravit" pracují s vybraným řádkem.
     // data-radek="X": adresa z atributu data-X vybraného řádku (upravit, odebrat, zakazka…);

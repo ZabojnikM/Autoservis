@@ -1349,3 +1349,18 @@ def test_nastaveni_instalator_zastupce():
     # nebezpečné znaky v adrese (cmd / PowerShell) se odmítnou
     r = client.get("/nastaveni/zastupce", params={"adresa": "http://x'; calc; '"}, follow_redirects=False)
     assert r.status_code == 303
+
+
+def test_seznamy_jeden_klik_stav_a_hledani_v_seznamu():
+    """#89: zakázka se otevře jedním klikem i ve vyhledávání a bublina říká totéž co nápověda.
+    #88: stav je hned za zákazníkem, požadavek až na konci. #86: hledání v seznamu má vlastní štítek."""
+    assert _prijem(spz="9KL1234", pozadavek="Brzdy TEST").status_code == 303
+    hledani = client.get("/hledat", params={"q": "Brzdy TEST"}).text
+    assert re.search(r'<table class="[^"]*klik-otevre', hledani)
+    seznam = client.get("/zakazky").text
+    for html in (hledani, seznam):
+        assert "Dvojklik otevře zakázku" not in html
+        assert 'title="Klik otevře zakázku"' in html
+        assert html.index('class="sl-stav"') < html.index("sl-pozadavek")
+    assert "Hledat v seznamu" in seznam
+    assert "Hledat v seznamu" in client.get("/vozidla").text

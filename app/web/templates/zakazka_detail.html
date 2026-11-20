@@ -18,7 +18,7 @@
     <a href="/zakazky/{{ zakazka.id }}/upravit" role="button" class="outline" data-okno
        title="Faktura vyžaduje zákazníka">Faktura: doplnit zákazníka</a>
     {% endif %}
-    <a href="/zakazky/{{ zakazka.id }}/vystavit?typ=vyuctovani" role="button" data-okno>Vyúčtování</a>
+    <a href="/zakazky/{{ zakazka.id }}/vystavit?typ=vyuctovani" role="button" class="outline" data-okno>Vyúčtování</a>
   {% endif %}
   {% if zakazka.je_otevrena or zakazka.faktury %}
     <hr>
@@ -216,11 +216,11 @@
 {% if doklady %}
 <div class="titulek-mrizky"><strong>Doklady</strong><span class="tlumene">{{ doklady|length }}</span></div>
 <div class="overflow-auto">
-<table class="striped">
+<table class="striped klik-otevre">
   <thead><tr><th>Číslo</th><th>Druh</th><th>Vystaveno</th><th class="cislo">Celkem</th><th class="cislo">Zbývá</th><th>Stav</th></tr></thead>
   <tbody>
   {% for f in doklady %}
-    <tr class="doklad-{{ f.stav }}" data-otevrit="/faktury/{{ f.id }}" title="Dvojklik otevře doklad">
+    <tr class="doklad-{{ f.stav }}" data-otevrit="/faktury/{{ f.id }}" title="Klik otevře doklad">
       <td><a href="/faktury/{{ f.id }}"><strong>{{ f.cislo }}</strong></a></td>
       <td>{{ f.nazev_typu }}</td>
       <td>{{ f.datum_vystaveni|datum }}</td>

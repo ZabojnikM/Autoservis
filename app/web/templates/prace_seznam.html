@@ -6,7 +6,7 @@
 <div class="lista-filtru-seznamu">
   <a href="/prace/nova" role="button" data-okno>Nová práce</a>
   <form method="get" class="filtr">
-    {{ hledani_seznamu('Kód práce (nebo název)…') }}
+    {{ hledani_seznamu('Kód nebo název práce…', napoveda='kód nebo název práce') }}
     <label class="tlumene"><input type="checkbox" name="neaktivni" value="1" {% if neaktivni %}checked{% endif %}
            onchange="this.form.submit()"> zobrazit i vyřazené</label>
   </form>
