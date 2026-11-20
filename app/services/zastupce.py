@@ -2,7 +2,7 @@
 
 Jeden soubor .bat: nahoře pár řádků pro cmd, které spustí PowerShell se skriptem uloženým v témže
 souboru pod značkou (nastroje/zastupce-autoservis.ps1) a předají mu adresu serveru – nic se nemusí
-rozbalovat ani psát. Zástupce otevře Autoservis ve vlastním okně Edge / Chrome."""
+rozbalovat ani psát. Zástupce otevře Autoservis ve vlastním okně Chrome / Edge."""
 import re
 from pathlib import Path
 

@@ -33,7 +33,7 @@ $env:AUTOSERVIS_DB = "data\autoservis-import.db"; .\.venv\Scripts\python -m uvic
 Aplikace se na pracovních počítačích neinstaluje – běží na serveru a otevírá se v prohlížeči. Aby vypadala jako
 samostatný program (vlastní okno bez adresního řádku, ikona na ploše a v nabídce Start), stačí na každém počítači
 jednou spustit `nastroje\zastupce-autoservis.bat` (dvojklik) a zadat adresu serveru, např. `http://server:8000`.
-Skript použije Edge (případně Chrome) v režimu `--app` a stáhne ikonu ze serveru. Zástupce jde kdykoli smazat.
+Skript použije Chrome (případně Edge) v režimu `--app` a stáhne ikonu ze serveru. Zástupce jde kdykoli smazat.
 
 Nejjednodušší je stáhnout instalátor přímo z aplikace: **Nastavení → Aplikace v samostatném okně (Windows)**.
 Stáhne se jediný soubor `Autoservis-zastupce.bat` s už vyplněnou adresou serveru – stačí ho spustit dvojklikem.

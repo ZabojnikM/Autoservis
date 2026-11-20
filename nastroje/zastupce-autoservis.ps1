@@ -1,5 +1,5 @@
 ﻿# Vytvoří na ploše (a v nabídce Start) zástupce „Autoservis“, který otevře aplikaci
-# ve vlastním okně Edge bez adresního řádku (režim --app). Nic neinstaluje, jde smazat jako běžný zástupce.
+# ve vlastním okně Chrome nebo Edge bez adresního řádku (režim --app). Nic neinstaluje, jde smazat jako běžný zástupce.
 #
 # Použití (nebo dvojklik na zastupce-autoservis.bat):
 #   powershell -ExecutionPolicy Bypass -File zastupce-autoservis.ps1 -Adresa http://server:8000
@@ -14,16 +14,16 @@ $Adresa = $Adresa.Trim().TrimEnd('/')
 if (-not $Adresa) { Write-Host 'Adresa nevyplněna, konec.'; exit 1 }
 if ($Adresa -notmatch '^https?://') { $Adresa = "http://$Adresa" }
 
-# Prohlížeč: Edge (je v každých Windows), jinak Chrome
+# Prohlížeč: přednost má Chrome, jinak Edge
 $kandidati = @(
-    "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe",
-    "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe",
     "$env:ProgramFiles\Google\Chrome\Application\chrome.exe",
     "${env:ProgramFiles(x86)}\Google\Chrome\Application\chrome.exe",
-    "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe"
+    "$env:LOCALAPPDATA\Google\Chrome\Application\chrome.exe",
+    "${env:ProgramFiles(x86)}\Microsoft\Edge\Application\msedge.exe",
+    "$env:ProgramFiles\Microsoft\Edge\Application\msedge.exe"
 )
 $prohlizec = $kandidati | Where-Object { $_ -and (Test-Path $_) } | Select-Object -First 1
-if (-not $prohlizec) { Write-Host 'Nenašel jsem Edge ani Chrome.'; exit 1 }
+if (-not $prohlizec) { Write-Host 'Nenašel jsem Chrome ani Edge.'; exit 1 }
 
 # Ikona ze serveru; když se nepodaří stáhnout, použije se ikona prohlížeče
 $slozka = Join-Path $env:LOCALAPPDATA 'Autoservis'
@@ -37,6 +37,13 @@ try {
     $ikona = $prohlizec
 }
 
+# Chrome používá vlastní profil; Edge si ponechá dosavadní profil.
+$nazevProfilu = 'prohlizec'
+if ((Split-Path $prohlizec -Leaf) -eq 'chrome.exe') {
+    $nazevProfilu = 'prohlizec-chrome'
+}
+$profil = Join-Path $slozka $nazevProfilu
+
 $shell = New-Object -ComObject WScript.Shell
 $cile = @(
     [Environment]::GetFolderPath('Desktop'),
@@ -48,7 +55,6 @@ foreach ($cil in $cile) {
     # Volbu „Spustit: maximalizované“ ve vlastnostech zástupce prohlížeč ignoruje a běžící prohlížeč
     # ignoruje i --start-maximized. Proto vlastní profil: okno Autoservisu je samostatný proces
     # a přepínač se uplatní vždy (zároveň se nemíchá s ostatními okny prohlížeče).
-    $profil = Join-Path $slozka 'prohlizec'
     $lnk.Arguments = "--app=$Adresa/ --user-data-dir=`"$profil`" --start-maximized --no-first-run --no-default-browser-check"
     $lnk.WindowStyle = 3
     $lnk.IconLocation = "$ikona,0"

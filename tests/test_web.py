@@ -1319,6 +1319,10 @@ def test_nastaveni_instalator_zastupce():
     obsah = r.content.decode("utf-8")
     assert obsah.startswith("@echo off\r\n") and "-Adresa 'http://server:8000'" in obsah
     assert "\r\n#SKRIPT-AUTOSERVIS\r\n" in obsah and "CreateShortcut" in obsah and "﻿" not in obsah
+    kandidati = obsah.split("$kandidati = @(", 1)[1].split("\r\n)", 1)[0]
+    assert [radek.split("\\")[-1].rstrip('",') for radek in kandidati.splitlines() if radek.strip()] == [
+        "chrome.exe", "chrome.exe", "chrome.exe", "msedge.exe", "msedge.exe",
+    ]
     # nebezpečné znaky v adrese (cmd / PowerShell) se odmítnou
     r = client.get("/nastaveni/zastupce", params={"adresa": "http://x'; calc; '"}, follow_redirects=False)
     assert r.status_code == 303
