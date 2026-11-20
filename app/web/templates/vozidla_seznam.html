@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_makra.html" import spz, zahlavi, hledani_seznamu, stavovy_radek with context %}
+{% from "_makra.html" import spz, zahlavi, hledani_seznamu, stavovy_radek, stk with context %}
 {% block title %}Vozidla{% endblock %}
 {% block content %}
 <div class="lista-filtru-seznamu">
@@ -13,7 +13,7 @@
 {% if vozidla %}
 <div class="overflow-auto">
 <table class="striped seznam-vozidel klik-otevre">
-  <thead><tr>{{ zahlavi('spz', 'SPZ', stranka) }}{{ zahlavi('znacka', 'Značka', stranka) }}{{ zahlavi('model', 'Model', stranka) }}{{ zahlavi('typ_vozidla', 'Typ vozidla', stranka) }}{{ zahlavi('kod_motoru', 'Kód motoru', stranka) }}{{ zahlavi('rok', 'Rok výroby', stranka) }}{{ zahlavi('vin', 'VIN', stranka) }}{{ zahlavi('zakaznik', 'Majitel', stranka) }}</tr></thead>
+  <thead><tr>{{ zahlavi('spz', 'SPZ', stranka) }}{{ zahlavi('znacka', 'Značka', stranka) }}{{ zahlavi('model', 'Model', stranka) }}{{ zahlavi('typ_vozidla', 'Typ vozidla', stranka) }}{{ zahlavi('kod_motoru', 'Kód motoru', stranka) }}{{ zahlavi('rok', 'Rok výroby', stranka) }}{{ zahlavi('vin', 'VIN', stranka) }}{{ zahlavi('stk', 'Platnost STK', stranka) }}{{ zahlavi('zakaznik', 'Majitel', stranka) }}</tr></thead>
   <tbody>
   {% for v in vozidla %}
     <tr data-otevrit="/vozidla/{{ v.id }}" data-upravit="/vozidla/{{ v.id }}/upravit">
@@ -24,6 +24,7 @@
       <td>{{ v.kod_motoru|pomlcka }}</td>
       <td>{{ v.rok_vyroby|pomlcka }}</td>
       <td class="kod vin">{{ v.vin|pomlcka }}</td>
+      <td class="sl-stk">{{ stk(v.termin_stk) }}</td>
       <td{% if v.zakaznik %} title="{{ v.zakaznik.nazev }}"{% endif %}>{% if v.zakaznik %}<a href="/zakaznici/{{ v.zakaznik.id }}">{{ v.zakaznik.nazev }}</a>{% else %}{{ none|pomlcka }}{% endif %}</td>
     </tr>
   {% endfor %}

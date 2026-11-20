@@ -890,7 +890,8 @@ def _seznam_ceniku(request, db, typ, q, neaktivni, razeni, od, vse_radky, zvyraz
     sablona = "cenik_seznam.html" if material else "prace_seznam.html"
     return _stranka(request, sablona, aktivni="cenik" if material else "prace", q=q, typ=typ,
                     neaktivni=neaktivni, polozky=st.polozky, stranka=st, nast=nastaveni.nacti(db), zvyraznit=zvyraznit,
-                    katalog=katalog, katalogy=katalogy.seznam(db) if material else [])
+                    katalog=katalog, katalogy=katalogy.seznam(db) if material else [],
+                    pouziti=cenik.pocty_pouziti(db, (p.id for p in st.polozky)) if material else {})
 
 
 ROK_SEKUND = 365 * 24 * 3600

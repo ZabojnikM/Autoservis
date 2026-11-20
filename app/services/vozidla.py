@@ -153,6 +153,7 @@ RAZENI = {
     "typ_vozidla": [Vozidlo.cislo_motoru.collate("cs")],
     "rok": [Vozidlo.rok_vyroby],
     "vin": [Vozidlo.vin],
+    "stk": [Vozidlo.termin_stk],  # #107
     "zakaznik": [Zakaznik.nazev.collate("cs")],
 }
 

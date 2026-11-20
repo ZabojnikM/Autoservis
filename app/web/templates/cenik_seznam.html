@@ -31,6 +31,7 @@
   <thead><tr>
     {{ zahlavi('kod', 'Kód / číslo dílu', stranka) }}{{ zahlavi('nazev', 'Název', stranka) }}
     {{ zahlavi('zamenitelny', 'Zaměnitelný díl', stranka) }}{{ zahlavi('jednotka', 'MJ', stranka) }}
+    {{ zahlavi('pouzito', 'Použito', stranka, 'cislo') }}
     {{ zahlavi('nakup', 'Nákup bez DPH' if nast.platce_dph else 'Nákup', stranka, 'cislo') }}
     {{ zahlavi('cena', 'Prodej bez DPH' if nast.platce_dph else 'Prodej', stranka, 'cislo') }}
     {% if nast.platce_dph %}{{ zahlavi('dph', 'DPH', stranka, 'cislo') }}<th class="cislo">Prodej s DPH</th>{% endif %}
@@ -43,6 +44,8 @@
       <td title="{{ p.nazev }}">{{ p.nazev }}{% if not p.aktivni %} <span class="tlumene">(vyřazeno)</span>{% endif %}</td>
       <td class="kod" title="{{ p.zamenitelny_dil or '' }}">{{ p.zamenitelny_dil|pomlcka }}</td>
       <td class="tlumene">{{ p.jednotka }}</td>
+      {# #122: kolikrát byl díl použitý na zakázkách #}
+      <td class="cislo tlumene">{{ (pouziti[p.id] ~ '×') if pouziti.get(p.id) else '–' }}</td>
       <td class="cislo tlumene">{{ (p.nakupni_cena|penize if p.nakupni_cena is not none else '')|pomlcka }}</td>
       {# #57: konečná cena (s DPH, u neplátce prodejní) polotučně #}
       <td class="cislo{% if not nast.platce_dph %} castka-hlavni{% endif %}">{{ p.cena|penize }}</td>
