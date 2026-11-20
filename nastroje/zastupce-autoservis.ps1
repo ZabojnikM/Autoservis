@@ -55,7 +55,7 @@ foreach ($cil in $cile) {
     # Volbu „Spustit: maximalizované“ ve vlastnostech zástupce prohlížeč ignoruje a běžící prohlížeč
     # ignoruje i --start-maximized. Proto vlastní profil: okno Autoservisu je samostatný proces
     # a přepínač se uplatní vždy (zároveň se nemíchá s ostatními okny prohlížeče).
-    $lnk.Arguments = "--app=$Adresa/ --user-data-dir=`"$profil`" --start-maximized --no-first-run --no-default-browser-check"
+    $lnk.Arguments = "--app=$Adresa/ --user-data-dir=`"$profil`" --start-maximized --disable-print-preview --no-first-run --no-default-browser-check"
     $lnk.WindowStyle = 3
     $lnk.IconLocation = "$ikona,0"
     $lnk.Description = 'Autoservis'

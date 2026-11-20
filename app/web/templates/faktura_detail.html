@@ -2,7 +2,7 @@
 {% from "_makra.html" import spz, adresa, tlacitko_smazat %}
 {% block title %}{{ f.nazev_typu }} {{ f.cislo }}{% endblock %}
 {% block akce %}
-  <a href="/faktury/{{ f.id }}/tisk" target="_blank" role="button">Tisk / PDF</a>
+  <a href="/faktury/{{ f.id }}/tisk?tisk=1" target="_blank" role="button" class="secondary outline tlacitko-tisk">Tisk / PDF</a>
   {% if f.zakazka_id %}<a href="/zakazky/{{ f.zakazka_id }}" role="button" class="secondary">Zakázka</a>{% endif %}
   {% if f.typ == 'vyuctovani' %}
   {# #55: vyúčtování má jen stav Uhrazeno / Neuhrazeno – přepíná se oběma směry #}

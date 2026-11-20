@@ -777,7 +777,11 @@ def test_zakazkovy_list_a4():
     assert "Podpis zákazníka" in r.text and "Předání opraveného vozidla" in r.text
     assert "Tajná interní poznámka" not in r.text  # interní poznámka se netiskne
     assert "window.print()" in r.text and 'addEventListener("load"' not in r.text
-    assert 'addEventListener("load"' in client.get(f"{loc}/tisk", params={"tisk": "1"}).text
+    primy_tisk = client.get(f"{loc}/tisk", params={"tisk": "1"}).text
+    assert 'addEventListener("load"' in primy_tisk
+    assert 'addEventListener("afterprint", () => window.close()' in primy_tisk
+    assert primy_tisk.count("window.print()") == 1
+    assert 'onclick="window.print()"' not in primy_tisk
     # s položkami: řádky a součty s DPH
     client.post(f"{loc}/polozky", data={"typ": "prace", "nazev": "Diagnostika", "mnozstvi": "1", "cena": "1000"})
     r = client.get(f"{loc}/tisk")
@@ -1211,6 +1215,8 @@ def test_vyuctovani_bez_prepinace_stav_a_qr():
     detail = client.get(doklad).text
     assert "Neuhrazeno" in detail and "Označit jako uhrazené" in detail and "Forma úhrady" not in detail
     assert "Zapsat úhradu" not in detail
+    assert f'href="{doklad}/tisk?tisk=1" target="_blank"' in detail
+    assert 'class="secondary outline tlacitko-tisk">Tisk / PDF</a>' in detail
     seznam = client.get("/faktury", params={"filtr": "vyuctovani"}).text
     assert doklad in seznam and "Neuhrazeno" in seznam
 
@@ -1319,6 +1325,7 @@ def test_nastaveni_instalator_zastupce():
     obsah = r.content.decode("utf-8")
     assert obsah.startswith("@echo off\r\n") and "-Adresa 'http://server:8000'" in obsah
     assert "\r\n#SKRIPT-AUTOSERVIS\r\n" in obsah and "CreateShortcut" in obsah and "﻿" not in obsah
+    assert "--disable-print-preview" in obsah
     kandidati = obsah.split("$kandidati = @(", 1)[1].split("\r\n)", 1)[0]
     assert [radek.split("\\")[-1].rstrip('",') for radek in kandidati.splitlines() if radek.strip()] == [
         "chrome.exe", "chrome.exe", "chrome.exe", "msedge.exe", "msedge.exe",

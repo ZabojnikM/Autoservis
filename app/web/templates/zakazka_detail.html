@@ -5,8 +5,8 @@
 {% set lze_menit = zakazka.je_otevrena and not doklad %}
 {% block akce %}
   {% if not doklad %}<a href="/zakazky/{{ zakazka.id }}/upravit" role="button" class="secondary" data-okno>Upravit zakázku</a>{% endif %}
-  <a href="/zakazky/{{ zakazka.id }}/tisk?tisk=1" role="button" class="secondary outline" target="_blank"
-     title="Zakázkový list A4 – tisk nebo uložení do PDF">Zakázkový list</a>
+  <a href="/zakazky/{{ zakazka.id }}/tisk?tisk=1" role="button" class="secondary outline tlacitko-tisk" target="_blank"
+     title="Zakázkový list A4 – tisk nebo uložení do PDF">Tisk / PDF</a>
   {% if doklad %}
     <hr>
     <a href="/faktury/{{ doklad.id }}" role="button">{{ doklad.nazev_typu }} {{ doklad.cislo }}</a>

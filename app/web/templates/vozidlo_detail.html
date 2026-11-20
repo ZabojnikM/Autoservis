@@ -4,7 +4,7 @@
 {% block akce %}
   <a href="/zakazky/nova?vozidlo_id={{ vozidlo.id }}" role="button" data-okno>Nová zakázka</a>
   <a href="/vozidla/{{ vozidlo.id }}/upravit" role="button" class="secondary" data-okno>Upravit vozidlo</a>
-  <button type="button" class="secondary outline" onclick="window.print()">Tisk</button>
+  <button type="button" class="secondary outline tlacitko-tisk" onclick="window.print()">Tisk / PDF</button>
   <hr>
   {{ tlacitko_smazat('/vozidla/%d/smazat' % vozidlo.id, 'Smazat vozidlo',
                      'Opravdu smazat vozidlo %s? Smazání nejde vrátit.' % vozidlo.spz,
