@@ -385,6 +385,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-20 | Z historie: přesný kód nahoře, pak podle počtu použití na vozidle, při shodě novější výš (#115) |
 | 2026-11-20 | Detail zakázky: Upravit vlevo, Smazat na pravém okraji řádku položky, obě svisle na středu (#103) |
 | 2026-11-20 | Detail zakázky: bez štítku zdrojového katalogu za názvem dílu (#103) |
+| 2026-11-20 | Detail zakázky: tlačítko Nová zakázka nahoře v levém sloupci |
 
 ## Zdroje průzkumu
 

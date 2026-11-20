@@ -4,6 +4,9 @@
 {% set doklad = zakazka.platna_faktura %}
 {% set lze_menit = zakazka.je_otevrena and not doklad %}
 {% block akce %}
+  {# rychlé založení další zakázky přímo z detailu (prázdná, jako v seznamu zakázek) #}
+  <a href="/zakazky/nova" role="button" class="secondary outline" data-okno>Nová zakázka</a>
+  <hr>
   {% if not doklad %}<a href="/zakazky/{{ zakazka.id }}/upravit" role="button" class="secondary" data-okno>Upravit zakázku</a>{% endif %}
   <a href="/zakazky/{{ zakazka.id }}/tisk?tisk=1" role="button" class="secondary outline tlacitko-tisk" target="_blank"
      title="Zakázkový list A4 – tisk nebo uložení do PDF">Tisk / PDF</a>
