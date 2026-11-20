@@ -383,6 +383,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-20 | Okno Přidat materiál: po otevření 30 nejpoužívanějších dílů, sloupec Použito, při hledání řazení podle použití, podbarvení a oddělovač nepoužitých; Zaměnitelný díl jen když je vyplněný (#102) |
 | 2026-11-20 | Okno Přidat materiál: podbarvení a čára „Méně používané díly“ podle hranice 3 použití (#113) |
 | 2026-11-20 | Z historie: přesný kód nahoře, pak podle počtu použití na vozidle, při shodě novější výš (#115) |
+| 2026-11-20 | Detail zakázky: Upravit vlevo, Smazat na pravém okraji řádku položky, obě svisle na středu (#103) |
 
 ## Zdroje průzkumu
 
