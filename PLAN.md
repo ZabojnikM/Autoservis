@@ -388,6 +388,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-20 | Detail zakázky: tlačítko Nová zakázka nahoře v levém sloupci |
 | 2026-11-20 | Nová zakázka: panely Vozidlo · Zakázka · Zákazník (#104); okno Databáze zákazníků na jeden řádek, Vozidla jako počet a první SPZ (#120) |
 | 2026-11-20 | Číslo dokladu jako jedno pole (#106); STK všude: propadlá červeně se štítkem „po termínu“, prázdná šedě „nevyplněno“, sloupec Platnost STK v seznamu vozidel (#107); ceník materiálu se sloupcem Použito (#122) |
+| 2026-11-20 | **Verze 0.7.3**: okno Přidat materiál s nejpoužívanějšími díly (#102, #113, #115), řádek položky a detail zakázky (#103, Nová zakázka), nová zakázka s vozidlem první a okno zákazníků (#104, #120), číslo dokladu (#106), STK (#107), Použito v ceníku (#122) |
 
 ## Zdroje průzkumu
 
