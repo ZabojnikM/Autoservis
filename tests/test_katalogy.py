@@ -206,3 +206,28 @@ def test_material_z_historie_vozidla(session):
     assert "nemá přiřazené vozidlo" in r.text
     r = klient.get("/cenik/vyber", params={"zakazka_id": cizi.id, "typ": "material", "zdroj": "historie"})
     assert "zatím nebyl" in r.text
+
+
+def test_historie_razeni_podle_poctu_a_presneho_kodu(session):
+    """#115: Z historie – přesná shoda kódu nahoře, pak podle počtu použití na vozidle, při shodě novější výš."""
+    from datetime import datetime, timedelta
+    from app.models import PolozkaZakazky, Vozidlo, Zakazka
+    v = Vozidlo(spz="9HR0115")
+    session.add(v); session.flush()
+    zakazky = []
+    for i in range(3):
+        z = Zakazka(cislo=f"T115-{i}", vozidlo_id=v.id, datum_prijeti=datetime(2026, 1, 1) + timedelta(days=i))
+        session.add(z); session.flush(); zakazky.append(z)
+    def radek(z, kod, nazev):
+        session.add(PolozkaZakazky(zakazka_id=z.id, typ="material", kod=kod, nazev=nazev, mnozstvi="1", cena="10"))
+    radek(zakazky[0], "OF 12", "Olejový filtr větší")
+    radek(zakazky[1], "OF 12", "Olejový filtr větší")
+    radek(zakazky[0], "SV 2", "Svíčka")
+    radek(zakazky[1], "OF 1", "Olejový filtr")
+    session.commit()
+    nova = Zakazka(cislo="T115-N", vozidlo_id=v.id, datum_prijeti=datetime(2026, 2, 1))
+    session.add(nova); session.commit()
+    # OF 12 použit 2×; OF 1 a SV 2 po 1×, OF 1 novější
+    assert [h.radek.kod for h in polozky.historie_vozidla(session, nova)] == ["OF 12", "OF 1", "SV 2"]
+    # přesný kód nahoře i před častěji použitým dílem
+    assert [h.radek.kod for h in polozky.historie_vozidla(session, nova, "of 1")] == ["OF 1", "OF 12"]
