@@ -4,7 +4,7 @@ from decimal import Decimal
 from sqlalchemy import Float, cast, or_
 from sqlmodel import Session, col, func, select
 
-from app.models import PolozkaCeniku, TypPolozky, zaokrouhli
+from app.models import PolozkaCeniku, PolozkaZakazky, TypPolozky, zaokrouhli
 from app.services import ChybaValidace, NenalezenoError, cisty_text, desetinne_nebo_none
 from app.services import katalogy
 from app.services import nastaveni as nastaveni_sluzba
@@ -171,6 +171,43 @@ def seznam(
     else:
         poradi = (PolozkaCeniku.typ.desc(), func.lower(PolozkaCeniku.nazev))
     return list(session.exec(dotaz.order_by(*poradi).limit(limit)))
+
+
+NEJPOUZIVANEJSI = 30  # #102: tolik nejčastěji použitých dílů ukáže okno Přidat materiál bez hledání
+
+
+def vyber_pro_zakazku(session: Session, hledat: str | None, typ: str, katalog_id: int | None,
+                      limit: int) -> tuple[list[PolozkaCeniku], dict[int, tuple[int, object]], bool]:
+    """Okno Přidat materiál (#102): díly i s počtem použití na zakázkách (počítá se z řádků zakázek,
+    které si pamatují svou kartu ceníku).
+
+    Bez hledání: NEJPOUZIVANEJSI nejčastěji použitých dílů katalogu (od nejčastějšího); když se zatím nic
+    nepoužilo, začátek ceníku podle kódu. S hledáním: přesná shoda kódu (bez mezer a oddělovačů) nahoře,
+    pak podle počtu použití, pak nepoužité podle kódu.
+    Vrací (díly, {id: (počet, naposledy)}, jen_nejpouzivanejsi)."""
+    pouziti = (select(PolozkaZakazky.polozka_ceniku_id.label("pid"), func.count().label("pocet"),
+                      func.max(PolozkaZakazky.vytvoreno).label("naposledy"))
+               .where(col(PolozkaZakazky.polozka_ceniku_id).is_not(None))
+               .group_by(PolozkaZakazky.polozka_ceniku_id).subquery())
+    pocet = func.coalesce(pouziti.c.pocet, 0)
+    dotaz = (_dotaz_seznamu(hledat, typ, True, katalog_id)
+             .add_columns(pocet, pouziti.c.naposledy)
+             .outerjoin(pouziti, pouziti.c.pid == PolozkaCeniku.id))
+    hledat = cisty_text(hledat)
+    poradi_kodu = (PolozkaCeniku.kod.is_(None), PolozkaCeniku.kod.collate("cs"), PolozkaCeniku.nazev.collate("cs"))
+    nejpouzivanejsi = False
+    if hledat:
+        kod = "".join(z for z in hledat.upper() if z not in " .-/")
+        presne = _bez_oddelovacu(PolozkaCeniku.kod) == kod if kod else False
+        radky = session.execute(dotaz.order_by(presne.desc() if kod else pocet.desc(), pocet.desc(), *poradi_kodu)
+                             .limit(limit)).all()
+    else:
+        radky = session.execute(dotaz.where(pouziti.c.pocet > 0).order_by(pocet.desc(), *poradi_kodu)
+                             .limit(NEJPOUZIVANEJSI)).all()
+        nejpouzivanejsi = bool(radky)
+        if not radky:
+            radky = session.execute(dotaz.order_by(*poradi_kodu).limit(limit)).all()
+    return [r[0] for r in radky], {r[0].id: (r[1], r[2]) for r in radky if r[1]}, nejpouzivanejsi
 
 
 def pocty_podle_typu(session: Session, hledat: str | None = None, jen_aktivni: bool = False,

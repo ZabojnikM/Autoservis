@@ -1415,3 +1415,36 @@ def test_seznam_zakazek_vin_motor_stk_a_jednotne_kopirovat():
     assert tlacitko in seznam
     assert tlacitko in client.get(zakazka).text
     assert tlacitko in client.get("/hledat", params={"q": "Výměna rozvodů"}).text
+
+
+def test_okno_materialu_nejpouzivanejsi_a_oddelovac():
+    """#102: okno Přidat materiál bez hledání ukáže nejpoužívanější díly (sloupec Použito); při hledání je přesný
+    kód nahoře, pak používané (podbarvené) podle počtu, pak oddělovač a nepoužité."""
+    for kod, nazev in [("FLT 100", "Filtr TEST A"), ("FLT 200", "Filtr TEST B"), ("FLT 300", "Filtr TEST C")]:
+        client.post("/cenik/nova", data={"typ": "material", "kod": kod, "nazev": nazev, "cena": "100"})
+    loc = _prijem(spz="9NP0102").headers["location"].split("?")[0]
+    zid = loc.rsplit("/", 1)[1]
+
+    def vyber(q=""):
+        return client.get("/cenik/vyber", params={"q": q, "zakazka_id": zid, "okno": "1", "typ": "material"}).text
+
+    ids = {k: re.search(rf'data-kod="{k}".*?name="polozka_ceniku_id" value="(\d+)"', vyber("FLT"), re.S).group(1)
+           for k in ("FLT 100", "FLT 200", "FLT 300")}
+    for kod, kolikrat in [("FLT 200", 3), ("FLT 300", 1)]:
+        for _ in range(kolikrat):
+            client.post(f"{loc}/polozky", data={"polozka_ceniku_id": ids[kod], "mnozstvi": "1"})
+
+    prazdne = vyber()
+    assert "Nejpoužívanější díly" in prazdne and ">Použito</th>" in prazdne
+    assert prazdne.index('data-kod="FLT 200"') < prazdne.index('data-kod="FLT 300"')
+    assert 'data-kod="FLT 100"' not in prazdne and "oddelovac-pouziti" not in prazdne  # jen použité
+
+    hledani = vyber("flt")
+    poradi = re.findall(r'data-kod="(FLT \d+)"', hledani)
+    assert poradi == ["FLT 200", "FLT 300", "FLT 100"]
+    assert hledani.index('data-kod="FLT 300"') < hledani.index("Ostatní díly – zatím nepoužité") \
+        < hledani.index('data-kod="FLT 100"')
+    assert re.search(r'data-kod="FLT 200" class="pouzivany"', hledani) and ">3×</td>" in hledani
+    assert "Nejpoužívanější díly" not in hledani
+    assert re.findall(r'data-kod="(FLT \d+)"', vyber("FLT100"))[0] == "FLT 100"  # přesný kód nahoře
+    assert "Zaměnitelný díl" not in hledani  # #102: prázdný sloupec se neukazuje
