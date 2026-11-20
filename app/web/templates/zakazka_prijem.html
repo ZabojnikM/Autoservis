@@ -35,7 +35,7 @@
         <label class="roztahnout">SPZ
           {{ vstup_spz(hodnoty.get('spz'), autofocus=not zakazka) }}
         </label>
-        <button type="button" tabindex="-1" class="maly"
+        <button type="button" tabindex="-1" class="maly outline"
                 hx-get="/vozidla/okno" hx-include="#panel-zakaznik [name=zakaznik_id]" hx-target="#okno-obsah"
                 hx-on::after-request="document.getElementById('okno-databaze').showModal()">Vybrat</button>
         <button type="button" tabindex="-1" class="maly secondary outline" title="Vyprázdnit panel – nové vozidlo"

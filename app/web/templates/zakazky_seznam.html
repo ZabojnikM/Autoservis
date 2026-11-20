@@ -5,7 +5,7 @@
 <div class="lista-filtru-seznamu">
   <a href="/zakazky/nova" role="button" data-okno>Nová zakázka</a>
   <form method="get" class="filtr">
-    {{ hledani_seznamu('Číslo zakázky, SPZ, zákazník, požadavek…', autofocus=False) }}
+    {{ hledani_seznamu('Číslo, SPZ, zákazník, požadavek…', autofocus=False, napoveda='číslo zakázky, SPZ, zákazník, požadavek') }}
     <select name="stav" onchange="this.form.submit()" aria-label="Stav zakázky">
       <option value="" {% if not stav and not vse %}selected{% endif %}>Otevřené ({{ pocet_otevrenych }})</option>
       {% for s, nazev in StavZakazky.ZALOZKY %}

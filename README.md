@@ -48,7 +48,7 @@ powershell -ExecutionPolicy Bypass -File nastroje\zastupce-autoservis.ps1 -Adres
 ## Ovládání (desktopový vzhled jako starý systém)
 
 - **Menu** je vodorovně nahoře, **tlačítka akcí** ve sloupci vlevo (na mobilu řádkem nad obsahem).
-- **Seznamy**: kliknutím vyberete řádek, **dvojklikem** ho otevřete; Otevřít / Upravit vlevo pracují s vybraným řádkem.
+- **Seznamy**: jedním **kliknutím** na řádek záznam otevřete (Ctrl+klik = nová karta), stejně i u zakázek ve vyhledávání. Nápověda dole i bublina na řádku to říkají stejně.
   Klik na **hlavičku sloupce** seřadí (znovu = opačně), hledání filtruje **při psaní**, zobrazí se 100 řádků
   a další přes **Načíst další / Načíst vše** ve stavovém řádku. Text se řadí podle české abecedy.
 - Formuláře (zakázka, vozidlo, zákazník, ceník, položka zakázky, vystavení dokladu) se otevírají jako **okno**
