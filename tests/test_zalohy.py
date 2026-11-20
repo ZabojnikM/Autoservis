@@ -275,3 +275,43 @@ def test_web_obnova(aplikacni_db):
     assert _zakaznici(aplikacni_db["eng"]) == ["TEST Původní"]
     r = client.post("/nastaveni/zalohy/obnovit", data={"nazev": "neni.db", "zdroj": "server"})
     assert "neexistuje" in r.text
+
+
+# --- prázdná databáze (#83) ---
+
+def _prazdna_db(tmp_path):
+    from app import db as databaze
+    soubor = tmp_path / "nova" / "autoservis.db"
+    soubor.parent.mkdir()
+    eng = databaze.vytvor_engine(f"sqlite:///{soubor}")
+    databaze.init_db(eng)
+    eng.dispose()
+    return soubor
+
+
+def test_prazdna_databaze_se_automaticky_nezalohuje(tmp_path):
+    soubor = _prazdna_db(tmp_path)
+    server, nas = tmp_path / "backups", tmp_path / "nas"
+    nas.mkdir()
+    (nas / zalohy.ZNACKA).write_text("")
+    for i in range(3):  # tři dobré týdenní zálohy z dřívějška
+        (nas / f"autoservis-tydenni-autoservis-2026010{i + 1}-030000.db").write_bytes(b"x")
+    assert zalohy.je_prazdna(soubor)
+    assert zalohy.naplanovane(str(nas), soubor, server) == []
+    assert len(list(nas.glob("autoservis-tydenni-*.db"))) == 3  # nic nevytlačeno
+    assert not server.exists() or not list(server.glob("*.db"))
+    assert zalohy.rucni(soubor, server).exists()  # ručně jde zálohovat vždy
+
+
+def test_po_prvnich_datech_se_zalohuje(tmp_path):
+    soubor = _prazdna_db(tmp_path)
+    c = sqlite3.connect(soubor)
+    c.execute("insert into zakaznik (nazev, vytvoreno) values ('TEST', datetime('now'))")
+    c.commit()
+    c.close()
+    assert not zalohy.je_prazdna(soubor)
+    assert len(zalohy.naplanovane("", soubor, tmp_path / "backups")) == 1
+
+
+def test_neznama_databaze_se_zalohuje(prostredi):
+    assert not zalohy.je_prazdna(prostredi["db"])  # tabulka t, bez tabulek Autoservisu → raději zálohovat

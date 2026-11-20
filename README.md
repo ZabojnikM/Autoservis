@@ -173,6 +173,8 @@ Před aktualizací programu přesto doporučujeme zálohu (zkopírovat `data/aut
   Ve složce musí být prázdný soubor `.autoservis-cil-zaloh`. Bez něj se do složky nezapisuje, takže při
   nepřipojeném sdíleném disku záloha neskončí v prázdném přípojném bodu na lokálním disku.
   Zálohy se nešifrují – cílové sdílení musí být soukromé.
+- Prázdná databáze (bez zakázek a zákazníků, typicky nová instalace) se automaticky nezálohuje, aby
+  nevytlačila dobré zálohy. Po nové instalaci stačí zadat složku a obnovit zálohu (#83).
 - **Zálohovat teď** udělá ruční zálohu (`rucni-…db`), ta se sama nemaže. Zálohy na serveru jdou stáhnout.
 - Každá záloha je konzistentní kopie přes SQLite backup a před uložením se kontroluje (`integrity_check`).
   Aplikace maže jen své staré denní a týdenní zálohy, zálohy před aktualizací ani jiné soubory ve složce nemaže.

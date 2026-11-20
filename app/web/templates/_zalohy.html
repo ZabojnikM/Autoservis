@@ -14,6 +14,11 @@
     <code>AUTOSERVIS_AUTOZALOHY=0</code>). Ruční záloha funguje.</p>
   {% endif %}
 
+  {% if prazdna %}
+  <p class="upozorneni-ram">Databáze je zatím prázdná (žádné zakázky ani zákazníci), automatické zálohy čekají
+    na první data. Dobré zálohy ve složce se tak nepřepíšou – po nové instalaci můžete v klidu obnovit zálohu níže.</p>
+  {% endif %}
+
   <p><strong>Denně na serveru</strong> – uchovává se posledních {{ dennich }} denních záloh.<br>
     {% if denni_uspech %}Poslední denní záloha: {{ denni_uspech|datumcas }}.{% else %}<span class="tlumene">Denní záloha zatím neproběhla.</span>{% endif %}
   </p>

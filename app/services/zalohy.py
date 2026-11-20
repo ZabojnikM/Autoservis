@@ -274,6 +274,24 @@ def _posledni_uspech(zalohy: Path, druh: str) -> datetime | None:
         return None
 
 
+def je_prazdna(db_path: Path) -> bool:
+    """Databáze bez zakázek a zákazníků (nová instalace) – automaticky se nezálohuje (#83)."""
+    db_path = Path(db_path)
+    if not db_path.exists():
+        return True
+    try:
+        spojeni = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+        try:
+            for tabulka in ("zakazka", "zakaznik"):
+                if spojeni.execute(f'SELECT 1 FROM "{tabulka}" LIMIT 1').fetchone():
+                    return False
+        finally:
+            spojeni.close()
+    except sqlite3.Error:
+        return False  # nečitelnou / neznámou databázi raději zálohovat
+    return True
+
+
 def naplanovane(cilova_slozka: str, db_path: Path = None, zalohy: Path | None = None,
                 ted: datetime | None = None) -> list[str]:
     """Udělá denní / týdenní zálohu, pokud je načase. Chyby se zapíšou do stavu, nevyhazují se."""
@@ -281,6 +299,8 @@ def naplanovane(cilova_slozka: str, db_path: Path = None, zalohy: Path | None = 
     ted = ted or datetime.now()
     hotovo = []
     with _zamek:
+        if je_prazdna(db_path or config.DB_PATH):  # #83: prázdná DB (nová instalace) nevytlačí dobré zálohy
+            return hotovo
         posledni = _posledni_uspech(zalohy, "denni")
         if posledni is None or ted - posledni >= DEN:
             try:

@@ -35,7 +35,7 @@ def _blok(request: Request, db, chyba: str = "", hlaseni: str = "", slozka_hodno
         "tydenni_uspech": _cas(stav.get("tydenni", {}).get("uspech")),
         "na_serveru": na_serveru[:ZOBRAZIT], "na_serveru_pocet": len(na_serveru),
         "ve_slozce": [s for s in ve_slozce if s.druh == "týdenní"],
-        "zapnuto": zalohy.zapnuto(), "slozka_serveru": str(zalohy.ZALOHY), "db": config.DB_PATH.name,
+        "zapnuto": zalohy.zapnuto(), "prazdna": zalohy.je_prazdna(config.DB_PATH), "slozka_serveru": str(zalohy.ZALOHY), "db": config.DB_PATH.name,
         "dennich": zalohy.DENNICH, "tydennich": zalohy.TYDENNICH,
         "obnova": stav.get("obnova", {}), "obnova_uspech": _cas(stav.get("obnova", {}).get("uspech")),
         "chyba": chyba, "hlaseni": hlaseni,
