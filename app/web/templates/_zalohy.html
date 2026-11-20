@@ -1,0 +1,72 @@
+<section id="zalohy" class="formular">
+<fieldset class="panel">
+  <legend>Zálohy databáze</legend>
+  {% if chyba %}<p class="upozorneni-ram" role="alert">{{ chyba }}</p>{% endif %}
+  {% if hlaseni %}<p class="uspech" role="status">{{ hlaseni }}</p>{% endif %}
+
+  {% if not zapnuto %}
+  <p class="upozorneni-ram">Automatické zálohy jsou na tomto počítači vypnuté (proměnná prostředí
+    <code>AUTOSERVIS_AUTOZALOHY=0</code>). Ruční záloha funguje.</p>
+  {% endif %}
+
+  <p><strong>Denně na serveru</strong> – uchovává se posledních {{ dennich }} denních záloh.<br>
+    {% if denni_uspech %}Poslední denní záloha: {{ denni_uspech|datumcas }}.{% else %}<span class="tlumene">Denní záloha zatím neproběhla.</span>{% endif %}
+  </p>
+  {% if denni.chyba %}<p class="upozorneni-ram">Poslední denní záloha selhala ({{ denni.cas|replace('T', ' ') }}): {{ denni.chyba }}</p>{% endif %}
+
+  <p><strong>Týdně do složky</strong> (např. sdílený disk) – uchovávají se poslední {{ tydennich }} týdenní zálohy.<br>
+    {% if not ulozena_slozka %}<span class="tlumene">Složka není nastavená, týdenní zálohy se nedělají.</span>
+    {% elif tydenni_uspech %}Poslední týdenní záloha: {{ tydenni_uspech|datumcas }}.
+    {% else %}<span class="tlumene">Týdenní záloha zatím neproběhla.</span>{% endif %}
+  </p>
+  {% if ulozena_slozka and not slozka_dostupna %}
+  <p class="upozorneni-ram">Složka {{ ulozena_slozka }} teď není dostupná – zkontrolujte připojení sdíleného disku.</p>
+  {% endif %}
+  {% if ulozena_slozka and tydenni.chyba %}<p class="upozorneni-ram">Poslední týdenní záloha selhala ({{ tydenni.cas|replace('T', ' ') }}): {{ tydenni.chyba }}</p>{% endif %}
+
+  <form hx-post="/nastaveni/zalohy/slozka" hx-target="#zalohy" hx-swap="outerHTML" class="radek-katalogu">
+    <input type="text" name="zaloha_slozka" value="{{ slozka }}" spellcheck="false" aria-label="Složka pro týdenní zálohy"
+           placeholder="Celá cesta ke složce na serveru, např. /mnt/zalohy/autoservis"
+           {% if chyba and slozka != ulozena_slozka %}aria-invalid="true"{% endif %}>
+    <button type="submit" class="secondary outline maly" hx-disabled-elt="this">Uložit složku</button>
+  </form>
+  <p class="tlumene">Složka je na serveru, kde Autoservis běží. Sdílený disk musí být k serveru připojený.
+    Prázdná složka týdenní zálohy vypne. Aplikace ve složce maže jen své staré týdenní zálohy.</p>
+
+  <p>
+    <button type="button" class="maly" hx-post="/nastaveni/zalohy/ted" hx-target="#zalohy" hx-swap="outerHTML"
+            hx-disabled-elt="this">Zálohovat teď</button>
+    {% if ulozena_slozka %}
+    <button type="button" class="secondary maly" hx-post="/nastaveni/zalohy/tydenni" hx-target="#zalohy"
+            hx-swap="outerHTML" hx-disabled-elt="this">Zálohovat do složky teď</button>
+    {% endif %}
+  </p>
+
+  {% if na_serveru %}
+  <details class="tlumene">
+    <summary>Zálohy na serveru ({{ na_serveru_pocet }}{% if na_serveru_pocet > na_serveru|length %}, zobrazeno {{ na_serveru|length }} nejnovějších{% endif %})</summary>
+    <table class="katalogy">
+      <tbody>
+      {% for z in na_serveru %}
+      <tr>
+        <td>{{ z.cas|datumcas }}</td><td>{{ z.druh }}</td><td>{{ z.velikost_text }}</td>
+        <td><a href="/nastaveni/zalohy/stahnout/{{ z.nazev }}" download title="{{ z.nazev }}">Stáhnout</a></td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <p>Složka na serveru: <code>{{ slozka_serveru }}</code> · databáze <code>{{ db }}</code></p>
+  </details>
+  {% endif %}
+  {% if ve_slozce %}
+  <details class="tlumene">
+    <summary>Týdenní zálohy ve složce ({{ ve_slozce|length }})</summary>
+    <table class="katalogy">
+      <tbody>
+      {% for z in ve_slozce %}<tr><td>{{ z.cas|datumcas }}</td><td>{{ z.nazev }}</td><td>{{ z.velikost_text }}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </details>
+  {% endif %}
+</fieldset>
+</section>

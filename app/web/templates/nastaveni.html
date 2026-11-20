@@ -167,6 +167,9 @@
   </fieldset>
 </section>
 
+{# #76: zálohy databáze – načte se zvlášť (sdílený disk může odpovídat pomalu) #}
+<div hx-get="/nastaveni/zalohy" hx-trigger="load" hx-swap="outerHTML"></div>
+
 {# verze a aktualizace z gitu – načte se zvlášť, aby git nezdržoval stránku #}
 <div hx-get="/nastaveni/aktualizace" hx-trigger="load" hx-swap="outerHTML"></div>
 {% endblock %}
