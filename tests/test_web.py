@@ -1382,4 +1382,12 @@ def test_okno_materialu_enter_podle_kodu_a_tlacitka():
     assert "function enterVHledaniMaterialu" in base and "kodProShodu(tr.dataset.kod) === hledany" in base
     css = client.get("/static/app.css").text
     assert ".okno-formular .rozvrzeni:not(.s-akcemi) > .obsah { padding-left: 20px; }" in css
-    assert "text-overflow: ellipsis; }" in css and "width: 7.3rem; height: 1.875rem" in css
+    assert "text-overflow: ellipsis; }" in css and "width: 8.6rem; height: 2.4rem" in css
+
+
+def test_okno_ceniku_tlacitka_vysoka_jako_v_zakazce():
+    """#98: tlačítka v titulku okna ceníku (materiál i práce) mají výšku a písmo jako Ceník / Nový v zakázce."""
+    css = client.get("/static/app.css").text
+    assert "font-size: 1rem; line-height: calc(2.4rem - 2px)" in css
+    assert ".tlacitka-hlavicky:not(.vlevo) > * { height: 2.4rem; padding: 0 .8rem; font-size: 1rem;" in css
+    assert ".okno-hlavicka.hlavicka-na-stred { display: grid; grid-template-columns: auto 1fr auto; }" in css
