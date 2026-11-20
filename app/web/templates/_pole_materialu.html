@@ -4,11 +4,12 @@
 {% from "_makra.html" import pole, textove_pole %}
   <fieldset class="panel">
     <legend>Materiál</legend>
-    {% if katalogy is defined and katalogy|length > 1 and not polozka %}
-    {# #70: nový materiál se ukládá do hlavního katalogu, jiný jde zvolit výslovně #}
-    {% set zvoleny = (hodnoty.get('katalog_id') or '')|string %}
+    {% if katalogy is defined and katalogy|length > 1 %}
+    {# #70: nový materiál se ukládá do hlavního katalogu, jiný jde zvolit výslovně;
+       #124: u úpravy předvybraný současný katalog dílu, změna díl při uložení přesune #}
+    {% set zvoleny = (hodnoty.get('katalog_id') or (polozka.katalog_id if polozka else '') or '')|string %}
     <div data-jen-cenik>
-      <label>Uložit do katalogu
+      <label>{{ 'Katalog' if polozka else 'Uložit do katalogu' }}
         <select name="katalog_id">
           {% for k in katalogy %}
           <option value="{{ k.id }}" {% if (zvoleny and zvoleny == k.id|string) or (not zvoleny and k.vychozi) %}selected{% endif %}>{{ k.nazev }}</option>

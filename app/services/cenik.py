@@ -102,7 +102,10 @@ def vytvor(session: Session, data: dict, commit: bool = True) -> PolozkaCeniku:
 
 def uprav(session: Session, polozka_id: int, data: dict) -> PolozkaCeniku:
     polozka = ziskej(session, polozka_id)
-    _nastav(session, polozka, data)
+    # #124: bez průběžného zápisu – rozpracovaná změna kódu / katalogu by jinak narazila na unikátní index
+    # dřív, než kontrola ukáže srozumitelnou hlášku
+    with session.no_autoflush:
+        _nastav(session, polozka, data)
     session.add(polozka)
     session.commit()
     session.refresh(polozka)
