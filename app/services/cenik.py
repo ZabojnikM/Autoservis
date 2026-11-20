@@ -174,6 +174,7 @@ def seznam(
 
 
 NEJPOUZIVANEJSI = 30  # #102: tolik nejčastěji použitých dílů ukáže okno Přidat materiál bez hledání
+CASTO_POUZIVANY = 3  # #113: od tolika použití je díl „často používaný“ (podbarvený, nad oddělovací čarou)
 
 
 def vyber_pro_zakazku(session: Session, hledat: str | None, typ: str, katalog_id: int | None,

@@ -1430,21 +1430,25 @@ def test_okno_materialu_nejpouzivanejsi_a_oddelovac():
 
     ids = {k: re.search(rf'data-kod="{k}".*?name="polozka_ceniku_id" value="(\d+)"', vyber("FLT"), re.S).group(1)
            for k in ("FLT 100", "FLT 200", "FLT 300")}
-    for kod, kolikrat in [("FLT 200", 3), ("FLT 300", 1)]:
+    for kod, kolikrat in [("FLT 200", 3), ("FLT 300", 1)]:  # #113: často = aspoň 3×
         for _ in range(kolikrat):
             client.post(f"{loc}/polozky", data={"polozka_ceniku_id": ids[kod], "mnozstvi": "1"})
 
     prazdne = vyber()
     assert "Nejpoužívanější díly" in prazdne and ">Použito</th>" in prazdne
     assert prazdne.index('data-kod="FLT 200"') < prazdne.index('data-kod="FLT 300"')
-    assert 'data-kod="FLT 100"' not in prazdne and "oddelovac-pouziti" not in prazdne  # jen použité
+    assert 'data-kod="FLT 100"' not in prazdne  # jen použité
+    # #113: i mezi nejpoužívanějšími odděluje čára díly použité méně než 3×
+    assert prazdne.index('data-kod="FLT 200"') < prazdne.index("Méně používané díly") < prazdne.index('data-kod="FLT 300"')
 
     hledani = vyber("flt")
     poradi = re.findall(r'data-kod="(FLT \d+)"', hledani)
     assert poradi == ["FLT 200", "FLT 300", "FLT 100"]
-    assert hledani.index('data-kod="FLT 300"') < hledani.index("Ostatní díly – zatím nepoužité") \
-        < hledani.index('data-kod="FLT 100"')
+    # #113: čára za díly použitými aspoň 3×; FLT 300 (1×) už je pod ní, nepodbarvený
+    assert hledani.index('data-kod="FLT 200"') < hledani.index("Méně používané díly") \
+        < hledani.index('data-kod="FLT 300"') < hledani.index('data-kod="FLT 100"')
     assert re.search(r'data-kod="FLT 200" class="pouzivany"', hledani) and ">3×</td>" in hledani
+    assert not re.search(r'data-kod="FLT 300" class="pouzivany"', hledani) and ">1×</td>" in hledani
     assert "Nejpoužívanější díly" not in hledani
     assert re.findall(r'data-kod="(FLT \d+)"', vyber("FLT100"))[0] == "FLT 100"  # přesný kód nahoře
     assert "Zaměnitelný díl" not in hledani  # #102: prázdný sloupec se neukazuje

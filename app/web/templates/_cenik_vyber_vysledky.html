@@ -7,7 +7,8 @@
 {% set ukaz_typ = not typ_okna %}
 {# #102: sloupec Zaměnitelný díl jen když je u některého nalezeného dílu vyplněný #}
 {% set ukaz_zamenitelny = typ_okna == 'material' and (nalezene|default([])|selectattr('zamenitelny_dil')|list) %}
-{# #102: materiál – počet použití na zakázkách; používané díly podbarvené, před nepoužitými oddělovací řádek #}
+{# #102, #113: materiál – počet použití na zakázkách; díly použité aspoň `casto`× podbarvené,
+   před ostatními (použité méně často nebo vůbec) oddělovací řádek „Méně používané díly“ #}
 {% set s_pouzitim = pouziti is defined %}
 {% if historie %}
 {# #69: materiál dříve vydaný na vozidlo zakázky – jeden řádek na díl (poslední použití, počet použití).
@@ -67,11 +68,12 @@
   {% for p in nalezene %}
     {% set cena = p.cena %}
     {% set pouzito = pouziti.get(p.id) if s_pouzitim else none %}
-    {% if s_pouzitim and stav_pouziti.predchozi and not pouzito %}
-    <tr class="oddelovac-pouziti"><td colspan="{{ 6 + (1 if ukaz_typ else 0) + (1 if ukaz_zamenitelny else 0) }}">Ostatní díly – zatím nepoužité</td></tr>
+    {% set casty = pouzito is not none and pouzito[0] >= casto %}
+    {% if s_pouzitim and stav_pouziti.predchozi and not casty %}
+    <tr class="oddelovac-pouziti"><td colspan="{{ 6 + (1 if ukaz_typ else 0) + (1 if ukaz_zamenitelny else 0) }}">Méně používané díly</td></tr>
     {% endif %}
-    {% set stav_pouziti.predchozi = pouzito is not none %}
-    <tr data-pridat data-kod="{{ p.kod or '' }}" {% if pouzito %}class="pouzivany"{% endif %} title="Dvojklik nebo Enter = vložit do zakázky">
+    {% set stav_pouziti.predchozi = casty %}
+    <tr data-pridat data-kod="{{ p.kod or '' }}" {% if casty %}class="pouzivany"{% endif %} title="Dvojklik nebo Enter = vložit do zakázky">
       {% if ukaz_typ %}<td><span class="typ typ-{{ p.typ }}">{{ p.nazev_typu }}</span></td>{% endif %}
       {# kód je hlavní údaj – tučně, seznam je podle něj seřazený (#28) #}
       <td class="zkratit kod-polozky-okna" title="{{ p.kod or '' }}"><strong>{{ p.kod or '' }}</strong></td>
