@@ -1,9 +1,8 @@
 {% extends "base.html" %}
 {% from "_makra.html" import spz %}
 {% from "_prijem_makra.html" import stav_radku, hlavni_akce %}
-{# Příjem vozidel (#51): návštěvy, které zpracoval Přijímací technik (OpenBot), od nejnovější.
-   U každé je vidět, jestli vozidlo už máme v databázi (podle SPZ nebo VIN). Klik na řádek:
-   v databázi → otevřená zakázka vozidla / nová zakázka, není → založit vozidlo, konflikt → podrobnosti. #}
+{# Příjem vozidel (#51, #85): návštěvy, které zpracoval Přijímací technik (OpenBot), od nejnovější.
+   Klik na řádek otevře podrobnosti příjmu. Tlačítko v řádku udělá jen svou akci. #}
 {% block title %}Příjem vozidel{% endblock %}
 {% block content %}
 <div class="lista-filtru-seznamu">
@@ -16,8 +15,8 @@
 {% else %}
 <div class="overflow-auto">
 <table class="striped klik-otevre prijem-seznam">
-  {# #53, #72, #82: [akce + stav] → SPZ → Značka a model → Zákazník (z naší databáze) → VIN + Kopírovat → Km → Přijato.
-     Jeden nízký řádek na auto; konflikt nemá tlačítko a klik na řádek otevře podrobnosti. #}
+  {# #53, #72, #82, #85: [akce + stav] → SPZ → Značka a model → Zákazník → VIN + Kopírovat → Km → Přijato.
+     Klik na řádek = podrobnosti. Tlačítko v řádku podrobnosti neotevře. #}
   <thead><tr><th></th><th>SPZ</th><th>Vozidlo</th><th>Zákazník</th><th>VIN</th><th class="cislo">Km</th><th>Přijato</th></tr></thead>
   <tbody>
   {% for n in prijmy.navstevy %}
@@ -27,8 +26,7 @@
     {% set v = shoda.vozidlo %}
     {% set znacka = n.znacka or (v.znacka if v else none) %}
     {% set model = n.model or (v.model if v else none) %}
-    <tr data-prijem="{{ n.id }}" data-otevrit="{{ a[1] if a else detail }}"{% if a and a[2] %} data-okno{% endif %}
-        title="{{ ('Klik: ' ~ a[0]) if a else 'Klik otevře podrobnosti' }}">
+    <tr data-prijem="{{ n.id }}" data-otevrit="{{ detail }}" title="Klik otevře podrobnosti">
       <td class="tlacitka-prijmu">{{ hlavni_akce(shoda, 'maly') }}{{ stav_radku(shoda) }}</td>
       <td class="hlavni spz-prijmu">{% if n.spz %}{{ spz(n.spz) }}{% if n.je_nejiste('spz') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td>{% if znacka or model %}<span{% if not (n.znacka or n.model) %} class="tlumene" title="Z naší databáze"{% endif %}>{{ [znacka, model]|select|join(' ') }}</span>{% else %}{{ none|pomlcka }}{% endif %}</td>
@@ -42,6 +40,6 @@
 </table>
 </div>
 <div class="stavovy-radek"><span>Příjmů: {{ prijmy.navstevy|length }}{% if prijmy.updated_at %} · aktualizováno {{ prijmy.updated_at|datumcas }}{% endif %}</span>
-  <span>Klik na řádek: zakázka vozidla / založit vozidlo · konflikt SPZ / VIN = podrobnosti příjmu</span></div>
+  <span>Klik na řádek otevře podrobnosti příjmu</span></div>
 {% endif %}
 {% endblock %}

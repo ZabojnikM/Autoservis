@@ -117,12 +117,14 @@ def test_v_databazi_podle_spz_nebo_vin_a_konflikt(soubor, session):
 
     text = client.get("/prijem").text
     radek = _radek(text, "spz")
-    assert f'data-otevrit="/zakazky/nova?vozidlo_id={a.id}&amp;tachometr=120000" data-okno' in radek
+    assert 'data-otevrit="/prijem/spz"' in radek and "data-okno" not in radek.split(">")[0]  # #85: řádek = podrobnosti
+    assert f'href="/zakazky/nova?vozidlo_id={a.id}&amp;tachometr=120000"' in radek
     assert ">Nová zakázka</a>" in radek and "Vozidlo je v databázi" in radek and "Podrobnosti" not in radek  # #72
     assert "TEST Novák" in radek  # #82: zákazník z naší databáze
     assert "akce-nova" in radek and radek.index("hlavni-akce") < radek.index("Vozidlo je v databázi") < radek.index("1AB2345")
     radek = _radek(text, "nova")
-    assert 'data-otevrit="/vozidla/nove?prijem=nova" data-okno' in radek and ">Založit vozidlo</a>" in radek
+    assert 'data-otevrit="/prijem/nova"' in radek and 'href="/vozidla/nove?prijem=nova"' in radek
+    assert ">Založit vozidlo</a>" in radek
     assert "akce-zalozit" in radek
     assert "Vozidlo není v databázi" in radek
     radek = _radek(text, "konf")
@@ -143,7 +145,8 @@ def test_otevrena_zakazka_a_zalozeni_vozidla_z_prijmu(soubor, session):
             _navsteva("n1", "2026-11-19T09:00:00Z", spz="7X77777", vin="ZZZ00000000000007",
                       technicke={"TovarniZnacka": "ŠKODA", "ObchodniOznaceni": "FABIA", "VIN": "ZZZ00000000000007"})])
     radek = _radek(client.get("/prijem").text, "a1")
-    assert f'data-otevrit="/zakazky/{zak.id}"' in radek and ">Otevřít zakázku</a>" in radek
+    assert 'data-otevrit="/prijem/a1"' in radek and f'href="/zakazky/{zak.id}"' in radek
+    assert ">Otevřít zakázku</a>" in radek
     assert "Zakázka už existuje" in radek  # #82
     assert "data-okno" not in radek.split(">")[0]  # existující zakázka = celá stránka
     # nová zakázka převezme stav km

@@ -112,8 +112,10 @@ tests/
 
 > **Po aktualizaci programu server restartujte** (zavřít okno `spustit.bat` a spustit znovu) –
 > automatické načtení změn kódu na Windows někdy zamrzne a běží dál stará verze.
-- **Zakázky**: číslování `RRRR-0001`, stavy Přijato → V opravě → Předáno → Uzavřeno (s dokladem),
-  termín dokončení (po termínu červeně), tisk zakázkového listu (tlačítko Tisk).
+- **Zakázky**: číslování `RRRR-0001`, stavy Přijato → V opravě → Předáno → Uzavřeno (s dokladem).
+  **Předáno** schová zakázku z otevřených, doklad ještě není. **Uzavřít bez dokladu** zavře zakázku
+  bez faktury (např. záruka). Seznam zakázek i faktur se otevře na aktuální rok, volba „všechny roky“
+  ukáže i starší. Termín dokončení (po termínu červeně), tisk zakázkového listu (tlačítko Tisk).
 - **Vozidla** a **Zákazníci**: seznam, hledání, detail, úpravy, historie zakázek.
 - **Hledání** v horní liště: SPZ, VIN, jméno, telefon, IČO, číslo zakázky.
 

@@ -881,6 +881,7 @@ fieldset.panel > legend ~ * { clear: both; }
 /* #61: přepínač stavu zakázky úplně vlevo */
 .nadpis-radek.nadpis-na-stred > .zmena-stavu { grid-column: 1; justify-self: start; }
 .zmena-stavu .prepinac-stavu { flex: 0 0 auto; }
+.zmena-stavu .napoveda-stavu { flex: 1 0 100%; margin: 0; font-size: .8rem; color: #6b7280; }
 
 /* #49: Zrušit / Zpět oddělené od ukládacích akcí (Uložit, Uložit a další) */
 .akce .zpet.oddelene { margin-top: 1rem; }

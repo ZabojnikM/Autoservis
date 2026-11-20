@@ -117,16 +117,24 @@ def _davka(vse_radky: str) -> int:
     return 1_000_000 if vse_radky else VELIKOST_STRANKY
 
 
+def _vybrany_rok(rok: str) -> tuple[int | None, str]:
+    """Rok filtru a hodnota do výběru. Prázdné = aktuální rok, „vse“ = bez omezení (#91)."""
+    if rok == "vse":
+        return None, ""
+    if len(rok) == 4 and rok.isascii() and rok.isdecimal():
+        return int(rok), rok
+    return date.today().year, str(date.today().year)
+
+
 @router.get("/zakazky", response_class=HTMLResponse)
 def zakazky_seznam(request: Request, db: DB, stav: str = "", q: str = "", vse: str = "", rok: str = "",
                    razeni: str = "", od: str = "", vse_radky: str = ""):
     if stav == "vse":
         stav, vse = "", "1"
     filtr = stav or (None if vse else StavZakazky.ZALOZKA_OTEVRENE)
-    rok = rok if len(rok) == 4 and rok.isascii() and rok.isdecimal() else ""
-    st = zakazky.stranka(db, stav=filtr, hledat=q, razeni=razeni, od=od, limit=_davka(vse_radky),
-                         rok=int(rok) if rok else None)
-    pocty = zakazky.pocty_podle_stavu(db)
+    rok_cislo, rok = _vybrany_rok(rok)
+    st = zakazky.stranka(db, stav=filtr, hledat=q, razeni=razeni, od=od, limit=_davka(vse_radky), rok=rok_cislo)
+    pocty = zakazky.pocty_podle_stavu(db, rok_cislo)
     return _stranka(
         request, "zakazky_seznam.html", aktivni="zakazky",
         zakazky=st.polozky, stranka=st, stav=stav, q=q, vse=vse, pocty=pocty, rok=rok, roky=zakazky.roky_prijeti(db),
@@ -1223,14 +1231,14 @@ async def faktura_vystavit_uloz(request: Request, db: DB, zakazka_id: int):
 
 
 def _seznam_faktur(db, filtr, q, rok, typ):
-    return faktury.seznam(db, filtr or faktury.VYCHOZI_FILTR, hledat=q, rok=int(rok) if rok.isdigit() else None,
-                          typ=typ or None)
+    return faktury.seznam(db, filtr or faktury.VYCHOZI_FILTR, hledat=q, rok=rok, typ=typ or None)
 
 
 @router.get("/faktury", response_class=HTMLResponse)
 def faktury_seznam(request: Request, db: DB, filtr: str = faktury.VYCHOZI_FILTR, q: str = "", rok: str = "", typ: str = "",
                    razeni: str = "", od: str = "", vse_radky: str = ""):
-    seznam = _seznam_faktur(db, filtr, q, rok, typ)
+    rok_cislo, rok = _vybrany_rok(rok)
+    seznam = _seznam_faktur(db, filtr, q, rok_cislo, typ)
     st = faktury.stranka(seznam, razeni=razeni, od=od, limit=_davka(vse_radky))
     return _stranka(request, "faktury_seznam.html", aktivni="faktury", faktury=st.polozky, stranka=st,
                     souhrn=faktury.souhrn(seznam), filtr=filtr, q=q, rok=rok, typ=typ,
