@@ -28,6 +28,19 @@ Spuštění nad jinou databází (např. kopií s importem ze starého systému)
 $env:AUTOSERVIS_DB = "data\autoservis-import.db"; .\.venv\Scripts\python -m uvicorn app.main:app --port 8001
 ```
 
+## Zástupce na ploše (pracovní počítače)
+
+Aplikace se na pracovních počítačích neinstaluje – běží na serveru a otevírá se v prohlížeči. Aby vypadala jako
+samostatný program (vlastní okno bez adresního řádku, ikona na ploše a v nabídce Start), stačí na každém počítači
+jednou spustit `nastroje\zastupce-autoservis.bat` (dvojklik) a zadat adresu serveru, např. `http://server:8000`.
+Skript použije Edge (případně Chrome) v režimu `--app` a stáhne ikonu ze serveru. Zástupce jde kdykoli smazat.
+
+Bez dotazu na adresu:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File nastroje\zastupce-autoservis.ps1 -Adresa http://server:8000
+```
+
 ## Ovládání (desktopový vzhled jako starý systém)
 
 - **Menu** je vodorovně nahoře, **tlačítka akcí** ve sloupci vlevo (na mobilu řádkem nad obsahem).
