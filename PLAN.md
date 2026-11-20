@@ -381,6 +381,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-20 | Seznam zakázek: místo Požadavku VIN s Kopírovat, kód motoru a platnost STK (propadlá červeně), řazení podle nich; tlačítko Kopírovat je v celé aplikaci jedno a stejné (#99) |
 | 2026-11-20 | **Verze 0.7.2**: vzhled seznamů a tlačítek (#86–#89), datum bez kalendáře (#94), okno Přidat z ceníku (#96, #98), seznam zakázek s VIN a STK (#99) |
 | 2026-11-20 | Okno Přidat materiál: po otevření 30 nejpoužívanějších dílů, sloupec Použito, při hledání řazení podle použití, podbarvení a oddělovač nepoužitých; Zaměnitelný díl jen když je vyplněný (#102) |
+| 2026-11-20 | Okno Přidat materiál: podbarvení a čára „Méně používané díly“ podle hranice 3 použití (#113) |
 
 ## Zdroje průzkumu
 
