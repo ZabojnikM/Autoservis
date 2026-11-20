@@ -1364,3 +1364,22 @@ def test_seznamy_jeden_klik_stav_a_hledani_v_seznamu():
         assert html.index('class="sl-stav"') < html.index("sl-pozadavek")
     assert "Hledat v seznamu" in seznam
     assert "Hledat v seznamu" in client.get("/vozidla").text
+
+
+def test_okno_materialu_enter_podle_kodu_a_tlacitka():
+    """#96: řádky výsledků nesou kód dílu (Enter v hledání vloží přesnou shodu kódu, jinak otevře Nový
+    s kódem z hledání); tlačítka v titulku okna jsou stejně velká a okno má okraj i vlevo."""
+    client.post("/cenik/nova", data={"typ": "material", "kod": "GAT 6PK1018", "nazev": "Klínový řemen TEST",
+                                     "cena": "300"})
+    loc = _prijem().headers["location"].split("?")[0]
+    zid = loc.rsplit("/", 1)[1]
+    vyber = client.get("/cenik/vyber", params={"q": "6PK1018", "zakazka_id": zid, "okno": "1",
+                                               "typ": "material"}).text
+    assert 'data-kod="GAT 6PK1018"' in vyber
+    okno = client.get(f"{loc}/cenik", params={"okno": "1", "typ": "material"}).text
+    assert 'class="maly tlacitko-novy" data-okno' in okno and 'data-s-hledanim="kod"' in okno
+    base = client.get(loc).text
+    assert "function enterVHledaniMaterialu" in base and "kodProShodu(tr.dataset.kod) === hledany" in base
+    css = client.get("/static/app.css").text
+    assert ".okno-formular .rozvrzeni:not(.s-akcemi) > .obsah { padding-left: 20px; }" in css
+    assert "text-overflow: ellipsis; }" in css and "width: 7.3rem; height: 1.875rem" in css

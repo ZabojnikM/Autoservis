@@ -439,6 +439,31 @@
       if (pole && !pole.value.trim()) pole.value = "1";
       form.requestSubmit();
     }
+    // #96: Enter v hledání materiálu – text přesně shodný s kódem dílu (bez ohledu na velikost písmen a mezery)
+    // díl vloží, jinak se otevře Nový materiál s kódem z hledání. Nejdřív se počká na čerstvé výsledky hledání.
+    const kodProShodu = (t) => String(t || "").toUpperCase().replace(/\s+/g, "");
+    let enterCeka = false;
+    async function enterVHledaniMaterialu(okno, hledani) {
+      const hledany = kodProShodu(hledani.value);
+      if (!hledany || enterCeka) return;
+      enterCeka = true;
+      try {
+        const vysledky = okno.querySelector("#cenik-vysledky");
+        await new Promise((hotovo) => {
+          const konec = () => { clearTimeout(pojistka); vysledky.removeEventListener("htmx:afterSettle", konec); hotovo(); };
+          const pojistka = setTimeout(konec, 3000);
+          vysledky.addEventListener("htmx:afterSettle", konec);
+          htmx.trigger(hledani, "search");  // hledání hned, bez čekání na prodlevu psaní
+        });
+        if (!document.contains(hledani) || kodProShodu(hledani.value) !== hledany) return;  // mezitím se psalo dál
+        const shoda = [...okno.querySelectorAll(".vyber-cenik tbody tr[data-pridat]")]
+          .find((tr) => kodProShodu(tr.dataset.kod) === hledany);
+        if (shoda) pridejRadek(shoda);
+        else okno.querySelector(".tlacitko-novy[data-s-hledanim]").click();
+      } finally {
+        enterCeka = false;
+      }
+    }
     function vyberRadekCeniku(tr) {
       if (!tr) return;
       tr.parentElement.querySelectorAll("tr.vybrany").forEach((r) => r.classList.remove("vybrany"));
@@ -455,7 +480,9 @@
       if (e.key === "Enter") {
         e.preventDefault();
         if (vybrany) pridejRadek(vybrany);
-        else if (radky.length === 1) pridejRadek(radky[0]);  // jediný nalezený řádek
+        else if (e.target.matches("input[type=search]") && okno.querySelector(".tlacitko-novy[data-s-hledanim]"))
+          enterVHledaniMaterialu(okno, e.target);
+        else if (radky.length === 1) pridejRadek(radky[0]);  // práce: jediný nalezený řádek
         return;
       }
       e.preventDefault();
