@@ -179,6 +179,27 @@ Před aktualizací programu přesto doporučujeme zálohu (zkopírovat `data/aut
 - Plánovač běží uvnitř aplikace a každých 10 minut ověří, zda je záloha na řadě. Na vývojovém počítači
   ho jde vypnout proměnnou `AUTOSERVIS_AUTOZALOHY=0`.
 
+### Obnova ze zálohy
+
+U každé zálohy v *Nastavení → Zálohy databáze* je tlačítko **Obnovit** (zálohy na serveru i týdenní ve složce, #77):
+
+1. Záloha se zkontroluje (je to neporušená databáze Autoservisu). Záloha ze sdílené složky se nejdřív zkopíruje na server.
+2. Současný stav se uloží do zálohy `pred-obnovou-…db`, ta se sama nemaže. Obnovu tak jde vrátit obnovením této zálohy.
+3. Databáze se přepíše obsahem zálohy za běhu aplikace a starší záloha dostane nové sloupce (stejně jako při startu).
+
+Změny provedené po čase zálohy se obnovou ztratí, proto aplikace před obnovou žádá potvrzení.
+
+**Ruční obnova, když aplikace nenaběhne:**
+
+1. Aplikaci zastavte (server: služba `autoservis`, správce serveru; Windows: zavřít okno `spustit.bat`).
+2. Poškozenou databázi přejmenujte, například `data/autoservis.db` → `data/autoservis-poskozena-RRRRMMDD.db`
+   (i soubory `-wal` a `-shm`, pokud vedle ní jsou). Nic nemažte.
+3. Vybranou zálohu (`data/backups/…db` nebo týdenní ze sdílené složky) zkopírujte jako `data/autoservis.db`.
+4. Kontrola: `python -c "import sqlite3; print(sqlite3.connect('data/autoservis.db').execute('pragma integrity_check').fetchone()[0])"`
+   musí vypsat `ok`.
+5. Aplikaci spusťte. Při startu sama doplní chybějící sloupce. Na serveru je potřeba dodržet práva souboru (vlastník
+   účtu služby, 0600).
+
 ## Verze a vydání
 
 Číslování `MAJOR.MINOR.OPRAVA` (zatím `0.x` – vývoj; `1.0.0` = úplný přechod ze starého systému):

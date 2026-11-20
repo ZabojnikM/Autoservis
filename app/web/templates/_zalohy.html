@@ -1,3 +1,8 @@
+{% macro tlacitko_obnovy(z, zdroj) %}
+<button type="button" class="secondary outline maly" hx-post="/nastaveni/zalohy/obnovit" hx-target="#zalohy"
+        hx-swap="outerHTML" hx-disabled-elt="this" hx-vals='{"nazev": "{{ z.nazev }}", "zdroj": "{{ zdroj }}"}'
+        hx-confirm="Obnovit databázi ze zálohy z {{ z.cas|datumcas }}? Všechny změny provedené po tomto čase se ztratí. Současný stav se před obnovou automaticky zazálohuje.">Obnovit</button>
+{% endmacro %}
 <section id="zalohy" class="formular">
 <fieldset class="panel">
   <legend>Zálohy databáze</legend>
@@ -23,6 +28,9 @@
   <p class="upozorneni-ram">Složka {{ ulozena_slozka }} teď není dostupná – zkontrolujte připojení sdíleného disku.</p>
   {% endif %}
   {% if ulozena_slozka and tydenni.chyba %}<p class="upozorneni-ram">Poslední týdenní záloha selhala ({{ tydenni.cas|replace('T', ' ') }}): {{ tydenni.chyba }}</p>{% endif %}
+
+  {% if obnova_uspech %}<p class="tlumene">Poslední obnova: {{ obnova_uspech|datumcas }} ze zálohy {{ obnova.soubor }}
+    (stav před obnovou: {{ obnova.pred_obnovou }}).</p>{% endif %}
 
   <form hx-post="/nastaveni/zalohy/slozka" hx-target="#zalohy" hx-swap="outerHTML" class="radek-katalogu">
     <input type="text" name="zaloha_slozka" value="{{ slozka }}" spellcheck="false" aria-label="Složka pro týdenní zálohy"
@@ -51,6 +59,7 @@
       <tr>
         <td>{{ z.cas|datumcas }}</td><td>{{ z.druh }}</td><td>{{ z.velikost_text }}</td>
         <td><a href="/nastaveni/zalohy/stahnout/{{ z.nazev }}" download title="{{ z.nazev }}">Stáhnout</a></td>
+        <td>{{ tlacitko_obnovy(z, 'server') }}</td>
       </tr>
       {% endfor %}
       </tbody>
@@ -63,7 +72,8 @@
     <summary>Týdenní zálohy ve složce ({{ ve_slozce|length }})</summary>
     <table class="katalogy">
       <tbody>
-      {% for z in ve_slozce %}<tr><td>{{ z.cas|datumcas }}</td><td>{{ z.nazev }}</td><td>{{ z.velikost_text }}</td></tr>{% endfor %}
+      {% for z in ve_slozce %}<tr><td>{{ z.cas|datumcas }}</td><td>{{ z.nazev }}</td><td>{{ z.velikost_text }}</td>
+        <td>{{ tlacitko_obnovy(z, 'slozka') }}</td></tr>{% endfor %}
       </tbody>
     </table>
   </details>

@@ -37,6 +37,7 @@ def _blok(request: Request, db, chyba: str = "", hlaseni: str = "", slozka_hodno
         "ve_slozce": [s for s in ve_slozce if s.druh == "týdenní"],
         "zapnuto": zalohy.zapnuto(), "slozka_serveru": str(zalohy.ZALOHY), "db": config.DB_PATH.name,
         "dennich": zalohy.DENNICH, "tydennich": zalohy.TYDENNICH,
+        "obnova": stav.get("obnova", {}), "obnova_uspech": _cas(stav.get("obnova", {}).get("uspech")),
         "chyba": chyba, "hlaseni": hlaseni,
     })
 
@@ -74,6 +75,21 @@ def tydenni_ted(request: Request, db: DB):
     except zalohy.ChybaZalohy as e:
         return _blok(request, db, chyba=str(e))
     return _blok(request, db, hlaseni=f"Týdenní záloha {cil.name} je uložená ve složce.")
+
+
+@router.post("/obnovit")
+def obnovit(request: Request, db: DB, nazev: str = Form(""), zdroj: str = Form("server")):
+    try:
+        soubor = zalohy.soubor_zalohy(nazev, zdroj, zalohy.slozka(db))
+        db.close()  # vlastní spojení požadavku pustit, ať obnova nečeká na zámek
+        v = zalohy.obnov(soubor)
+    except zalohy.ChybaZalohy as e:
+        return _blok(request, db, chyba=str(e))
+    p = v["pocty"]
+    return _blok(request, db, hlaseni=(
+        f"Obnoveno ze zálohy {v['soubor']}: {p['zakazka']} zakázek, {p['vozidlo']} vozidel, "
+        f"{p['zakaznik']} zákazníků, {p['faktura']} dokladů. Stav před obnovou je uložený "
+        f"v záloze {v['pred_obnovou']}. Otevřené stránky v jiných oknech obnovte (F5)."))
 
 
 @router.get("/stahnout/{nazev}")

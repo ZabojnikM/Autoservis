@@ -307,7 +307,8 @@ def tydenni_ted(cilova_slozka: str, db_path: Path = None, zalohy: Path | None = 
 
 def _druh(nazev: str) -> str:
     for predpona, druh in (("denni-", "denní"), ("rucni-", "ruční"), ("pred-aktualizaci-", "před aktualizací"),
-                           ("autoservis-tydenni-", "týdenní")):
+                           ("autoservis-tydenni-", "týdenní"), ("pred-obnovou-", "před obnovou"),
+                           ("pred-migraci-", "před migrací")):
         if nazev.startswith(predpona):
             return druh
     return "jiná"
@@ -335,6 +336,93 @@ def soubor_ke_stazeni(nazev: str, zalohy: Path | None = None) -> Path:
     if not soubor.is_file():
         raise ChybaZalohy("Záloha neexistuje.")
     return soubor
+
+
+# --- obnova ze zálohy (#77) -------------------------------------------------------------------
+
+POVINNE_TABULKY = ("nastaveni", "zakaznik", "vozidlo", "zakazka", "faktura")
+
+
+def soubor_zalohy(nazev: str, zdroj: str, cilova_slozka: str = "", zalohy: Path | None = None) -> Path:
+    """Záloha podle názvu ze seznamu: `server` = adresář záloh, `slozka` = složka týdenních záloh."""
+    zalohy = Path(zalohy or ZALOHY)
+    if zdroj == "slozka":
+        if not cilova_slozka:
+            raise ChybaZalohy("Složka pro týdenní zálohy není nastavená.")
+        return soubor_ke_stazeni(nazev, Path(cilova_slozka))
+    return soubor_ke_stazeni(nazev, zalohy)
+
+
+def zkontroluj_zalohu(soubor: Path) -> dict:
+    """Je to neporušená databáze Autoservisu? Vrací počty hlavních záznamů."""
+    try:
+        with open(soubor, "rb") as f:
+            if f.read(16) != b"SQLite format 3\x00":
+                raise ChybaZalohy("Soubor není databáze SQLite.")
+        _zkontroluj(soubor)
+        spojeni = sqlite3.connect(f"file:{soubor}?mode=ro", uri=True)
+        try:
+            tabulky = {r[0] for r in spojeni.execute("SELECT name FROM sqlite_master WHERE type = 'table'")}
+            chybi = [t for t in POVINNE_TABULKY if t not in tabulky]
+            if chybi:
+                raise ChybaZalohy(f"Soubor není záloha Autoservisu (chybí tabulky: {', '.join(chybi)}).")
+            return {t: spojeni.execute(f'SELECT COUNT(*) FROM "{t}"').fetchone()[0]
+                    for t in ("zakaznik", "vozidlo", "zakazka", "faktura")}
+        finally:
+            spojeni.close()
+    except sqlite3.Error as e:
+        raise ChybaZalohy(f"Zálohu nejde přečíst: {e}") from e
+
+
+def obnov(soubor: Path, db_path: Path = None, zalohy: Path | None = None, eng=None) -> dict:
+    """Přepíše databázi obsahem zálohy. Postup:
+    1. kontrola zálohy (u zálohy ze sdílené složky nad místní kopií),
+    2. záloha současného stavu `pred-obnovou-…db` (maže se jen ručně),
+    3. SQLite backup ze zálohy do běžící databáze – za běhu bezpečné, aplikace nemusí stát,
+    4. migrace (`init_db`) – starší záloha dostane nové sloupce, kontrola integrity.
+    """
+    from app import db as databaze
+
+    zalohy = Path(zalohy or ZALOHY)
+    db_path = Path(db_path or config.DB_PATH)
+    eng = eng or databaze.engine
+    soubor = Path(soubor)
+    with _zamek:
+        docasna = None
+        try:
+            if soubor.parent.resolve() != zalohy.resolve():  # sdílená složka: pracovat s místní kopií
+                docasne = zalohy / ".obnova"
+                docasne.mkdir(parents=True, exist_ok=True)
+                docasna = docasne / soubor.name
+                try:
+                    shutil.copyfile(soubor, docasna)
+                except OSError as e:
+                    raise ChybaZalohy(f"Zálohu se nepodařilo načíst: {e.strerror or e}") from e
+            zdroj_soubor = docasna or soubor
+            pocty = zkontroluj_zalohu(zdroj_soubor)
+            pred = vytvor(db_path, zalohy, _predpona("pred-obnovou", db_path))
+            try:
+                zdroj = sqlite3.connect(f"file:{zdroj_soubor}?mode=ro", uri=True)
+                cil = sqlite3.connect(db_path, timeout=30)
+                try:
+                    zdroj.backup(cil)
+                finally:
+                    cil.close()
+                    zdroj.close()
+                eng.dispose()
+                databaze.init_db(eng)
+                _zkontroluj(db_path)
+            except (sqlite3.Error, ChybaZalohy) as e:
+                raise ChybaZalohy(f"Obnova selhala: {e}. Předchozí stav je v záloze {pred.name}.") from e
+        except ChybaZalohy as e:
+            _uloz_stav(zalohy, "obnova", chyba=str(e), soubor=soubor.name)
+            raise
+        finally:
+            if docasna:
+                docasna.unlink(missing_ok=True)
+    _uloz_stav(zalohy, "obnova", chyba="", soubor=soubor.name, pred_obnovou=pred.name,
+               uspech=datetime.now().isoformat(timespec="seconds"))
+    return {"soubor": soubor.name, "pred_obnovou": pred.name, "pocty": pocty}
 
 
 # --- plánovač ---------------------------------------------------------------------------------
