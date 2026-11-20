@@ -939,6 +939,17 @@ dd .vedle { margin-left: 1rem; margin-right: .35rem; }
 .hlavni-akce.akce-nova { background: #2f6fb3; border-color: #2f6fb3; color: #fff; }
 .hlavni-akce.akce-nova:hover { background: #245a93; border-color: #245a93; }
 
+/* #82: kompaktní seznam příjmů – jeden nízký řádek na auto, tlačítko + stav vlevo s pevnou šířkou */
+.prijem-seznam th, .prijem-seznam td { padding: 3px 8px; vertical-align: middle; }
+.prijem-seznam td.zakaznik-prijmu { max-width: 11rem; overflow: hidden; text-overflow: ellipsis; }
+.prijem-seznam td { white-space: nowrap; }
+.prijem-seznam td.tlacitka-prijmu .hlavni-akce { min-width: 8rem; padding: 2px 8px; font-size: .8rem; vertical-align: middle; }
+.prijem-seznam td.tlacitka-prijmu .misto-akce { display: inline-block; min-width: 8rem; margin-right: 4px; }
+.prijem-seznam .stav-radku { display: inline-block; min-width: 8.6rem; font-size: .8rem; color: var(--pico-muted-color, #6b7280); vertical-align: middle; }
+.prijem-seznam .stav-radku.konflikt { color: #b91c1c; font-weight: 600; cursor: help; }
+.prijem-seznam td.vin .vin-text { display: inline-block; min-width: 12.2rem; }
+.prijem-seznam td.vin button.kopirovat { margin-left: 6px; padding: 1px 8px !important; font-size: .75rem !important; vertical-align: middle; }
+
 /* #15: číslo dokladu při vystavení – pevná předpona řady + přepisovatelné pořadové číslo */
 .cislo-dokladu-pole { display: flex; align-items: center; gap: 6px; }
 .cislo-dokladu-pole .predpona-dokladu { font-weight: 700; font-size: 1.05rem; letter-spacing: .02em; white-space: nowrap; }

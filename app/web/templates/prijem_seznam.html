@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_makra.html" import spz %}
-{% from "_prijem_makra.html" import stav_db, hlavni_akce %}
+{% from "_prijem_makra.html" import stav_radku, hlavni_akce %}
 {# Příjem vozidel (#51): návštěvy, které zpracoval Přijímací technik (OpenBot), od nejnovější.
    U každé je vidět, jestli vozidlo už máme v databázi (podle SPZ nebo VIN). Klik na řádek:
    v databázi → otevřená zakázka vozidla / nová zakázka, není → založit vozidlo, konflikt → podrobnosti. #}
@@ -16,24 +16,24 @@
 {% else %}
 <div class="overflow-auto">
 <table class="striped klik-otevre prijem-seznam">
-  {# #53: SPZ → Značka → Model → VIN → Km → Přijato; stav v databázi u SPZ.
-     #72: hlavní akce úplně vlevo (menší, barevně odlišená), bez tlačítka Podrobnosti – konflikt otevře
-     podrobnosti klikem na řádek. #}
-  <thead><tr><th></th><th>SPZ</th><th>Značka</th><th>Model</th><th>VIN</th><th class="cislo">Km</th><th>Přijato</th></tr></thead>
+  {# #53, #72, #82: [akce + stav] → SPZ → Značka a model → Zákazník (z naší databáze) → VIN + Kopírovat → Km → Přijato.
+     Jeden nízký řádek na auto; konflikt nemá tlačítko a klik na řádek otevře podrobnosti. #}
+  <thead><tr><th></th><th>SPZ</th><th>Vozidlo</th><th>Zákazník</th><th>VIN</th><th class="cislo">Km</th><th>Přijato</th></tr></thead>
   <tbody>
   {% for n in prijmy.navstevy %}
     {% set shoda = shody[n.id] %}
     {% set detail = '/prijem/' ~ (n.id|urlencode) %}
     {% set a = shoda.akce %}
     {% set v = shoda.vozidlo %}
+    {% set znacka = n.znacka or (v.znacka if v else none) %}
+    {% set model = n.model or (v.model if v else none) %}
     <tr data-prijem="{{ n.id }}" data-otevrit="{{ a[1] if a else detail }}"{% if a and a[2] %} data-okno{% endif %}
         title="{{ ('Klik: ' ~ a[0]) if a else 'Klik otevře podrobnosti' }}">
-      <td class="tlacitka-prijmu">{{ hlavni_akce(shoda, 'maly') }}</td>
-      <td class="hlavni spz-prijmu">{% if n.spz %}{{ spz(n.spz) }}{% if n.je_nejiste('spz') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}{{ none|pomlcka }}{% endif %}
-        {{ stav_db(shoda) }}</td>
-      <td>{% if n.znacka %}{{ n.znacka }}{% elif v and v.znacka %}<span class="tlumene" title="Z naší databáze">{{ v.znacka }}</span>{% else %}{{ none|pomlcka }}{% endif %}</td>
-      <td>{% if n.model %}{{ n.model }}{% elif v and v.model %}<span class="tlumene" title="Z naší databáze">{{ v.model }}</span>{% else %}{{ none|pomlcka }}{% endif %}</td>
-      <td class="kod vin">{% if n.vin %}{{ n.vin }}{% if n.je_nejiste('vin') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}{{ none|pomlcka }}{% endif %}</td>
+      <td class="tlacitka-prijmu">{{ hlavni_akce(shoda, 'maly') }}{{ stav_radku(shoda) }}</td>
+      <td class="hlavni spz-prijmu">{% if n.spz %}{{ spz(n.spz) }}{% if n.je_nejiste('spz') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}{{ none|pomlcka }}{% endif %}</td>
+      <td>{% if znacka or model %}<span{% if not (n.znacka or n.model) %} class="tlumene" title="Z naší databáze"{% endif %}>{{ [znacka, model]|select|join(' ') }}</span>{% else %}{{ none|pomlcka }}{% endif %}</td>
+      <td class="zakaznik-prijmu"{% if v and v.zakaznik %} title="{{ v.zakaznik.nazev }}"{% endif %}>{{ (v.zakaznik.nazev if v and v.zakaznik else none)|pomlcka }}</td>
+      <td class="kod vin">{% if n.vin %}<span class="vin-text">{{ n.vin }}{% if n.je_nejiste('vin') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}</span><button type="button" class="kopirovat neni-tisk" data-kopirovat="{{ n.vin }}" title="Zkopírovat VIN do schránky">Kopírovat</button>{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td class="cislo">{% if n.km is not none %}{{ n.km|cislo }}{% if n.je_nejiste('odometer_km') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td>{{ (n.created_at|datumcas if n.created_at else '')|pomlcka }}</td>
     </tr>

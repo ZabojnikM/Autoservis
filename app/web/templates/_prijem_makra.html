@@ -10,6 +10,18 @@
 {%- endif -%}
 {%- endmacro %}
 
+{#- #82: stav vedle tlačítka v seznamu příjmů – jeden krátký text místo štítku u SPZ -#}
+{% macro stav_radku(shoda) -%}
+{%- if shoda.stav == 'konflikt' -%}
+<span class="stav-radku konflikt" title="{{ shoda.upozorneni }}">Konflikt SPZ / VIN</span>
+{%- elif shoda.stav == 'v_databazi' -%}
+<span class="stav-radku" title="Nalezeno podle {{ 'SPZ i VIN' if shoda.podle_spz and shoda.podle_vin else ('SPZ' if shoda.podle_spz else 'VIN') }}">{{ 'Zakázka už existuje' if shoda.otevrena else 'Vozidlo je v databázi' }}</span>
+{%- if shoda.upozorneni %} <span class="stav-db konflikt-db" title="{{ shoda.upozorneni }}">nesoulad</span>{% endif -%}
+{%- else -%}
+<span class="stav-radku">Vozidlo není v databázi</span>
+{%- endif -%}
+{%- endmacro %}
+
 {% macro hlavni_akce(shoda, trida='') -%}
 {%- set a = shoda.akce -%}
 {#- #72: každá akce má vlastní barvu – založit vozidlo / otevřít zakázku / nová zakázka -#}

@@ -6,6 +6,7 @@ import re
 import pytest
 
 from app import config
+from app.models import Zakaznik
 from app.services import prijem_vozidel, vozidla, zakazky
 from tests.test_web import client
 
@@ -42,11 +43,12 @@ def test_seznam_od_nejnovejsiho_a_dve_navstevy_stejneho_auta(soubor):
     assert ">Příjem vozidel</a>" in text and 'class="striped klik-otevre prijem-seznam"' in text
     km = [t.replace(" ", " ") for t in re.findall(r"12\d.\d00", text)]
     assert text.count("1AB2345") == 2 and km[:2] == ["120 500", "120 000"]  # dvě návštěvy stejného auta
-    assert "<td>ŠKODA</td>" in text and "<td>OCTAVIA</td>" in text
+    assert "<span>ŠKODA OCTAVIA</span>" in text  # #82: značka a model dohromady
     assert '<span class="prazdne">—</span>' in text and "Neuvedeno" not in text  # #57: chybějící VIN / km / značka = pomlčka
-    # #53: SPZ → Značka → Model → VIN → Km → Přijato, tlačítka na konci
+    # #82: [akce + stav] → SPZ → Vozidlo → Zákazník → VIN → Km → Přijato
     hlavicka = re.findall(r"<th[^>]*>([^<]*)</th>", text.split("<thead>")[1].split("</thead>")[0])
-    assert hlavicka == ["", "SPZ", "Značka", "Model", "VIN", "Km", "Přijato"]
+    assert hlavicka == ["", "SPZ", "Vozidlo", "Zákazník", "VIN", "Km", "Přijato"]
+    assert 'data-kopirovat="TMBAA00000000001"' in _radek(text, "a1")  # kopírování VIN
     assert "tajne" not in text and "/fotky/" not in text  # sources, events, fotky se nezobrazují
 
 
@@ -94,6 +96,9 @@ def _radek(text, id_):
 
 def test_v_databazi_podle_spz_nebo_vin_a_konflikt(soubor, session):
     a = vozidla.vytvor(session, {"spz": "1AB2345", "vin": "TMBAA000000000001", "znacka": "Škoda"})
+    a.zakaznik = Zakaznik(nazev="TEST Novák")
+    session.add(a)
+    session.commit()
     b = vozidla.vytvor(session, {"spz": "2BB2222", "vin": "WVWZZZ00000000002"})
     soubor([_navsteva("spz", "2026-11-19T10:00:00Z", vin=""),
             _navsteva("vin", "2026-11-19T09:00:00Z", spz="1AB 2345", vin="tmbaa000000000001"),
@@ -113,12 +118,13 @@ def test_v_databazi_podle_spz_nebo_vin_a_konflikt(soubor, session):
     text = client.get("/prijem").text
     radek = _radek(text, "spz")
     assert f'data-otevrit="/zakazky/nova?vozidlo_id={a.id}&amp;tachometr=120000" data-okno' in radek
-    assert ">Nová zakázka</a>" in radek and "V databázi" in radek and "Podrobnosti" not in radek  # #72
-    assert "akce-nova" in radek and radek.index("hlavni-akce") < radek.index("V databázi")  # tlačítko vlevo
+    assert ">Nová zakázka</a>" in radek and "Vozidlo je v databázi" in radek and "Podrobnosti" not in radek  # #72
+    assert "TEST Novák" in radek  # #82: zákazník z naší databáze
+    assert "akce-nova" in radek and radek.index("hlavni-akce") < radek.index("Vozidlo je v databázi") < radek.index("1AB2345")
     radek = _radek(text, "nova")
     assert 'data-otevrit="/vozidla/nove?prijem=nova" data-okno' in radek and ">Založit vozidlo</a>" in radek
     assert "akce-zalozit" in radek
-    assert "Není v databázi" in radek
+    assert "Vozidlo není v databázi" in radek
     radek = _radek(text, "konf")
     assert 'data-otevrit="/prijem/konf"' in radek and "Konflikt SPZ / VIN" in radek
     assert "Nová zakázka" not in radek and "Založit vozidlo" not in radek
@@ -138,6 +144,7 @@ def test_otevrena_zakazka_a_zalozeni_vozidla_z_prijmu(soubor, session):
                       technicke={"TovarniZnacka": "ŠKODA", "ObchodniOznaceni": "FABIA", "VIN": "ZZZ00000000000007"})])
     radek = _radek(client.get("/prijem").text, "a1")
     assert f'data-otevrit="/zakazky/{zak.id}"' in radek and ">Otevřít zakázku</a>" in radek
+    assert "Zakázka už existuje" in radek  # #82
     assert "data-okno" not in radek.split(">")[0]  # existující zakázka = celá stránka
     # nová zakázka převezme stav km
     assert 'value="120000"' in client.get("/zakazky/nova", params={"vozidlo_id": a.id, "tachometr": "120000"}).text
@@ -149,4 +156,4 @@ def test_otevrena_zakazka_a_zalozeni_vozidla_z_prijmu(soubor, session):
                     follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"].startswith("/prijem")
     radek = _radek(client.get("/prijem").text, "n1")
-    assert "V databázi" in radek and ">Nová zakázka</a>" in radek
+    assert "Vozidlo je v databázi" in radek and ">Nová zakázka</a>" in radek
