@@ -1,4 +1,5 @@
 """Více katalogů materiálu (#62)."""
+import re
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import text
@@ -231,3 +232,24 @@ def test_historie_razeni_podle_poctu_a_presneho_kodu(session):
     assert [h.radek.kod for h in polozky.historie_vozidla(session, nova)] == ["OF 12", "OF 1", "SV 2"]
     # přesný kód nahoře i před častěji použitým dílem
     assert [h.radek.kod for h in polozky.historie_vozidla(session, nova, "of 1")] == ["OF 1", "OF 12"]
+
+
+def test_uprava_materialu_volba_katalogu_a_presun(session):
+    """#124: okno Upravit materiál má volbu katalogu (předvybraný současný); změna díl přesune,
+    stejný kód v cílovém katalogu se odmítne."""
+    klient = TestClient(app)
+    lkq = katalogy.vytvor(session, "LKQ")
+    hlavni = katalogy.vychozi(session)
+    dil = cenik.vytvor(session, {"kod": "K124", "nazev": "Díl 124", "cena": "10"})
+    cenik.vytvor(session, {"kod": "DUP124", "nazev": "Duplicita v LKQ", "cena": "10", "katalog_id": lkq.id})
+    form = klient.get(f"/cenik/{dil.id}/upravit").text
+    assert '<select name="katalog_id">' in form and ">Katalog" in form
+    assert f'<option value="{hlavni.id}" selected>' in form
+    r = klient.post(f"/cenik/{dil.id}/upravit", data={"typ": "material", "kod": "K124", "nazev": "Díl 124", "cena": "10",
+                                                       "katalog_id": str(lkq.id), "aktivni": "1"})
+    assert r.status_code in (200, 303), re.findall(r"class=\"chyba\"[^>]*>([^<]*)", r.text)
+    session.expire_all()
+    assert cenik.ziskej(session, dil.id).katalog_id == lkq.id
+    r = klient.post(f"/cenik/{dil.id}/upravit", data={"typ": "material", "kod": "DUP124", "nazev": "Díl 124", "cena": "10",
+                                                       "katalog_id": str(lkq.id), "aktivni": "1"})
+    assert "už v tomto katalogu má položka" in r.text

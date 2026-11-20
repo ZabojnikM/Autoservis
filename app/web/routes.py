@@ -870,7 +870,7 @@ POLE_CEN = ["cena_s", "cena_zdroj", "cena_s_dph", "nakupni_cena", "nakupni_cena_
 
 def _data_ceniku(data: dict) -> dict:
     vysledek = {p: data.get(p, "") for p in POLE_CENIKU + POLE_CEN if p in data or p in POLE_CENIKU}
-    if cisty_text(data.get("katalog_id")):  # nový materiál: katalog vybraný při otevření formuláře
+    if cisty_text(data.get("katalog_id")):  # katalog z formuláře – nový materiál i přesun při úpravě (#124)
         vysledek["katalog_id"] = data["katalog_id"]
     return vysledek
 
@@ -1004,7 +1004,7 @@ def _formular_ceniku(request, db, polozka, hodnoty, okno=False, chyba=None, zpra
         katalog = katalogy.podle_id(db, hodnoty.get("katalog_id"))
     return _stranka(request, "prace_form.html" if prace else "cenik_form.html", _status_formulare(okno, chyba),
                     aktivni="zakazky" if radek else "prace" if prace else "cenik", polozka=polozka, hodnoty=hodnoty,
-                    katalog=katalog, katalogy=katalogy.seznam(db) if not prace and not polozka else [],
+                    katalog=katalog, katalogy=katalogy.seznam(db) if not prace else [],
                     nast=nastaveni.nacti(db), okno=okno, chyba=chyba, zprava=zprava,
                     adresa_ceniku=_adresa_ceniku(typ), z_ceniku=z_ceniku if okno else None, q_ceniku=q or "",
                     radek_zakazky=radek)
