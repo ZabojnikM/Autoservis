@@ -1452,3 +1452,20 @@ def test_okno_materialu_nejpouzivanejsi_a_oddelovac():
     assert "Nejpoužívanější díly" not in hledani
     assert re.findall(r'data-kod="(FLT \d+)"', vyber("FLT100"))[0] == "FLT 100"  # přesný kód nahoře
     assert "Zaměnitelný díl" not in hledani  # #102: prázdný sloupec se neukazuje
+
+
+def test_radek_polozky_upravit_vlevo_smazat_vpravo():
+    """#103: v řádku položky zakázky je Upravit v prvním sloupci a Smazat v posledním (pravý okraj)."""
+    client.post("/cenik/nova", data={"typ": "material", "kod": "RD103", "nazev": "Díl TEST 103", "cena": "50"})
+    loc = _prijem(spz="9RD0103").headers["location"].split("?")[0]
+    zid = loc.rsplit("/", 1)[1]
+    vyber = client.get("/cenik/vyber", params={"q": "RD103", "zakazka_id": zid})
+    cid = re.search(r'name="polozka_ceniku_id" value="(\d+)"', vyber.text).group(1)
+    client.post(f"{loc}/polozky", data={"polozka_ceniku_id": cid, "mnozstvi": "1"})
+    detail = client.get(loc).text
+    radek = re.search(r'<tr data-otevrit="/polozky/\d+/upravit".*?</tr>', detail, re.S).group(0)
+    bunky = re.findall(r'<td class="([^"]*)"', radek)
+    assert bunky[0].startswith("sl-upravit") and bunky[-1].startswith("sl-smazat")
+    assert "upravit-radek" in radek.split("</td>")[0] and "smazat-radek" in radek.split("<td")[-1]
+    hlavicka = re.findall(r'<th class="([^"]*)"', detail.split("mrizka-polozek")[1].split("</thead>")[0])
+    assert hlavicka[0].startswith("sl-upravit") and hlavicka[-1].startswith("sl-smazat")
