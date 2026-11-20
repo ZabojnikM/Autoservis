@@ -711,7 +711,8 @@ th.razeni a { padding: var(--radek); }
 table.seznam-zakazek { width: 100%; }
 table.seznam-zakazek th, table.seznam-zakazek td { white-space: nowrap; }
 table.seznam-zakazek td, table.seznam-zakazek th.razeni a { padding-right: 16px; }
-table.seznam-zakazek td.sl-pozadavek { width: 100%; max-width: 0; overflow: hidden; text-overflow: ellipsis; }
+/* #99: místo Požadavku VIN (s Kopírovat), kód motoru a platnost STK; šířky podle obsahu, volné místo rovnoměrně */
+table.seznam-zakazek td.sl-vin button.kopirovat { margin-left: 6px; }
 thead th { font-size: .8rem; }
 .overflow-auto:has(> table) { margin-bottom: var(--mezera); border-radius: 12px; overflow: auto; }
 .stav, .stav-dokladu { padding: 2px 9px; font-size: .8rem; }
@@ -774,9 +775,9 @@ a:hover > .spz { border-color: var(--akcent); background: var(--akcent-svetly); 
 .karta-vozidla .vin-radek { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 .karta-vozidla .udaj.vin .udaj-hodnota { font-family: ui-monospace, "Cascadia Mono", Consolas, monospace; font-size: 1.1rem;
   font-weight: 700; letter-spacing: .08em; }
-button.kopirovat { width: auto; margin: 0; padding: 4px 12px !important; font-size: .82rem !important; }
+/* #99: tlačítko Kopírovat je všude stejné (makro kopirovat) – malé, vedle kopírovaného textu */
+button.kopirovat { width: auto; margin: 0; padding: 1px 8px !important; font-size: .75rem !important; vertical-align: middle; }
 .vin-zakazky { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-.vin-zakazky button.kopirovat { padding: 1px 8px !important; font-size: .75rem !important; }
 button.kopirovat.zkopirovano { background: var(--c-hotovo, #15803d) !important; border-color: var(--c-hotovo, #15803d) !important; color: #fff !important; }
 .karta-vozidla .po-terminu { color: var(--c-chyba); font-weight: 700; }
 .poznamka-vozidla { margin-top: .6rem; }
@@ -947,7 +948,7 @@ dd .vedle { margin-left: 1rem; margin-right: .35rem; }
 .prijem-seznam .stav-radku { display: inline-block; min-width: 8.6rem; font-size: .8rem; color: var(--pico-muted-color, #6b7280); vertical-align: middle; }
 .prijem-seznam .stav-radku.konflikt { color: #b91c1c; font-weight: 600; cursor: help; }
 .prijem-seznam td.vin .vin-text { display: inline-block; min-width: 12.2rem; }
-.prijem-seznam td.vin button.kopirovat { margin-left: 6px; padding: 1px 8px !important; font-size: .75rem !important; vertical-align: middle; }
+.prijem-seznam td.vin button.kopirovat { margin-left: 6px; }
 
 /* #15: číslo dokladu při vystavení – pevná předpona řady + přepisovatelné pořadové číslo */
 .cislo-dokladu-pole { display: flex; align-items: center; gap: 6px; }

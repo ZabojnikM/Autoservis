@@ -175,6 +175,12 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
 </div>
 {%- endmacro %}
 
+{# #99: jedno tlačítko Kopírovat pro celou aplikaci (karta zakázky, karta vozidla, příjem, seznam zakázek).
+   Zkopíruje text do schránky a krátce ukáže „Zkopírováno ✓“ (base.html); klik neotevře řádek seznamu. #}
+{% macro kopirovat(text, co='VIN') -%}
+<button type="button" class="kopirovat maly neni-tisk" data-kopirovat="{{ text }}" title="Zkopírovat {{ co }} do schránky">Kopírovat</button>
+{%- endmacro %}
+
 {% macro tabulka_zakazek(zakazky, ukaz_vozidlo=True, ukaz_zakaznika=True, stranka=None) -%}
 {% if zakazky %}
 <div class="overflow-auto">
@@ -182,14 +188,14 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
   <thead><tr>
     {% if stranka %}
     {{ zahlavi('cislo', 'Číslo', stranka) }}{{ zahlavi('prijato', 'Přijato', stranka) }}
-    {% if ukaz_vozidlo %}{{ zahlavi('vozidlo', 'Vozidlo', stranka) }}{% endif %}
+    {% if ukaz_vozidlo %}{{ zahlavi('vozidlo', 'Vozidlo', stranka) }}{{ zahlavi('vin', 'VIN', stranka) }}{{ zahlavi('motor', 'Kód motoru', stranka) }}{{ zahlavi('stk', 'Platnost STK', stranka) }}{% endif %}
     {% if ukaz_zakaznika %}{{ zahlavi('zakaznik', 'Zákazník', stranka) }}{% endif %}
-    {{ zahlavi('stav', 'Stav', stranka) }}{{ zahlavi('pozadavek', 'Požadavek', stranka) }}
+    {{ zahlavi('stav', 'Stav', stranka) }}
     {% else %}
     <th>Číslo</th><th>Přijato</th>
-    {% if ukaz_vozidlo %}<th>Vozidlo</th>{% endif %}
+    {% if ukaz_vozidlo %}<th>Vozidlo</th><th>VIN</th><th>Kód motoru</th><th>Platnost STK</th>{% endif %}
     {% if ukaz_zakaznika %}<th>Zákazník</th>{% endif %}
-    <th>Stav</th><th>Požadavek</th>
+    <th>Stav</th>
     {% endif %}
   </tr></thead>
   <tbody>
@@ -198,10 +204,12 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
         title="Klik otevře zakázku">
       <td class="hlavni"><a href="/zakazky/{{ z.id }}">{{ z.cislo }}</a></td>
       <td>{{ z.datum_prijeti|datum }}</td>
-      {% if ukaz_vozidlo %}<td>{% if z.vozidlo %}{{ spz(z.vozidlo.spz) }} <span class="popis-vozidla">{{ z.vozidlo.popis }}</span>{% else %}<span class="tlumene">bez vozidla</span>{% endif %}</td>{% endif %}
+      {% if ukaz_vozidlo %}{% set v = z.vozidlo %}<td>{% if v %}{{ spz(v.spz) }} <span class="popis-vozidla">{{ v.popis }}</span>{% else %}<span class="tlumene">bez vozidla</span>{% endif %}</td>
+      <td class="kod vin sl-vin">{% if v and v.vin %}<span class="vin-text">{{ v.vin }}</span> {{ kopirovat(v.vin) }}{% else %}{{ none|pomlcka }}{% endif %}</td>
+      <td class="sl-motor">{{ (v.kod_motoru if v else none)|pomlcka }}</td>
+      <td class="sl-stk{% if v and v.termin_stk and v.termin_stk < dnes() %} po-terminu{% endif %}"{% if v and v.termin_stk and v.termin_stk < dnes() %} title="STK propadlá"{% endif %}>{{ (v.termin_stk|datum if v and v.termin_stk else none)|pomlcka }}</td>{% endif %}
       {% if ukaz_zakaznika %}<td>{{ (z.zakaznik.nazev if z.zakaznik else '')|pomlcka }}</td>{% endif %}
       <td class="sl-stav">{{ stav(z) }}</td>
-      <td class="zkratit sl-pozadavek" title="{{ z.pozadavek or '' }}">{{ z.pozadavek|pomlcka }}</td>
     </tr>
   {% endfor %}
   </tbody>

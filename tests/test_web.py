@@ -1361,7 +1361,7 @@ def test_seznamy_jeden_klik_stav_a_hledani_v_seznamu():
     for html in (hledani, seznam):
         assert "Dvojklik otevře zakázku" not in html
         assert 'title="Klik otevře zakázku"' in html
-        assert html.index('class="sl-stav"') < html.index("sl-pozadavek")
+        assert 'class="sl-stav"' in html
     assert "Hledat v seznamu" in seznam
     assert "Hledat v seznamu" in client.get("/vozidla").text
 
@@ -1391,3 +1391,27 @@ def test_okno_ceniku_tlacitka_vysoka_jako_v_zakazce():
     assert "font-size: 1rem; line-height: calc(2.4rem - 2px)" in css
     assert ".tlacitka-hlavicky:not(.vlevo) > * { height: 2.4rem; padding: 0 .8rem; font-size: 1rem;" in css
     assert ".okno-hlavicka.hlavicka-na-stred { display: grid; grid-template-columns: auto 1fr auto; }" in css
+
+
+def test_seznam_zakazek_vin_motor_stk_a_jednotne_kopirovat():
+    """#99: seznam zakázek bez Požadavku, s VIN (Kopírovat), kódem motoru a platností STK (propadlá červeně);
+    tlačítko Kopírovat je všude stejné (makro kopirovat)."""
+    r = _prijem(spz="9ST0099", pozadavek="Výměna rozvodů TEST", v_vin="TMBTEST0000000099",
+                v_kod_motoru="CAYC", v_termin_stk="01.01.2020")
+    assert r.status_code == 303
+    zakazka = r.headers["location"].split("?")[0]
+    seznam = client.get("/zakazky").text
+    hlavicka = re.search(r"<thead>.*?</thead>", seznam, re.S).group(0)
+    assert "Požadavek" not in hlavicka
+    for nazev in ("VIN", "Kód motoru", "Platnost STK"):
+        assert nazev in hlavicka
+    assert "Výměna rozvodů TEST" not in seznam
+    assert 'data-kopirovat="TMBTEST0000000099"' in seznam and "CAYC" in seznam
+    assert re.search(r'class="sl-stk po-terminu"[^>]*>01\.01\.2020<', seznam)
+    assert client.get("/zakazky", params={"razeni": "stk"}).status_code == 200
+    assert client.get("/zakazky", params={"razeni": "-vin"}).status_code == 200
+    tlacitko = ('<button type="button" class="kopirovat maly neni-tisk" data-kopirovat="TMBTEST0000000099" '
+                'title="Zkopírovat VIN do schránky">Kopírovat</button>')
+    assert tlacitko in seznam
+    assert tlacitko in client.get(zakazka).text
+    assert tlacitko in client.get("/hledat", params={"q": "Výměna rozvodů"}).text
