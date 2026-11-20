@@ -37,7 +37,8 @@
       {% if v.olej %}<dt>Olej</dt><dd>{{ v.olej }}</dd>{% endif %}
       {% if v.barva %}<dt>Barva</dt><dd>{{ v.barva }}</dd>{% endif %}
       {% if v.datum_registrace %}<dt>1. registrace</dt><dd>{{ v.datum_registrace|datum }}</dd>{% endif %}
-      <dt>Termín STK</dt><dd>{{ stk(v.termin_stk) }}</dd>
+      <dt>Termín STK</dt><dd>{{ stk(v.termin_stk, v.stav_registru) }}</dd>
+      {% if v.stav_registru %}<dt>Stav v registru</dt><dd title="Načteno {{ v.registr_nacteno|datumcas }}">{{ v.stav_registru|lower }}</dd>{% endif %}
     </dl>
     {% if vyplneno < 5 %}<p class="prazdny-udaj neni-tisk">{% if not vyplneno %}Další údaje nevyplněny · {% endif %}<a href="/vozidla/{{ v.id }}/upravit" data-okno>Doplnit údaje vozidla</a></p>{% endif %}
   </section>

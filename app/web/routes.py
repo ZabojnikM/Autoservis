@@ -12,7 +12,8 @@ from app.db import get_session
 from app.models import FormaUhrady, StavZakazky, TypDokladu, TypPolozky, Uhrada
 from app.services import ares, import_lkq, prijem_vozidel, zastupce
 from app.services import (
-    ChybaValidace, cenik, cisty_text, faktury, hledani, katalogy, nastaveni, polozky, registr_vozidel, vozidla,
+    ChybaValidace, cenik, cisty_text, faktury, hledani, katalogy, nastaveni, polozky, registr_hromadne, registr_vozidel,
+    vozidla,
     zakaznici,
     zakazky,
 )
@@ -1115,7 +1116,38 @@ async def cenik_smazat(request: Request, db: DB, polozka_id: int):
 @router.get("/nastaveni", response_class=HTMLResponse)
 def nastaveni_stranka(request: Request, db: DB, ulozeno: str = ""):
     return _stranka(request, "nastaveni.html", aktivni="nastaveni", nast=nastaveni.nacti(db), ulozeno=ulozeno,
-                    adresa_serveru=str(request.base_url).rstrip("/"), **_kontext_katalogu(db))
+                    adresa_serveru=str(request.base_url).rstrip("/"), **_kontext_katalogu(db),
+                    beh=registr_hromadne.stav(), tempo=registr_hromadne.TEMPO_ZA_MINUTU)
+
+
+# ---- #126: hromadné doplnění údajů vozidel z registru (běží na pozadí, průběh v Nastavení)
+
+def _beh_registru(request, chyba=None):
+    return _stranka(request, "_registr_beh.html", beh=registr_hromadne.stav(), chyba=chyba,
+                    tempo=registr_hromadne.TEMPO_ZA_MINUTU)
+
+
+@router.get("/nastaveni/registr/stav", response_class=HTMLResponse)
+def registr_beh_stav(request: Request):
+    return _beh_registru(request)
+
+
+@router.post("/nastaveni/registr/doplnit", response_class=HTMLResponse)
+async def registr_beh_spust(request: Request, db: DB):
+    data = await _formular(request)
+    klic = nastaveni.nacti(db).api_klic_registr
+    if not cisty_text(klic):
+        return _beh_registru(request, chyba="Nejdřív zadejte a uložte API klíč registru vozidel.")
+    limit = int(data["limit"]) if str(data.get("limit", "")).isdigit() else None  # zkušební běh na pár vozidel
+    if not registr_hromadne.spust(db.get_bind(), klic, limit=limit):
+        return _beh_registru(request, chyba="Doplňování už běží.")
+    return _beh_registru(request)
+
+
+@router.post("/nastaveni/registr/zastavit", response_class=HTMLResponse)
+def registr_beh_zastav(request: Request):
+    registr_hromadne.zastav()
+    return _beh_registru(request)
 
 
 @router.get("/nastaveni/zastupce")

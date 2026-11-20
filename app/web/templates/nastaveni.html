@@ -110,6 +110,18 @@
   </fieldset>
 </form>
 
+{# #126: hromadné doplnění údajů vozidel z registru – mimo formulář nastavení #}
+<section class="formular" id="registr-hromadne">
+  <fieldset class="panel">
+    <legend>Doplnit údaje vozidel z registru</legend>
+    <p class="tlumene">U všech vozidel s VIN načte z registru <strong>kód motoru</strong>, <strong>stav vozidla</strong>
+      a <strong>platnost STK</strong>. Provozované vozidlo dostane STK z registru, vyřazené nebo jinak mimo provoz
+      má STK prázdnou a místo ní stav. Při chybě zůstane dosavadní údaj. Běží na pozadí, asi 22 vozidel za minutu
+      (1 000 vozidel ≈ 45 minut); vozidla načtená už dnes přeskočí.</p>
+    {% include "_registr_beh.html" %}
+  </fieldset>
+</section>
+
 {# #62: katalogy materiálu – mimo formulář nastavení (vlastní formuláře) #}
 <section class="formular" id="katalogy">
   <fieldset class="panel panel-katalogu">

@@ -390,6 +390,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-20 | Číslo dokladu jako jedno pole (#106); STK všude: propadlá červeně se štítkem „po termínu“, prázdná šedě „nevyplněno“, sloupec Platnost STK v seznamu vozidel (#107); ceník materiálu se sloupcem Použito (#122) |
 | 2026-11-20 | **Verze 0.7.3**: okno Přidat materiál s nejpoužívanějšími díly (#102, #113, #115), řádek položky a detail zakázky (#103, Nová zakázka), nová zakázka s vozidlem první a okno zákazníků (#104, #120), číslo dokladu (#106), STK (#107), Použito v ceníku (#122) |
 | 2026-11-20 | Upravit materiál: volba katalogu jako u nového materiálu, změna díl přesune; duplicitní kód v cílovém katalogu se odmítne s hláškou (#124) |
+| 2026-11-20 | Hromadné doplnění údajů vozidel z registru v Nastavení: kód motoru, stav v registru a STK (provozované = STK z registru, mimo provoz = stav místo STK), na pozadí 22 VIN/min s průběhem a přehledem (#126) |
 
 ## Zdroje průzkumu
 
