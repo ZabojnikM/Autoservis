@@ -1469,3 +1469,12 @@ def test_radek_polozky_upravit_vlevo_smazat_vpravo():
     assert "upravit-radek" in radek.split("</td>")[0] and "smazat-radek" in radek.split("<td")[-1]
     hlavicka = re.findall(r'<th class="([^"]*)"', detail.split("mrizka-polozek")[1].split("</thead>")[0])
     assert hlavicka[0].startswith("sl-upravit") and hlavicka[-1].startswith("sl-smazat")
+
+
+def test_detail_zakazky_tlacitko_nova_zakazka_nahore():
+    """Detail zakázky: v levém sloupci akcí je úplně nahoře Nová zakázka (prázdná, otevře se v okně)."""
+    loc = _prijem(spz="9NZ0001").headers["location"].split("?")[0]
+    detail = client.get(loc).text
+    akce = detail.split('<aside class="akce')[1]
+    prvni = re.search(r'<a [^>]*role="button"[^>]*>([^<]+)</a>', akce)
+    assert prvni.group(1) == "Nová zakázka" and 'href="/zakazky/nova"' in prvni.group(0)
