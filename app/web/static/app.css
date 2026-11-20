@@ -113,6 +113,10 @@ legend { font-weight: 600; }
 .okno-tabulka td { vertical-align: middle; }
 .okno-tabulka .vpravo { text-align: right; white-space: nowrap; }
 .okno-tabulka button { margin: 0; }
+/* #120: Databáze zákazníků jako Databáze vozidel – každý řádek na jeden řádek */
+.okno-tabulka table.okno-zakaznici td { white-space: nowrap; }
+.okno-tabulka table.okno-zakaznici td.zkratit { max-width: 18rem; overflow: hidden; text-overflow: ellipsis; }
+.okno-tabulka table.okno-zakaznici td.vozidla-zakaznika { color: #374151; }
 .maly-text { font-size: .85rem; margin-bottom: .3rem; }
 
 /* ---------- detail ---------- */

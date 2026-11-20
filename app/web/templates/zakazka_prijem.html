@@ -16,19 +16,7 @@
       {% if okno %}hx-post="{{ url }}" hx-target="#okno-formular-obsah"{% endif %}>
   {% if okno %}<input type="hidden" name="okno" value="1">{% endif %}
   <div class="prijem-panely">
-    {% include "_prijem_zakaznik.html" %}
-
-    <fieldset class="panel">
-      <legend>Zakázka</legend>
-      <div class="mrizka">
-        {{ pole('datum_prijeti', 'Přijetí', hodnoty, typ='datetime-local') }}
-        {{ pole('tachometr', 'Stav km', hodnoty, extra='inputmode="numeric" pattern="[0-9\\s]*" title="Jen číslice"') }}
-      </div>
-      {{ textove_pole('pozadavek', 'Popis zakázky (požadavek / závada)', hodnoty, radky=5) }}
-      {{ textove_pole('poznamka', 'Interní poznámka', hodnoty, radky=2) }}
-      <p class="tlumene napoveda">V popisu Enter = nový řádek, Tab = další pole.</p>
-    </fieldset>
-
+    {# #104: pořadí panelů Vozidlo · Zakázka · Zákazník – práce začíná SPZ #}
     <fieldset class="panel" id="panel-vozidlo">
       <legend>Vozidlo</legend>
       <div class="radek-s-tlacitky">
@@ -46,6 +34,21 @@
       </div>
       {% if zakazka %}<p class="tlumene napoveda">Jinou SPZ (nebo Vybrat) zakázku přesunete na jiné vozidlo.</p>{% endif %}
     </fieldset>
+
+
+    <fieldset class="panel">
+      <legend>Zakázka</legend>
+      <div class="mrizka">
+        {{ pole('datum_prijeti', 'Přijetí', hodnoty, typ='datetime-local') }}
+        {{ pole('tachometr', 'Stav km', hodnoty, extra='inputmode="numeric" pattern="[0-9\\s]*" title="Jen číslice"') }}
+      </div>
+      {{ textove_pole('pozadavek', 'Popis zakázky (požadavek / závada)', hodnoty, radky=5) }}
+      {{ textove_pole('poznamka', 'Interní poznámka', hodnoty, radky=2) }}
+      <p class="tlumene napoveda">V popisu Enter = nový řádek, Tab = další pole.</p>
+    </fieldset>
+
+
+    {% include "_prijem_zakaznik.html" %}
   </div>
 </form>
 {% endblock %}

@@ -1,5 +1,5 @@
-{% from "_makra.html" import spz %}
-{# Okno „Databáze zákazníků“ – stejný seznam jako /zakaznici, s filtrem a tlačítkem Vložit do výběru `pole`. #}
+{# Okno „Databáze zákazníků“ – stejný seznam jako /zakaznici, s filtrem a tlačítkem Vložit do výběru `pole`.
+   #120: řádky na jeden řádek jako v Databázi vozidel; Vozidla = počet a první SPZ, všechny SPZ v bublině. #}
 <header class="okno-hlavicka">
   <h3>Databáze zákazníků</h3>
   <button type="button" class="zpet maly" onclick="document.getElementById('okno-databaze').close()">✕ Zavřít</button>
@@ -11,16 +11,19 @@
        onkeydown="if (event.key === 'Enter') event.preventDefault()">
 <div id="okno-tabulka" class="okno-tabulka">
 {% if zakaznici %}
-<table class="striped">
+<table class="striped okno-zakaznici">
   <thead><tr><th>Jméno / firma</th><th>Telefon</th><th>Město</th><th>IČO</th><th>Vozidla</th><th></th></tr></thead>
   <tbody>
   {% for k in zakaznici %}
     <tr>
-      <td>{{ k.nazev }}</td>
+      <td class="zkratit" title="{{ k.nazev }}">{{ k.nazev }}</td>
       <td>{{ k.telefon or '' }}</td>
-      <td>{{ k.mesto or '' }}</td>
+      <td class="zkratit" title="{{ k.mesto or '' }}">{{ k.mesto or '' }}</td>
       <td>{{ k.ico or '' }}</td>
-      <td>{% for v in k.vozidla %}{{ spz(v.spz) }} {% endfor %}</td>
+      {% set spz_vozidel = k.vozidla|map(attribute='spz')|select|list %}
+      <td class="vozidla-zakaznika"{% if spz_vozidel %} title="{{ spz_vozidel|join(', ') }}"{% endif %}>
+        {%- if k.vozidla %}{{ k.vozidla|length }}{% if spz_vozidel %} · {{ spz_vozidel[0] }}{% if spz_vozidel|length > 1 %} …{% endif %}{% endif %}{% else %}<span class="tlumene">–</span>{% endif -%}
+      </td>
       <td class="vpravo">
         {% if cil == 'prijem' %}
         <button type="button" class="maly" hx-get="/zakazky/nova/zakaznik" hx-vals='{"vybrat_id": "{{ k.id }}"}'

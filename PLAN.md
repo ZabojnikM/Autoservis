@@ -386,6 +386,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-20 | Detail zakázky: Upravit vlevo, Smazat na pravém okraji řádku položky, obě svisle na středu (#103) |
 | 2026-11-20 | Detail zakázky: bez štítku zdrojového katalogu za názvem dílu (#103) |
 | 2026-11-20 | Detail zakázky: tlačítko Nová zakázka nahoře v levém sloupci |
+| 2026-11-20 | Nová zakázka: panely Vozidlo · Zakázka · Zákazník (#104); okno Databáze zákazníků na jeden řádek, Vozidla jako počet a první SPZ (#120) |
 
 ## Zdroje průzkumu
 

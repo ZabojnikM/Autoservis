@@ -1478,3 +1478,19 @@ def test_detail_zakazky_tlacitko_nova_zakazka_nahore():
     akce = detail.split('<aside class="akce')[1]
     prvni = re.search(r'<a [^>]*role="button"[^>]*>([^<]+)</a>', akce)
     assert prvni.group(1) == "Nová zakázka" and 'href="/zakazky/nova"' in prvni.group(0)
+
+
+def test_prijem_poradi_panelu_a_okno_zakazniku_na_jeden_radek():
+    """#104: Nová zakázka – panely Vozidlo · Zakázka · Zákazník. #120: okno Databáze zákazníků bez štítků SPZ,
+    ve sloupci Vozidla počet a první SPZ (všechny v bublině)."""
+    form = client.get("/zakazky/nova").text
+    assert form.index('id="panel-vozidlo"') < form.index("<legend>Zakázka</legend>") < form.index('id="panel-zakaznik"')
+    r = _prijem(spz="9OK0120", k_nazev="Flotila TEST 120")
+    assert r.status_code == 303
+    zid = client.get("/hledat", params={"q": "Flotila TEST 120"}).text
+    kid = re.search(r'href="/zakaznici/(\d+)"', zid).group(1)
+    client.post("/vozidla/nove", data={"spz": "9OK0121", "zakaznik_id": kid})
+    okno = client.get("/zakaznici/okno", params={"cil": "prijem", "q": "Flotila TEST 120"}).text
+    radek = re.search(r"<tr>\s*<td[^>]*>Flotila TEST 120.*?</tr>", okno, re.S).group(0)
+    assert 'class="spz' not in radek
+    assert re.search(r'title="9OK012[01], 9OK012[01]">2 · 9OK012[01] …', radek)
