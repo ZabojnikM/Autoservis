@@ -44,17 +44,19 @@
     <form method="post" action="/zakazky/{{ zakazka.id }}/stav" class="prepinac-stavu">
       {% for s in StavZakazky.OTEVRENE %}
         <button type="submit" name="stav" value="{{ s }}" class="stav-tlacitko{% if s == zakazka.stav %} aktivni{% endif %}"
-                {% if s == zakazka.stav %}aria-pressed="true" disabled{% endif %}>{{ StavZakazky.NAZVY[s] }}</button>
+                {% if s == zakazka.stav %}aria-pressed="true" disabled{% endif %}
+                {% if s == 'hotovo' %}title="Zmizí z otevřených. Doklad ještě není."{% endif %}>{{ StavZakazky.NAZVY[s] }}</button>
       {% endfor %}
     </form>
-    {# Uzavřeno bez dokladu (např. záruka) jen s potvrzením #}
+    {# #90: jiné znění než štítek „Uzavřeno“ u zakázky s dokladem #}
     <form method="post" action="/zakazky/{{ zakazka.id }}/stav" class="prepinac-stavu"
           {% if not zakazka.uzavrena_bez_dokladu %}data-potvrdit="Uzavřít zakázku {{ zakazka.cislo }} bez dokladu (např. záruka)?&#10;&#10;Nebude vyúčtovaná a přesune se mezi uzavřené zakázky s označením „bez dokladu“." data-potvrdit-ano="Uzavřít bez dokladu"{% endif %}>
       <input type="hidden" name="stav" value="predano"><input type="hidden" name="bez_dokladu" value="1">
       <button type="submit" class="stav-tlacitko{% if zakazka.uzavrena_bez_dokladu %} aktivni{% endif %}"
-              {% if zakazka.uzavrena_bez_dokladu %}aria-pressed="true" disabled{% endif %}
-              title="Uzavřít bez faktury / vyúčtování">{{ StavZakazky.NAZVY['predano'] }}{% if zakazka.uzavrena_bez_dokladu %} bez dokladu{% endif %}</button>
+              {% if zakazka.uzavrena_bez_dokladu %}aria-pressed="true" disabled{% endif %}>
+        {{ 'Uzavřeno bez dokladu' if zakazka.uzavrena_bez_dokladu else 'Uzavřít bez dokladu' }}</button>
     </form>
+    <p class="napoveda-stavu">Předáno schová zakázku z otevřených. Doklad ještě není.</p>
   </div>
   {% endif %}
 </div>

@@ -128,7 +128,7 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
 
 {% macro vyber_roku(roky, rok) -%}
 <select name="rok" onchange="this.form.submit()" aria-label="Rok">
-  <option value="">všechny roky</option>
+  <option value="vse" {% if not rok %}selected{% endif %}>všechny roky</option>
   {% for r in roky %}<option value="{{ r }}" {% if rok == r|string %}selected{% endif %}>{{ r }}</option>{% endfor %}
 </select>
 {%- endmacro %}

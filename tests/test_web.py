@@ -1,4 +1,5 @@
 ﻿import re
+from datetime import date
 
 import pytest
 from fastapi.testclient import TestClient
@@ -101,9 +102,24 @@ def test_druha_zakazka_na_zname_vozidlo():
 
 def test_zmena_stavu():
     loc = _prijem().headers["location"].split("?")[0]
+    otevrena = client.get(loc).text
+    assert "Uzavřít bez dokladu" in otevrena  # #90: jiné znění než štítek zakázky s dokladem
+    assert "Předáno schová zakázku z otevřených" in otevrena
+    assert ">Uzavřeno</button>" not in otevrena
     r = client.post(f"{loc}/stav", data={"stav": "predano", "bez_dokladu": "1"}, follow_redirects=True)
-    assert "Uzavřeno" in r.text
+    assert "Uzavřeno bez dokladu" in r.text
     assert "1AB2345" not in client.get("/").text  # uzavřená není mezi otevřenými zakázkami
+
+
+def test_vyber_roku_je_letosni():
+    """#91: zakázky i faktury se otevřou na aktuální rok, všechny roky jsou volba."""
+    letos = str(date.today().year)
+    for url in ("/zakazky", "/faktury"):
+        text = client.get(url).text
+        assert f'value="{letos}" selected' in text
+        assert 'value="vse" selected' not in text
+    vse = client.get("/zakazky", params={"rok": "vse"}).text
+    assert 'value="vse" selected' in vse
 
 
 def test_hledani_presne_spz_presmeruje():

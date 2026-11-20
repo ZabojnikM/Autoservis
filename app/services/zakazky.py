@@ -350,12 +350,19 @@ def stranka(session: Session, stav: str | list[str] | None = None, jen_otevrene:
 
 
 def roky_prijeti(session: Session) -> list[int]:
-    rok = extract("year", Zakazka.datum_prijeti)
-    return list(session.exec(select(rok).distinct().order_by(rok.desc())))
+    """Roky, ve kterých je aspoň jedna zakázka. Aktuální rok je v seznamu vždy."""
+    sloupec = extract("year", Zakazka.datum_prijeti)
+    roky = {int(h) for h in session.exec(select(sloupec).distinct()) if h is not None}
+    roky.add(date.today().year)
+    return sorted(roky, reverse=True)
 
 
-def pocty_podle_stavu(session: Session) -> dict[str, int]:
-    radky = session.exec(select(Zakazka.stav, func.count()).group_by(Zakazka.stav)).all()
+def pocty_podle_stavu(session: Session, rok: int | None = None) -> dict[str, int]:
+    """Počty zakázek podle stavu. S rokem jen zakázky přijaté v tom roce (jako seznam)."""
+    dotaz = select(Zakazka.stav, func.count())
+    if rok is not None:
+        dotaz = dotaz.where(extract("year", Zakazka.datum_prijeti) == rok)
+    radky = session.exec(dotaz.group_by(Zakazka.stav)).all()
     pocty = {s: 0 for s in StavZakazky.VSECHNY}
     pocty.update({stav: pocet for stav, pocet in radky})
     return pocty

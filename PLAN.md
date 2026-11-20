@@ -373,6 +373,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-20 | Obnova databáze ze zálohy v Nastavení (#77): kontrola zálohy, záloha před obnovou, migrace; postup ruční obnovy v README |
 | 2026-11-20 | Prázdná databáze se automaticky nezálohuje (#83), nová instalace tak nevytlačí dobré zálohy |
 | 2026-11-20 | Příjem vozidel: kompaktní seznam se stavem u tlačítka, zákazník a kopírování VIN (#82) |
+| 2026-11-20 | Stavy zakázky: tlačítko bez dokladu se jmenuje „Uzavřít bez dokladu“, u Předáno je napsané, že zakázka zmizí z otevřených (#90). Příjem vozidel: klik na řádek otevře podrobnosti, tlačítko jen svou akci (#85). Seznamy zakázek a faktur se otevřou na aktuální rok (#91) |
 
 ## Zdroje průzkumu
 
