@@ -1407,7 +1407,7 @@ def test_seznam_zakazek_vin_motor_stk_a_jednotne_kopirovat():
         assert nazev in hlavicka
     assert "Výměna rozvodů TEST" not in seznam
     assert 'data-kopirovat="TMBTEST0000000099"' in seznam and "CAYC" in seznam
-    assert re.search(r'class="sl-stk po-terminu"[^>]*>01\.01\.2020<', seznam)
+    assert re.search(r'<td class="sl-stk"><span class="po-terminu"[^>]*>01\.01\.2020</span> <span class="stitek-po-terminu">po termínu', seznam)
     assert client.get("/zakazky", params={"razeni": "stk"}).status_code == 200
     assert client.get("/zakazky", params={"razeni": "-vin"}).status_code == 200
     tlacitko = ('<button type="button" class="kopirovat maly neni-tisk" data-kopirovat="TMBTEST0000000099" '
@@ -1494,3 +1494,39 @@ def test_prijem_poradi_panelu_a_okno_zakazniku_na_jeden_radek():
     radek = re.search(r"<tr>\s*<td[^>]*>Flotila TEST 120.*?</tr>", okno, re.S).group(0)
     assert 'class="spz' not in radek
     assert re.search(r'title="9OK012[01], 9OK012[01]">2 · 9OK012[01] …', radek)
+
+
+def test_stk_vsude_stejne_po_terminu_a_nevyplneno():
+    """#107: propadlá STK červeně se štítkem „po termínu“, prázdná šedě „nevyplněno“; seznam vozidel má sloupec
+    Platnost STK s řazením."""
+    r = client.post("/vozidla/nove", data={"spz": "9ST1071", "zakaznik_id": "bez", "termin_stk": "01.01.2020"},
+                    follow_redirects=True)
+    assert 'class="po-terminu"' in r.text and "po termínu" in r.text  # karta vozidla
+    r = client.post("/vozidla/nove", data={"spz": "9ST1072", "zakaznik_id": "bez"}, follow_redirects=True)
+    assert "Termín STK" in r.text and '<span class="nevyplneno">nevyplněno</span>' in r.text
+    seznam = client.get("/vozidla", params={"q": "9ST107"}).text
+    assert ">Platnost STK" in seznam and "po termínu" in seznam and "nevyplněno" in seznam
+    assert client.get("/vozidla", params={"razeni": "stk"}).status_code == 200
+
+
+def test_cenik_materialu_sloupec_pouzito():
+    """#122: ceník materiálu ukazuje počet použití; podle něj jde řadit, výchozí řazení zůstává podle kódu."""
+    client.post("/cenik/nova", data={"typ": "material", "kod": "AA122", "nazev": "Díl TEST 122 A", "cena": "10"})
+    client.post("/cenik/nova", data={"typ": "material", "kod": "ZZ122", "nazev": "Díl TEST 122 Z", "cena": "10"})
+    loc = _prijem(spz="9PU0122").headers["location"].split("?")[0]
+    zid = loc.rsplit("/", 1)[1]
+    vyber = client.get("/cenik/vyber", params={"q": "ZZ122", "zakazka_id": zid}).text
+    cid = re.search(r'name="polozka_ceniku_id" value="(\d+)"', vyber).group(1)
+    for _ in range(2):
+        client.post(f"{loc}/polozky", data={"polozka_ceniku_id": cid, "mnozstvi": "1"})
+    vychozi = client.get("/cenik", params={"q": "TEST 122"}).text
+    assert ">Použito" in vychozi and ">2×</td>" in vychozi
+    assert vychozi.index("AA122") < vychozi.index("ZZ122")  # výchozí podle kódu
+    podle_pouziti = client.get("/cenik", params={"q": "TEST 122", "razeni": "-pouzito"}).text
+    assert podle_pouziti.index("ZZ122") < podle_pouziti.index("AA122")
+
+
+def test_cislo_dokladu_predpona_v_jednom_poli():
+    """#106: předpona řady je uvnitř rámečku pole s pořadovým číslem."""
+    css = client.get("/static/app.css").text
+    assert ".cislo-dokladu-pole { display: inline-flex;" in css and "border: 0 !important" in css

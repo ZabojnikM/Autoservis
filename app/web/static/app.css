@@ -787,6 +787,12 @@ button.kopirovat { width: auto; margin: 0; padding: 1px 8px !important; font-siz
 .vin-zakazky { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 button.kopirovat.zkopirovano { background: var(--c-hotovo, #15803d) !important; border-color: var(--c-hotovo, #15803d) !important; color: #fff !important; }
 .karta-vozidla .po-terminu { color: var(--c-chyba); font-weight: 700; }
+/* #107: STK – propadlá červeně tučně se štítkem „po termínu“, prázdná šedě „nevyplněno“ */
+.po-terminu { color: var(--c-chyba); font-weight: 700; }
+.stitek-po-terminu { display: inline-block; padding: 0 .45rem; border-radius: 999px; background: var(--c-chyba); color: #fff;
+  font-size: .72rem; font-weight: 700; line-height: 1.5; vertical-align: middle; white-space: nowrap; }
+.nevyplneno { color: #9ca3af; }
+td.sl-stk { white-space: nowrap; }
 .poznamka-vozidla { margin-top: .6rem; }
 
 @media print { .karta-vozidla-panely { grid-template-columns: repeat(3, 1fr); } .karta-vozidla-panely .panel { box-shadow: none; } }
@@ -958,9 +964,14 @@ dd .vedle { margin-left: 1rem; margin-right: .35rem; }
 .prijem-seznam td.vin button.kopirovat { margin-left: 6px; }
 
 /* #15: číslo dokladu při vystavení – pevná předpona řady + přepisovatelné pořadové číslo */
-.cislo-dokladu-pole { display: flex; align-items: center; gap: 6px; }
-.cislo-dokladu-pole .predpona-dokladu { font-weight: 700; font-size: 1.05rem; letter-spacing: .02em; white-space: nowrap; }
-.cislo-dokladu-pole input { width: 7rem; margin: 0; font-weight: 700; }
+/* #106: předpona řady a pořadové číslo jako jedno pole – předpona šedě uvnitř rámečku, číslo za ní */
+.cislo-dokladu-pole { display: inline-flex; align-items: stretch; width: max-content; margin-top: 4px;
+  border: 1px solid var(--pico-form-element-border-color, #d1d5db); border-radius: 8px; background: #fff; overflow: hidden; }
+.cislo-dokladu-pole:focus-within { border-color: var(--akcent); box-shadow: 0 0 0 3px rgba(91,91,214,.2); }
+.cislo-dokladu-pole .predpona-dokladu { display: flex; align-items: center; padding: 0 .3rem 0 .75rem; font-weight: 700;
+  font-size: 1.05rem; letter-spacing: .02em; color: #6b7280; white-space: nowrap; }
+.cislo-dokladu-pole input { width: 6.5rem; margin: 0 !important; padding-left: 0 !important; font-weight: 700; font-size: 1.05rem;
+  letter-spacing: .02em; border: 0 !important; box-shadow: none !important; background: transparent; }
 /* #15: místo smazaného dokladu v přehledu */
 tr.volne-misto td { color: var(--tlumene, #64748b); font-style: italic; background: repeating-linear-gradient(135deg, transparent 0 8px, rgba(148,163,184,.08) 8px 16px); }
 

@@ -233,7 +233,20 @@ RAZENI = {
     "nakup": [cast(PolozkaCeniku.nakupni_cena, Float)],
     "zamenitelny": [PolozkaCeniku.zamenitelny_dil.collate("cs")],
     "jednotka": [PolozkaCeniku.jednotka, PolozkaCeniku.nazev.collate("cs")],
+    # #122: počet použití na zakázkách (stejný výpočet jako okno Přidat materiál, #102)
+    "pouzito": [select(func.count()).where(PolozkaZakazky.polozka_ceniku_id == PolozkaCeniku.id)
+                .correlate(PolozkaCeniku).scalar_subquery()],
 }
+
+
+def pocty_pouziti(session: Session, ids) -> dict[int, int]:
+    """#122: počet řádků zakázek, které použily dané karty ceníku (karty bez použití ve výsledku nejsou)."""
+    ids = list(ids)
+    if not ids:
+        return {}
+    dotaz = (select(PolozkaZakazky.polozka_ceniku_id, func.count())
+             .where(col(PolozkaZakazky.polozka_ceniku_id).in_(ids)).group_by(PolozkaZakazky.polozka_ceniku_id))
+    return {pid: pocet for pid, pocet in session.execute(dotaz).all()}
 
 
 def stranka(session: Session, hledat: str | None = None, typ: str | None = None, jen_aktivni: bool = False,
