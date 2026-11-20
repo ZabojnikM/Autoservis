@@ -372,6 +372,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-20 | Automatické zálohy databáze (#76): denně na serveru (14), týdně do složky z Nastavení (3), ruční záloha a stažení |
 | 2026-11-20 | Obnova databáze ze zálohy v Nastavení (#77): kontrola zálohy, záloha před obnovou, migrace; postup ruční obnovy v README |
 | 2026-11-20 | Prázdná databáze se automaticky nezálohuje (#83), nová instalace tak nevytlačí dobré zálohy |
+| 2026-11-20 | Příjem vozidel: kompaktní seznam se stavem u tlačítka, zákazník a kopírování VIN (#82) |
 
 ## Zdroje průzkumu
 
