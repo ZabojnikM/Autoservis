@@ -30,7 +30,7 @@
            {% if chyba and slozka != ulozena_slozka %}aria-invalid="true"{% endif %}>
     <button type="submit" class="secondary outline maly" hx-disabled-elt="this">Uložit složku</button>
   </form>
-  <p class="tlumene">Složka je na serveru, kde Autoservis běží. Sdílený disk musí být k serveru připojený.
+  <p class="tlumene">Složka je na serveru, kde Autoservis běží. Sdílený disk musí být k serveru připojený a ve složce musí být značka <code>.autoservis-cil-zaloh</code> (připraví správce serveru).
     Prázdná složka týdenní zálohy vypne. Aplikace ve složce maže jen své staré týdenní zálohy.</p>
 
   <p>

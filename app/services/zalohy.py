@@ -37,6 +37,9 @@ TYDENNICH = 3
 DEN = timedelta(hours=24)
 TYDEN = timedelta(days=7)
 INTERVAL = 600
+# Značka v cílové složce týdenních záloh. Bez ní se do složky nezapisuje – nepřipojený sdílený disk
+# (prázdný přípojný bod na lokálním disku) tak záloha nikdy nezaplní místo lokálního disku.
+ZNACKA = ".autoservis-cil-zaloh"
 _zamek = threading.Lock()
 _FORMAT_CASU = "%Y%m%d-%H%M%S"
 _NAZEV = re.compile(r"^[A-Za-z0-9._-]+\.db$")
@@ -165,6 +168,9 @@ def over_slozku(cesta: str) -> Path:
         raise ChybaValidace("Zadejte celou cestu ke složce na serveru, např. /mnt/zalohy/autoservis.", KLIC_SLOZKY)
     if not p.is_dir():
         raise ChybaValidace(f"Složka {p} na serveru neexistuje (je sdílený disk připojený?).", KLIC_SLOZKY)
+    if not (p / ZNACKA).is_file():
+        raise ChybaValidace(f"Ve složce {p} chybí značka {ZNACKA} – sdílený disk není připojený, nebo složka "
+                            "ještě není pro zálohy připravená (značku vytvoří správce serveru).", KLIC_SLOZKY)
     zkouska = p / ".autoservis-zkouska-zapisu"
     try:
         zkouska.write_bytes(b"ok")
@@ -234,6 +240,9 @@ def tydenni(cilova_slozka: str, db_path: Path = None, zalohy: Path | None = None
         cil_slozka = Path(cilova_slozka)
         if not cil_slozka.is_dir():
             raise ChybaZalohy(f"Složka {cil_slozka} není dostupná (je sdílený disk připojený?).")
+        if not (cil_slozka / ZNACKA).is_file():
+            raise ChybaZalohy(f"Ve složce {cil_slozka} chybí značka {ZNACKA} – sdílený disk není připojený, "
+                              "záloha se do složky neuložila.")
         docasne = Path(zalohy) / ".tydenni"
         mistni = vytvor(db_path, docasne, predpona, ted)
         try:

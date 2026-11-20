@@ -21,6 +21,7 @@ def prostredi(tmp_path, monkeypatch):
     server = tmp_path / "backups"
     sdilena = tmp_path / "sdileny-disk"
     sdilena.mkdir()
+    (sdilena / zalohy.ZNACKA).write_text("")
     monkeypatch.setattr(zalohy, "ZALOHY", server)
     monkeypatch.setattr(zalohy.config, "DB_PATH", db)
     return {"db": db, "server": server, "sdilena": sdilena}
@@ -151,3 +152,17 @@ def test_web_slozka_a_tydenni(prostredi):
 
 def test_nastaveni_nacte_blok_zaloh():
     assert 'hx-get="/nastaveni/zalohy"' in client.get("/nastaveni").text
+
+
+def test_bez_znacky_se_do_slozky_nezapisuje(prostredi, tmp_path):
+    """Nepřipojený sdílený disk = prázdný přípojný bod bez značky → chyba, žádný zápis."""
+    prazdny = tmp_path / "mnt-nepripojeno"
+    prazdny.mkdir()
+    with pytest.raises(zalohy.ChybaZalohy, match="chybí značka"):
+        zalohy.tydenni(str(prazdny), prostredi["db"], prostredi["server"])
+    with pytest.raises(ChybaValidace, match="chybí značka"):
+        zalohy.over_slozku(str(prazdny))
+    assert list(prazdny.iterdir()) == []
+    assert "chybí značka" in zalohy.nacti_stav(prostredi["server"])["tydenni"]["chyba"]
+    # denní záloha na serveru běží dál
+    assert len(zalohy.naplanovane(str(prazdny), prostredi["db"], prostredi["server"])) == 1
