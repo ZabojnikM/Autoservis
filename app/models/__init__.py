@@ -93,6 +93,9 @@ class Vozidlo(SQLModel, table=True):
     olej: Optional[str] = None
     barva: Optional[str] = None
     termin_stk: Optional[date] = None
+    # #126: stav vozidla v Registru silničních vozidel (StatusNazev, např. PROVOZOVANÉ) a kdy se naposledy načetl
+    stav_registru: Optional[str] = None
+    registr_nacteno: Optional[NaiveDatetime] = None
     # termin_ek zrušen (EK se nepoužívá) – sloupec v databázi zůstal, aplikace ho nečte
     poznamka: Optional[str] = None
     zakaznik_id: Optional[int] = Field(default=None, foreign_key="zakaznik.id", index=True)

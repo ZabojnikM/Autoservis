@@ -137,6 +137,10 @@ templates.env.globals["TypDokladu"] = TypDokladu
 templates.env.globals["FormaUhrady"] = FormaUhrady
 templates.env.globals["dnes_rok"] = lambda: date.today().year
 templates.env.globals["dnes"] = date.today
+# #126: stav hromadného doplnění z registru (Nastavení se vykresluje z víc míst)
+from app.services import registr_hromadne  # noqa: E402
+templates.env.globals["registr_beh"] = registr_hromadne.stav
+templates.env.globals["registr_tempo"] = registr_hromadne.TEMPO_ZA_MINUTU
 templates.env.globals["STAVY_PALIVA"] = STAVY_PALIVA
 templates.env.globals["APP_VERSION"] = config.APP_VERSION
 # při změně CSS se změní adresa → prohlížeč nepoužije starou verzi z cache

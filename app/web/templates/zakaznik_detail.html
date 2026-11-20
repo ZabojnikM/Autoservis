@@ -68,7 +68,7 @@
         <td>{% if v.znacka or v.model %}{{ v.popis }}{% endif %}</td>
         <td>{{ v.rok_vyroby or '' }}</td>
         <td class="tlumene">{{ v.vin or '' }}</td>
-        <td class="sl-stk">{{ stk(v.termin_stk) }}</td>
+        <td class="sl-stk">{{ stk(v.termin_stk, v.stav_registru) }}</td>
         <td>{% if posledni %}<a href="/zakazky/{{ posledni.id }}">{{ posledni.cislo }}</a> <span class="tlumene">{{ posledni.datum_prijeti|datum }}</span>{% endif %}</td>
         <td class="neni-tisk"><a href="/zakazky/nova?vozidlo_id={{ v.id }}" class="maly" data-okno>+ zakázka</a></td>
       </tr>

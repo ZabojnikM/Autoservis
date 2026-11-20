@@ -24,7 +24,7 @@
       <td>{{ v.kod_motoru|pomlcka }}</td>
       <td>{{ v.rok_vyroby|pomlcka }}</td>
       <td class="kod vin">{{ v.vin|pomlcka }}</td>
-      <td class="sl-stk">{{ stk(v.termin_stk) }}</td>
+      <td class="sl-stk">{{ stk(v.termin_stk, v.stav_registru) }}</td>
       <td{% if v.zakaznik %} title="{{ v.zakaznik.nazev }}"{% endif %}>{% if v.zakaznik %}<a href="/zakaznici/{{ v.zakaznik.id }}">{{ v.zakaznik.nazev }}</a>{% else %}{{ none|pomlcka }}{% endif %}</td>
     </tr>
   {% endfor %}

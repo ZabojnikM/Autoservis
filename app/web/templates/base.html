@@ -85,6 +85,12 @@
     }
     document.addEventListener("change", (e) => { if (e.target.matches?.("input.vstup-datum")) upravDatum(e.target); }, true);
 
+    // hx-confirm (HTMX) přes okno aplikace místo systémového confirm (#126)
+    document.addEventListener("htmx:confirm", (e) => {
+      if (!e.detail.question) return;
+      e.preventDefault();
+      potvrd(e.detail.question, {ano: "Spustit"}).then((ano) => { if (ano) e.detail.issueRequest(true); });
+    });
     function potvrd(text, {ano = "Ano", ne = "Ne", nebezpecne = false} = {}) {
       const d = document.getElementById("okno-potvrzeni");
       d.querySelector(".potvrzeni-text").textContent = text;

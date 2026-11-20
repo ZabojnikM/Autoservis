@@ -176,8 +176,10 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
 {%- endmacro %}
 
 {# #107: platnost STK všude stejně – propadlá červeně se štítkem „po termínu“, prázdná šedě „nevyplněno“ #}
-{% macro stk(datum) -%}
-{%- if not datum %}<span class="nevyplneno">nevyplněno</span>
+{# #126: vozidlo mimo provoz podle registru (stav jiný než PROVOZOVANÉ) – místo STK šedě stav, bez upozornění #}
+{% macro stk(datum, stav=None) -%}
+{%- if not datum and stav and stav|upper != 'PROVOZOVANÉ' %}<span class="nevyplneno" title="Stav v registru vozidel">{{ stav|lower }}</span>
+{%- elif not datum %}<span class="nevyplneno">nevyplněno</span>
 {%- elif datum < dnes() %}<span class="po-terminu" title="STK propadlá">{{ datum|datum }}</span> <span class="stitek-po-terminu">po termínu</span>
 {%- else %}{{ datum|datum }}{% endif -%}
 {%- endmacro %}
@@ -214,7 +216,7 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
       {% if ukaz_vozidlo %}{% set v = z.vozidlo %}<td>{% if v %}{{ spz(v.spz) }} <span class="popis-vozidla">{{ v.popis }}</span>{% else %}<span class="tlumene">bez vozidla</span>{% endif %}</td>
       <td class="kod vin sl-vin">{% if v and v.vin %}<span class="vin-text">{{ v.vin }}</span> {{ kopirovat(v.vin) }}{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td class="sl-motor">{{ (v.kod_motoru if v else none)|pomlcka }}</td>
-      <td class="sl-stk">{% if v %}{{ stk(v.termin_stk) }}{% else %}{{ none|pomlcka }}{% endif %}</td>{% endif %}
+      <td class="sl-stk">{% if v %}{{ stk(v.termin_stk, v.stav_registru) }}{% else %}{{ none|pomlcka }}{% endif %}</td>{% endif %}
       {% if ukaz_zakaznika %}<td>{{ (z.zakaznik.nazev if z.zakaznik else '')|pomlcka }}</td>{% endif %}
       <td class="sl-stav">{{ stav(z) }}</td>
     </tr>

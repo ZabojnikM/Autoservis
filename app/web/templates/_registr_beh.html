@@ -1,0 +1,25 @@
+{# #126: hromadné doplnění údajů vozidel z registru – tlačítko, průběh (obnovuje se každé 3 s) a přehled #}
+{% set beh = beh if beh is defined else registr_beh() %}
+{% set tempo = tempo if tempo is defined else registr_tempo %}
+<div id="registr-beh" {% if beh.bezi %}hx-get="/nastaveni/registr/stav" hx-trigger="every 3s" hx-swap="outerHTML"{% endif %}>
+  {% if chyba %}<p class="chyba" role="alert">{{ chyba }}</p>{% endif %}
+  {% if beh.bezi %}
+    <p><strong>Probíhá: {{ beh.hotovo }} / {{ beh.celkem }} vozidel</strong>
+      <span class="tlumene">· aktualizováno {{ beh.aktualizovano }} · nenalezeno {{ beh.nenalezeno }} · chyby {{ beh.chyby|length }}
+      · zbývá asi {{ ((beh.celkem - beh.hotovo) / tempo)|round(0, 'ceil')|int }} min</span></p>
+    <progress value="{{ beh.hotovo }}" max="{{ beh.celkem or 1 }}"></progress>
+    <button type="button" class="secondary outline maly" hx-post="/nastaveni/registr/zastavit" hx-target="#registr-beh"
+            hx-swap="outerHTML">Zastavit</button>
+  {% else %}
+    {% if beh.zacatek %}
+    <p><strong>{{ 'Zastaveno' if beh.zastaveno else 'Hotovo' }} {{ beh.konec|datumcas }}:</strong>
+      aktualizováno {{ beh.aktualizovano }} · nenalezeno {{ beh.nenalezeno }} · přeskočeno {{ beh.preskoceno }}
+      (bez VIN nebo načtená už dnes) · chyby {{ beh.chyby|length }}</p>
+    {% if beh.nenalezene %}<p class="tlumene maly-text">Nenalezená v registru: {{ beh.nenalezene|join(', ') }}</p>{% endif %}
+    {% if beh.chyby %}<ul class="maly-text">{% for spz, text in beh.chyby[:20] %}<li>{{ spz }}: {{ text }}</li>{% endfor %}
+      {% if beh.chyby|length > 20 %}<li>… a dalších {{ beh.chyby|length - 20 }}</li>{% endif %}</ul>{% endif %}
+    {% endif %}
+    <button type="button" class="secondary outline" hx-post="/nastaveni/registr/doplnit" hx-target="#registr-beh"
+            hx-swap="outerHTML" hx-confirm="Doplnit údaje všech vozidel s VIN z registru? Poběží na pozadí, asi 22 vozidel za minutu.">Doplnit údaje z registru</button>
+  {% endif %}
+</div>

@@ -48,6 +48,7 @@ powershell -ExecutionPolicy Bypass -File nastroje\zastupce-autoservis.ps1 -Adres
 ## Ovládání (desktopový vzhled jako starý systém)
 
 - **Menu** je vodorovně nahoře, **tlačítka akcí** ve sloupci vlevo (na mobilu řádkem nad obsahem).
+- **Nastavení → Doplnit údaje vozidel z registru** načte u všech vozidel s VIN kód motoru, stav v registru a platnost STK (na pozadí, asi 22 vozidel za minutu, s průběhem a přehledem). Vozidlo mimo provoz má místo STK šedě svůj stav.
 - **Datum** se píše do obyčejného pole jako `20.11.2026` (bez kalendáře). Stačí i zkráceně: `20.11.` = letošní rok, `20.11.26` nebo `20112026`. Po opuštění pole se datum doplní celé, neplatné datum aplikace odmítne.
 - **Seznamy**: jedním **kliknutím** na řádek záznam otevřete (Ctrl+klik = nová karta), stejně i u zakázek ve vyhledávání. Nápověda dole i bublina na řádku to říkají stejně.
   Klik na **hlavičku sloupce** seřadí (znovu = opačně), hledání filtruje **při psaní**, zobrazí se 100 řádků
