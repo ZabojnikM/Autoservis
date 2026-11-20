@@ -6,6 +6,7 @@ from sqlmodel import Session, col, func, select
 
 from app.models import PolozkaCeniku, TypPolozky, zaokrouhli
 from app.services import ChybaValidace, NenalezenoError, cisty_text, desetinne_nebo_none
+from app.services import katalogy
 from app.services import nastaveni as nastaveni_sluzba
 from app.services.strankovani import VELIKOST_STRANKY, Stranka, strankuj_dotaz
 
@@ -69,11 +70,17 @@ def _nastav(session: Session, polozka: PolozkaCeniku, data: dict) -> None:
     if "aktivni" in data:
         polozka.aktivni = data["aktivni"] in (True, "1", "on", "true")
 
+    if "katalog_id" in data:
+        # práce mají jeden společný katalog (výchozí), materiál patří do zvoleného (#62)
+        polozka.katalog_id = (katalogy.vychozi(session).id if polozka.typ == TypPolozky.PRACE
+                              else katalogy.podle_id(session, data["katalog_id"]).id)
+    elif polozka.katalog_id is None or polozka.typ == TypPolozky.PRACE:
+        polozka.katalog_id = katalogy.vychozi(session).id
+
     if polozka.kod:
-        with session.no_autoflush:
-            jina = session.exec(select(PolozkaCeniku).where(PolozkaCeniku.kod == polozka.kod)).first()
+        jina = najdi_podle_kodu(session, polozka.kod, polozka.katalog_id)
         if jina and jina.id != polozka.id:
-            raise ChybaValidace(f"Kód {polozka.kod} už má položka „{jina.nazev}“.", "kod")
+            raise ChybaValidace(f"Kód {polozka.kod} už v tomto katalogu má položka „{jina.nazev}“.", "kod")
 
 
 def vytvor(session: Session, data: dict, commit: bool = True) -> PolozkaCeniku:
@@ -102,11 +109,14 @@ def uprav(session: Session, polozka_id: int, data: dict) -> PolozkaCeniku:
     return polozka
 
 
-def najdi_podle_kodu(session: Session, kod: str | None) -> PolozkaCeniku | None:
+def najdi_podle_kodu(session: Session, kod: str | None, katalog_id: int | None) -> PolozkaCeniku | None:
+    """Položka s kódem v daném katalogu (stejný kód v jiném katalogu je jiný díl, #62)."""
     kod = cisty_text(kod)
     if not kod:
         return None
-    return session.exec(select(PolozkaCeniku).where(PolozkaCeniku.kod == kod)).first()
+    with session.no_autoflush:
+        return session.exec(select(PolozkaCeniku).where(PolozkaCeniku.kod == kod,
+                                                        PolozkaCeniku.katalog_id == katalog_id)).first()
 
 
 def ziskej(session: Session, polozka_id: int) -> PolozkaCeniku:
@@ -123,8 +133,11 @@ def _bez_oddelovacu(vyraz):
     return func.upper(vyraz)
 
 
-def _dotaz_seznamu(hledat: str | None, typ: str | None, jen_aktivni: bool):
+def _dotaz_seznamu(hledat: str | None, typ: str | None, jen_aktivni: bool, katalog_id: int | None = None):
+    """`katalog_id` omezí materiál na jeden katalog; práce (společný katalog) zůstávají."""
     dotaz = select(PolozkaCeniku)
+    if katalog_id is not None:
+        dotaz = dotaz.where(or_(PolozkaCeniku.typ == TypPolozky.PRACE, PolozkaCeniku.katalog_id == katalog_id))
     hledat = cisty_text(hledat)
     if hledat:
         vzor = f"%{hledat}%"
@@ -149,9 +162,10 @@ def seznam(
     jen_aktivni: bool = False,
     limit: int = 500,
     podle_kodu: bool = False,
+    katalog_id: int | None = None,
 ) -> list[PolozkaCeniku]:
     """`podle_kodu` = řadit podle kódu (položky bez kódu na konec), jinak práce před materiálem a podle názvu."""
-    dotaz = _dotaz_seznamu(hledat, typ, jen_aktivni)
+    dotaz = _dotaz_seznamu(hledat, typ, jen_aktivni, katalog_id)
     if podle_kodu:
         poradi = (PolozkaCeniku.kod.is_(None), PolozkaCeniku.kod.collate("cs"), PolozkaCeniku.nazev.collate("cs"))
     else:
@@ -159,9 +173,10 @@ def seznam(
     return list(session.exec(dotaz.order_by(*poradi).limit(limit)))
 
 
-def pocty_podle_typu(session: Session, hledat: str | None = None, jen_aktivni: bool = False) -> dict[str, int]:
+def pocty_podle_typu(session: Session, hledat: str | None = None, jen_aktivni: bool = False,
+                     katalog_id: int | None = None) -> dict[str, int]:
     """Počty položek pro záložky Vše / Práce / Materiál (se stejným hledáním jako seznam)."""
-    filtr = _dotaz_seznamu(hledat, None, jen_aktivni).whereclause
+    filtr = _dotaz_seznamu(hledat, None, jen_aktivni, katalog_id).whereclause
     dotaz = select(PolozkaCeniku.typ, func.count()).group_by(PolozkaCeniku.typ)
     if filtr is not None:
         dotaz = dotaz.where(filtr)
@@ -184,9 +199,9 @@ RAZENI = {
 
 
 def stranka(session: Session, hledat: str | None = None, typ: str | None = None, jen_aktivni: bool = False,
-            razeni: str | None = None, od=0, limit: int = VELIKOST_STRANKY) -> Stranka:
+            razeni: str | None = None, od=0, limit: int = VELIKOST_STRANKY, katalog_id: int | None = None) -> Stranka:
     # výchozí řazení podle kódu (hlavní klíč ceníku); položky bez kódu jsou na konci
-    return strankuj_dotaz(session, _dotaz_seznamu(hledat, typ, jen_aktivni), RAZENI, razeni, "kod",
+    return strankuj_dotaz(session, _dotaz_seznamu(hledat, typ, jen_aktivni, katalog_id), RAZENI, razeni, "kod",
                           od, limit, doplnkove=[PolozkaCeniku.id])
 
 

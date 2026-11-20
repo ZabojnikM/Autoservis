@@ -12,7 +12,8 @@ from app.db import get_session
 from app.models import FormaUhrady, StavZakazky, TypDokladu, TypPolozky, Uhrada
 from app.services import ares, import_lkq, prijem_vozidel
 from app.services import (
-    ChybaValidace, cenik, cisty_text, faktury, hledani, nastaveni, polozky, registr_vozidel, vozidla, zakaznici,
+    ChybaValidace, cenik, cisty_text, faktury, hledani, katalogy, nastaveni, polozky, registr_vozidel, vozidla,
+    zakaznici,
     zakazky,
 )
 from app.services.strankovani import VELIKOST_STRANKY
@@ -275,11 +276,17 @@ def _detail_zakazky(request, db, zakazka_id, chyba=None, hodnoty=None, status_co
         rek=polozky.rekapitulace(zakazka), nast=nastaveni.nacti(db),
         nelze_smazat=zakazky.duvod_proc_nesmazat(zakazka),
         doklady=sorted(zakazka.faktury, key=lambda f: (f.datum_vystaveni, f.cislo)),
+        vice_katalogu=len(katalogy.seznam(db)) > 1,
         chyba=chyba, hodnoty=hodnoty or {}, **kontext,
     )
 
 
 LIMIT_CENIKU = 100
+
+
+def _katalog(request: Request, db):
+    """Katalog materiálu vybraný na kartě Materiál (cookie prohlížeče, #62); jinak výchozí."""
+    return katalogy.podle_id(db, request.cookies.get(katalogy.KLIC_COOKIE))
 
 
 def _typ_ceniku(typ) -> str | None:
@@ -298,9 +305,11 @@ def _okno_ceniku(request, db, zakazka_id, q="", okno=False, chyba=None, zprava=N
     typ = _typ_ceniku(typ)
     zakazka = zakazky.ziskej(db, zakazka_id)
     db.refresh(zakazka)
+    katalog = _katalog(request, db)
     return _stranka(request, "zakazka_cenik.html", _status_formulare(okno, chyba), aktivni="zakazky",
-                    zakazka=zakazka, zakazka_id=zakazka_id, q=q, okno=okno, typ_okna=typ,
-                    nalezene=cenik.seznam(db, q, typ=typ, jen_aktivni=True, limit=LIMIT_CENIKU, podle_kodu=True), limit=LIMIT_CENIKU,
+                    zakazka=zakazka, zakazka_id=zakazka_id, q=q, okno=okno, typ_okna=typ, katalog=katalog,
+                    nalezene=cenik.seznam(db, q, typ=typ, jen_aktivni=True, limit=LIMIT_CENIKU, podle_kodu=True,
+                                          katalog_id=katalog.id), limit=LIMIT_CENIKU,
                     nast=nastaveni.nacti(db), hlaseni_chyba=chyba, hlaseni=zprava, pridano=pridano)
 
 
@@ -355,6 +364,7 @@ async def zakazka_pridej_polozku(request: Request, db: DB, zakazka_id: int):
     """
     data = await _formular(request)
     okno = bool(data.pop("okno", ""))
+    data.setdefault("katalog_id", str(_katalog(request, db).id))  # „uložit i do ceníku“ → vybraný katalog
     z_ceniku = bool(cisty_text(data.get("polozka_ceniku_id")))
     try:
         if z_ceniku:
@@ -393,6 +403,7 @@ async def polozka_upravit_uloz(request: Request, db: DB, polozka_id: int):
     data = await _formular(request)
     okno = bool(data.pop("okno", ""))
     data.setdefault("cena_s_dph", "")
+    data.setdefault("katalog_id", str(_katalog(request, db).id))
     try:
         radek = polozky.uprav(db, polozka_id, data)
     except ChybaValidace as e:
@@ -812,7 +823,10 @@ POLE_CEN = ["cena_s", "cena_zdroj", "cena_s_dph", "nakupni_cena", "nakupni_cena_
 
 
 def _data_ceniku(data: dict) -> dict:
-    return {p: data.get(p, "") for p in POLE_CENIKU + POLE_CEN if p in data or p in POLE_CENIKU}
+    vysledek = {p: data.get(p, "") for p in POLE_CENIKU + POLE_CEN if p in data or p in POLE_CENIKU}
+    if cisty_text(data.get("katalog_id")):  # nový materiál: katalog vybraný při otevření formuláře
+        vysledek["katalog_id"] = data["katalog_id"]
+    return vysledek
 
 
 # Dva oddělené ceníky: materiál (/cenik) a práce (/prace) – vlastní seznam, sloupce i okno.
@@ -823,17 +837,29 @@ def _adresa_ceniku(typ: str) -> str:
 
 
 def _seznam_ceniku(request, db, typ, q, neaktivni, razeni, od, vse_radky, zvyraznit):
-    st = cenik.stranka(db, q, typ=typ, jen_aktivni=not neaktivni, razeni=razeni, od=od, limit=_davka(vse_radky))
-    sablona = "prace_seznam.html" if typ == TypPolozky.PRACE else "cenik_seznam.html"
-    return _stranka(request, sablona, aktivni="prace" if typ == TypPolozky.PRACE else "cenik", q=q, typ=typ,
-                    neaktivni=neaktivni, polozky=st.polozky, stranka=st, nast=nastaveni.nacti(db), zvyraznit=zvyraznit)
+    material = typ == TypPolozky.MATERIAL
+    katalog = _katalog(request, db) if material else None
+    st = cenik.stranka(db, q, typ=typ, jen_aktivni=not neaktivni, razeni=razeni, od=od, limit=_davka(vse_radky),
+                       katalog_id=katalog.id if katalog else None)
+    sablona = "cenik_seznam.html" if material else "prace_seznam.html"
+    return _stranka(request, sablona, aktivni="cenik" if material else "prace", q=q, typ=typ,
+                    neaktivni=neaktivni, polozky=st.polozky, stranka=st, nast=nastaveni.nacti(db), zvyraznit=zvyraznit,
+                    katalog=katalog, katalogy=katalogy.seznam(db) if material else [])
+
+
+ROK_SEKUND = 365 * 24 * 3600
 
 
 @router.get("/cenik", response_class=HTMLResponse)
 def cenik_seznam(request: Request, db: DB, q: str = "", typ: str = "", neaktivni: str = "",
-                 razeni: str = "", od: str = "", vse_radky: str = "", zvyraznit: str = ""):
+                 razeni: str = "", od: str = "", vse_radky: str = "", zvyraznit: str = "", katalog: str = ""):
     if typ == TypPolozky.PRACE:  # starší odkazy na záložku Práce
         return RedirectResponse(f"/prace?{request.url.query}", status_code=303)
+    if katalog:  # přepínač katalogů: výběr si zapamatuje prohlížeč (cookie), pak seznam bez parametru
+        vybrany = katalogy.podle_id(db, katalog)
+        odpoved = RedirectResponse("/cenik" + (f"?q={quote(q)}" if q else ""), status_code=303)
+        odpoved.set_cookie(katalogy.KLIC_COOKIE, str(vybrany.id), max_age=10 * ROK_SEKUND, path="/", samesite="lax")
+        return odpoved
     return _seznam_ceniku(request, db, TypPolozky.MATERIAL, q, neaktivni, razeni, od, vse_radky, zvyraznit)
 
 
@@ -845,12 +871,15 @@ def prace_seznam(request: Request, db: DB, q: str = "", neaktivni: str = "",
 
 # ---------------------------------------------------------------- import dodacího listu LKQ (#8)
 
-def _okno_importu(request, db, okno=False, zakazka_id=None, dodaci_list=None, chyba=None):
-    """Okno importu: bez `dodaci_list` výběr souboru, s ním náhled spárovaný s ceníkem."""
+def _okno_importu(request, db, okno=False, zakazka_id=None, dodaci_list=None, chyba=None, katalog_id=None):
+    """Okno importu: bez `dodaci_list` výběr souboru, s ním náhled spárovaný s katalogem.
+    Importuje se do katalogu vybraného při otevření okna (`katalog_id` jde dál ve formuláři, #62)."""
     zakazka = zakazky.ziskej(db, zakazka_id) if zakazka_id else None
+    katalog = katalogy.podle_id(db, katalog_id) if katalog_id else _katalog(request, db)
     return _stranka(request, "import_lkq.html", _status_formulare(okno, chyba), aktivni="zakazky" if zakazka else "cenik",
                     okno=okno, zakazka=zakazka, dodaci_list=dodaci_list, chyba=chyba, nast=nastaveni.nacti(db),
-                    radky=import_lkq.nahled(db, dodaci_list) if dodaci_list else [],
+                    katalog=katalog,
+                    radky=import_lkq.nahled(db, dodaci_list, katalog.id) if dodaci_list else [],
                     data_listu=import_lkq.do_json(dodaci_list) if dodaci_list else "")
 
 
@@ -868,27 +897,28 @@ def import_lkq_okno(request: Request, db: DB, okno: str = "", zakazka_id: str = 
 async def import_lkq_nahled(request: Request, db: DB):
     form = await request.form()
     okno, zakazka_id = bool(form.get("okno")), _id_zakazky(form.get("zakazka_id"))
-    soubor = form.get("soubor")
+    soubor, katalog_id = form.get("soubor"), form.get("katalog_id")
     try:
         dodaci_list = import_lkq.nacti_csv(await soubor.read() if hasattr(soubor, "read") else b"")
     except ChybaValidace as e:
-        return _okno_importu(request, db, okno, zakazka_id, chyba=e)
-    return _okno_importu(request, db, okno, zakazka_id, dodaci_list)
+        return _okno_importu(request, db, okno, zakazka_id, chyba=e, katalog_id=katalog_id)
+    return _okno_importu(request, db, okno, zakazka_id, dodaci_list, katalog_id=katalog_id)
 
 
 @router.post("/cenik/import", response_class=HTMLResponse)
 async def import_lkq_uloz(request: Request, db: DB):
     form = await request.form()
     okno, zakazka_id = bool(form.get("okno")), _id_zakazky(form.get("zakazka_id"))
+    katalog = katalogy.podle_id(db, form.get("katalog_id")) if form.get("katalog_id") else _katalog(request, db)
     try:
         dodaci_list = import_lkq.z_json(str(form.get("data_listu") or ""))
     except ChybaValidace as e:
-        return _okno_importu(request, db, okno, zakazka_id, chyba=e)
+        return _okno_importu(request, db, okno, zakazka_id, chyba=e, katalog_id=katalog.id)
     vybrane = [int(v) for v in form.getlist("vybrano") if str(v).isdigit()]
     try:
-        souhrn = import_lkq.importuj(db, dodaci_list, vybrane, zakazka_id)
+        souhrn = import_lkq.importuj(db, dodaci_list, vybrane, zakazka_id, katalog_id=katalog.id)
     except ChybaValidace as e:
-        return _okno_importu(request, db, okno, zakazka_id, dodaci_list, chyba=e)
+        return _okno_importu(request, db, okno, zakazka_id, dodaci_list, chyba=e, katalog_id=katalog.id)
     cil = f"/zakazky/{zakazka_id}" if zakazka_id else "/cenik"
     # z okna: obnovit stránku pod oknem (zakázka / ceník) a ukázat souhrn
     return _po_ulozeni(okno, cil, None, zprava=souhrn.text)
@@ -900,7 +930,8 @@ def cenik_vyber(request: Request, db: DB, q: str = "", zakazka_id: int = 0, okno
     q = cisty_text(q) or ""
     typ = _typ_ceniku(typ)
     return _stranka(request, "_cenik_vyber_vysledky.html", q=q, zakazka_id=zakazka_id, okno=bool(okno), typ_okna=typ,
-                    nalezene=cenik.seznam(db, q, typ=typ, jen_aktivni=True, limit=LIMIT_CENIKU, podle_kodu=True), limit=LIMIT_CENIKU,
+                    nalezene=cenik.seznam(db, q, typ=typ, jen_aktivni=True, limit=LIMIT_CENIKU, podle_kodu=True,
+                                          katalog_id=_katalog(request, db).id), limit=LIMIT_CENIKU,
                     nast=nastaveni.nacti(db))
 
 
@@ -916,8 +947,16 @@ def _formular_ceniku(request, db, polozka, hodnoty, okno=False, chyba=None, zpra
     se změny propíšou i do něj."""
     typ = polozka.typ if polozka else hodnoty.get("typ") or TypPolozky.MATERIAL
     prace = typ == TypPolozky.PRACE
+    if prace:
+        katalog = None
+    elif polozka:
+        katalog = katalogy.podle_id(db, polozka.katalog_id)
+    else:  # nový materiál: katalog vybraný při otevření formuláře (hodnota jde dál ve formuláři)
+        katalog = katalogy.podle_id(db, hodnoty.get("katalog_id")) if hodnoty.get("katalog_id") \
+            else _katalog(request, db)
     return _stranka(request, "prace_form.html" if prace else "cenik_form.html", _status_formulare(okno, chyba),
                     aktivni="zakazky" if radek else "prace" if prace else "cenik", polozka=polozka, hodnoty=hodnoty,
+                    katalog=katalog,
                     nast=nastaveni.nacti(db), okno=okno, chyba=chyba, zprava=zprava,
                     adresa_ceniku=_adresa_ceniku(typ), z_ceniku=z_ceniku if okno else None, q_ceniku=q or "",
                     radek_zakazky=radek)
@@ -964,8 +1003,9 @@ async def cenik_nova_uloz(request: Request, db: DB):
         db.rollback()
         return _formular_ceniku(request, db, None, data, okno, e)
     typ = data.get("typ", "material")
-    if data.get("dalsi") and okno:  # okno zůstane otevřené s prázdným formulářem
-        return _formular_ceniku(request, db, None, _nova_polozka_ceniku(db, typ), okno,
+    if data.get("dalsi") and okno:  # okno zůstane otevřené s prázdným formulářem (ve stejném katalogu)
+        return _formular_ceniku(request, db, None, _nova_polozka_ceniku(db, typ)
+                                | {"katalog_id": str(nova.katalog_id or "")}, okno,
                                 zprava=f"Uloženo: {nova.nazev}")
     adresa = _adresa_ceniku(nova.typ)
     if data.get("dalsi"):
@@ -1026,7 +1066,48 @@ async def cenik_smazat(request: Request, db: DB, polozka_id: int):
 
 @router.get("/nastaveni", response_class=HTMLResponse)
 def nastaveni_stranka(request: Request, db: DB, ulozeno: str = ""):
-    return _stranka(request, "nastaveni.html", aktivni="nastaveni", nast=nastaveni.nacti(db), ulozeno=ulozeno)
+    return _stranka(request, "nastaveni.html", aktivni="nastaveni", nast=nastaveni.nacti(db), ulozeno=ulozeno,
+                    **_kontext_katalogu(db))
+
+
+def _kontext_katalogu(db) -> dict:
+    """Panel Katalogy materiálu v Nastavení: katalogy, počty dílů a proč nejde smazat."""
+    seznam = katalogy.seznam(db)
+    return {"katalogy": seznam, "pocty_katalogu": {k.id: katalogy.pocet_polozek(db, k.id) for k in seznam},
+            "nesmazatelne": {k.id: katalogy.duvod_proc_nesmazat(db, k) for k in seznam}}
+
+
+@router.post("/katalogy")
+async def katalog_novy(request: Request, db: DB):
+    data = await _formular(request)
+    try:
+        katalog = katalogy.vytvor(db, data.get("nazev"))
+    except ChybaValidace as e:
+        db.rollback()
+        return _presmeruj_s_chybou("/nastaveni#katalogy", e)
+    return _presmeruj("/nastaveni#katalogy", f"Katalog „{katalog.nazev}“ založen.")
+
+
+@router.post("/katalogy/{katalog_id}/prejmenovat")
+async def katalog_prejmenovat(request: Request, db: DB, katalog_id: int):
+    data = await _formular(request)
+    try:
+        katalog = katalogy.prejmenuj(db, katalog_id, data.get("nazev"))
+    except ChybaValidace as e:
+        db.rollback()
+        return _presmeruj_s_chybou("/nastaveni#katalogy", e)
+    return _presmeruj("/nastaveni#katalogy", f"Katalog přejmenován na „{katalog.nazev}“.")
+
+
+@router.post("/katalogy/{katalog_id}/smazat")
+def katalog_smazat(db: DB, katalog_id: int):
+    nazev = katalogy.ziskej(db, katalog_id).nazev
+    try:
+        katalogy.smaz(db, katalog_id)
+    except ChybaValidace as e:
+        db.rollback()
+        return _presmeruj_s_chybou("/nastaveni#katalogy", e)
+    return _presmeruj("/nastaveni#katalogy", f"Katalog „{nazev}“ smazán.")
 
 
 @router.post("/nastaveni", response_class=HTMLResponse)
@@ -1046,7 +1127,7 @@ async def nastaveni_uloz(request: Request, db: DB):
     except ChybaValidace as e:
         db.rollback()
         return _stranka(request, "nastaveni.html", 422, aktivni="nastaveni", nast=nastaveni.nacti(db),
-                        chyba=e)
+                        chyba=e, **_kontext_katalogu(db))
     return _presmeruj("/nastaveni?ulozeno=1")
 
 

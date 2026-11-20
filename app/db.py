@@ -54,6 +54,14 @@ def _zapni_cizi_klice(dbapi_conn, _record):
         dbapi_conn.create_collation("cs", _porovnej_cesky)
 
 
+@event.listens_for(models.PolozkaCeniku, "before_insert")
+def _vychozi_katalog(_mapper, connection, polozka):
+    """Položka ceníku bez katalogu (práce, importy) patří do výchozího katalogu (#62)."""
+    if polozka.katalog_id is None:
+        polozka.katalog_id = connection.execute(
+            text("SELECT id FROM katalog WHERE vychozi = 1 ORDER BY id")).scalar()
+
+
 def vytvor_engine(url: str = config.DATABASE_URL) -> Engine:
     return create_engine(url, connect_args={"check_same_thread": False})
 
@@ -67,6 +75,7 @@ def init_db(eng: Engine | None = None) -> None:
     SQLModel.metadata.create_all(eng)
     doplnit_sloupce(eng)
     uvolnit_povinne_sloupce(eng)
+    zavest_katalogy(eng)
 
 
 def doplnit_sloupce(eng: Engine) -> list[str]:
@@ -176,6 +185,49 @@ def uvolnit_povinne_sloupce(eng: Engine) -> list[str]:
     finally:
         surove.close()
     return hotovo
+
+
+VYCHOZI_KATALOG = "Hlavní katalog"
+
+
+def zavest_katalogy(eng: Engine) -> bool:
+    """Migrace #62 – více katalogů materiálu. Idempotentní, vrací True, když něco změnila.
+
+    - založí výchozí katalog a přiřadí mu všechny položky ceníku bez katalogu (práce patří do výchozího),
+    - řádkům zakázek z ceníku (materiál) při prvním zavedení doplní zdrojový katalog,
+    - jedinečnost kódu: místo jedinečného indexu na `kod` jedinečná dvojice (katalog, kód)."""
+    with eng.connect() as conn:
+        indexy = {r[1]: r[2] for r in conn.execute(text("PRAGMA index_list(polozkaceniku)"))}
+        bez_katalogu = conn.execute(text("SELECT count(*) FROM polozkaceniku WHERE katalog_id IS NULL")).scalar()
+        vychozi = conn.execute(text("SELECT id FROM katalog WHERE vychozi = 1 ORDER BY id")).scalar()
+    zmena_indexu = bool(indexy.get("ix_polozkaceniku_kod")) or "ux_polozkaceniku_katalog_kod" not in indexy
+    if vychozi is not None and not bez_katalogu and not zmena_indexu:
+        return False
+    if bez_katalogu or zmena_indexu:
+        _zaloha_pred_migraci(eng)
+    with eng.begin() as conn:
+        prvni = vychozi is None
+        if prvni:
+            jiny = conn.execute(text("SELECT id FROM katalog ORDER BY poradi, id")).scalar()
+            if jiny is not None:  # katalogy existují, jen žádný není výchozí
+                conn.execute(text("UPDATE katalog SET vychozi = 1 WHERE id = :id"), {"id": jiny})
+                vychozi, prvni = jiny, False
+            else:
+                vychozi = conn.execute(text(
+                    "INSERT INTO katalog (nazev, vychozi, poradi) VALUES (:n, 1, 0) RETURNING id"),
+                    {"n": VYCHOZI_KATALOG}).scalar()
+        conn.execute(text("UPDATE polozkaceniku SET katalog_id = :k WHERE katalog_id IS NULL"), {"k": vychozi})
+        if prvni:
+            conn.execute(text(
+                "UPDATE polozkazakazky SET katalog_id = (SELECT p.katalog_id FROM polozkaceniku p"
+                " WHERE p.id = polozkazakazky.polozka_ceniku_id)"
+                " WHERE katalog_id IS NULL AND typ = 'material' AND polozka_ceniku_id IS NOT NULL"))
+        if indexy.get("ix_polozkaceniku_kod"):  # jedinečný index z doby jednoho ceníku
+            conn.execute(text("DROP INDEX ix_polozkaceniku_kod"))
+            conn.execute(text("CREATE INDEX ix_polozkaceniku_kod ON polozkaceniku (kod)"))
+        conn.execute(text("CREATE UNIQUE INDEX IF NOT EXISTS ux_polozkaceniku_katalog_kod"
+                          " ON polozkaceniku (katalog_id, kod)"))
+    return True
 
 
 def get_session() -> Iterator[Session]:

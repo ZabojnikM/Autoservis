@@ -7,6 +7,7 @@ from sqlmodel import Session
 from app.models import PolozkaZakazky, TypPolozky, Zakazka, zaokrouhli
 from app.services import ChybaValidace, NenalezenoError, cisty_text, desetinne_nebo_none
 from app.services import cenik as cenik_sluzba
+from app.services import katalogy
 from app.services import nastaveni as nastaveni_sluzba
 from app.services import zakazky as zakazky_sluzba
 
@@ -44,6 +45,7 @@ def pridej_z_ceniku(
         zakazka_id=zakazka.id, polozka_ceniku_id=vzor.id, typ=vzor.typ, kod=vzor.kod,
         nazev=vzor.nazev, jednotka=vzor.jednotka, mnozstvi=mnozstvi, cena=vzor.cena,
         sazba_dph=vzor.sazba_dph if nast.platce_dph else Decimal("0"),
+        katalog_id=_katalog_radku(vzor),
     )
     vlastni_cena = desetinne_nebo_none(cena, "Cena")
     if vlastni_cena is not None:
@@ -53,6 +55,11 @@ def pridej_z_ceniku(
         session.commit()
         session.refresh(radek)
     return radek
+
+
+def _katalog_radku(vzor) -> int | None:
+    """Zdrojový katalog řádku – jen u materiálu (práce mají jeden společný katalog)."""
+    return vzor.katalog_id if vzor.typ == TypPolozky.MATERIAL else None
 
 
 def vloz_z_ceniku(session: Session, zakazka_id: int, vyber: list[tuple]) -> list[PolozkaZakazky]:
@@ -85,12 +92,15 @@ class KodUzVCeniku(ChybaValidace):
 
 
 def _do_ceniku(session: Session, data: dict, typ: str):
-    """Založí položku ceníku z polí ruční položky (stejná pole jako karta Materiál / Práce)."""
-    existujici = cenik_sluzba.najdi_podle_kodu(session, data.get("kod"))
+    """Založí položku ceníku z polí ruční položky (stejná pole jako karta Materiál / Práce).
+    Materiál jde do katalogu `katalog_id` (vybraný v prohlížeči), práce do společného (#62)."""
+    katalog = (katalogy.vychozi(session) if typ == TypPolozky.PRACE
+               else katalogy.podle_id(session, data.get("katalog_id")))
+    existujici = cenik_sluzba.najdi_podle_kodu(session, data.get("kod"), katalog.id)
     if existujici:
         raise KodUzVCeniku(existujici)
     pole = {k: v for k, v in data.items() if k not in ("mnozstvi", "ulozit_do_ceniku", "okno", "cena_s_dph")}
-    return cenik_sluzba.vytvor(session, pole | {"typ": typ}, commit=False)
+    return cenik_sluzba.vytvor(session, pole | {"typ": typ, "katalog_id": katalog.id}, commit=False)
 
 
 def pridej_rucne(session: Session, zakazka_id: int, data: dict) -> PolozkaZakazky:
@@ -156,7 +166,8 @@ def uprav(session: Session, polozka_id: int, data: dict) -> PolozkaZakazky:
     try:
         _nastav_radek(radek, data, nastaveni_sluzba.nacti(session))
         if _je(data.get("ulozit_do_ceniku")) and radek.polozka_ceniku_id is None:
-            radek.polozka_ceniku_id = _do_ceniku(session, data, radek.typ).id
+            vzor = _do_ceniku(session, data, radek.typ)
+            radek.polozka_ceniku_id, radek.katalog_id = vzor.id, _katalog_radku(vzor)
         session.add(radek)
         session.commit()
     except Exception:
@@ -179,6 +190,7 @@ def prevezmi_z_ceniku(session: Session, polozka_id: int) -> PolozkaZakazky:
     nast = nastaveni_sluzba.nacti(session)
     radek.typ, radek.kod, radek.nazev, radek.jednotka, radek.cena = \
         vzor.typ, vzor.kod, vzor.nazev, vzor.jednotka, vzor.cena
+    radek.katalog_id = _katalog_radku(vzor)
     radek.sazba_dph = vzor.sazba_dph if nast.platce_dph else Decimal("0")
     session.add(radek)
     session.commit()

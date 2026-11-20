@@ -5,6 +5,16 @@
 {% block content %}
 <div class="lista-filtru-seznamu">
   <a href="/cenik/nova" role="button" data-okno>Nový materiál</a>
+  {% if katalogy %}
+  {# #62: přepínač katalogů – výběr si pamatuje prohlížeč (cookie), platí i pro okno Přidat materiál v zakázce #}
+  <nav class="prepinac-katalogu" aria-label="Katalog materiálu">
+    {% for k in katalogy %}
+    <a href="/cenik?katalog={{ k.id }}{% if q %}&q={{ q|urlencode }}{% endif %}" role="button"
+       class="katalog-tlacitko{% if k.id == katalog.id %} aktivni{% endif %}"
+       {% if k.id == katalog.id %}aria-current="true"{% endif %}>{{ k.nazev }}</a>
+    {% endfor %}
+  </nav>
+  {% endif %}
   <a href="/cenik/import" role="button" class="secondary outline" data-okno
      title="Načíst dodací list LKQ (CSV) – aktualizuje ceny v ceníku a založí chybějící díly">Import LKQ</a>
   <form method="get" class="filtr">
@@ -47,7 +57,7 @@
 </div>
 {{ stavovy_radek(stranka, 'Ceny za měrnou jednotku · klik na řádek otevře kartu materiálu') }}
 {% else %}
-<p class="tlumene prazdna-mrizka">{% if q %}Nic nenalezeno.{% else %}Materiál je zatím prázdný.{% endif %}</p>
+<p class="tlumene prazdna-mrizka">{% if q %}Nic nenalezeno.{% else %}{{ katalog.nadpis }} je zatím prázdný.{% endif %}</p>
 {% endif %}
 </div>
 {% endblock %}

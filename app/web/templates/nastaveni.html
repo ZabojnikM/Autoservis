@@ -110,6 +110,40 @@
   </fieldset>
 </form>
 
+{# #62: katalogy materiálu – mimo formulář nastavení (vlastní formuláře) #}
+<section class="formular" id="katalogy">
+  <fieldset class="panel panel-katalogu">
+    <legend>Katalogy materiálu</legend>
+    <p class="tlumene">Každý katalog má vlastní díly a ceny; stejný kód dílu může být ve více katalozích.
+      Katalog se přepíná na kartě <a href="/cenik">Materiál</a>. Práce mají jeden společný katalog.</p>
+    <table class="katalogy">
+      <tbody>
+      {% for k in katalogy %}
+      <tr>
+        <td>
+          <form method="post" action="/katalogy/{{ k.id }}/prejmenovat" class="radek-katalogu">
+            <input type="text" name="nazev" value="{{ k.nazev }}" required aria-label="Název katalogu {{ k.nazev }}">
+            <button type="submit" class="secondary outline maly">Přejmenovat</button>
+          </form>
+        </td>
+        <td class="tlumene">{{ pocty_katalogu[k.id] }} položek{% if k.vychozi %} · výchozí{% endif %}</td>
+        <td>
+          <form method="post" action="/katalogy/{{ k.id }}/smazat"
+                data-potvrdit="Smazat katalog {{ k.nazev }}?" data-potvrdit-ano="Smazat">
+            <button type="submit" class="secondary outline maly" {% if nesmazatelne[k.id] %}disabled title="{{ nesmazatelne[k.id] }}"{% endif %}>Smazat</button>
+          </form>
+        </td>
+      </tr>
+      {% endfor %}
+      </tbody>
+    </table>
+    <form method="post" action="/katalogy" class="radek-katalogu">
+      <input type="text" name="nazev" placeholder="Název nového katalogu, např. LKQ" required aria-label="Název nového katalogu">
+      <button type="submit" class="secondary outline maly">Přidat katalog</button>
+    </form>
+  </fieldset>
+</section>
+
 {# verze a aktualizace z gitu – načte se zvlášť, aby git nezdržoval stránku #}
 <div hx-get="/nastaveni/aktualizace" hx-trigger="load" hx-swap="outerHTML"></div>
 {% endblock %}

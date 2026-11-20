@@ -13,6 +13,7 @@ from sqlmodel import Session, func, select
 
 from app.models import PolozkaCeniku, TypPolozky, zaokrouhli
 from app.services import ChybaValidace
+from app.services import katalogy
 from app.services import polozky as polozky_sluzba
 
 ZAHLAVI_POLOZEK = "Cislo;Kod;Nazev"
@@ -117,11 +118,15 @@ def normalizuj_kod(kod: str | None) -> str:
     return re.sub(r"\s", "", kod or "").upper()
 
 
-def najdi_v_ceniku(session: Session, kod: str) -> PolozkaCeniku | None:
+def najdi_v_ceniku(session: Session, kod: str, katalog_id: int | None = None) -> PolozkaCeniku | None:
+    """Díl s kódem v katalogu, do kterého se importuje (#62); bez `katalog_id` ve výchozím."""
     norm = normalizuj_kod(kod)
     if not norm:
         return None
+    if katalog_id is None:
+        katalog_id = katalogy.vychozi(session).id
     return session.exec(select(PolozkaCeniku).where(
+        PolozkaCeniku.katalog_id == katalog_id,
         func.upper(func.replace(PolozkaCeniku.kod, " ", "")) == norm)).first()
 
 
@@ -141,8 +146,9 @@ class RadekNahledu:
         return p is not None and (p.nakupni_cena != self.dil.nakup or p.cena != self.dil.moc or p.sazba_dph != self.dil.dph)
 
 
-def nahled(session: Session, dodaci_list: DodaciList) -> list[RadekNahledu]:
-    return [RadekNahledu(i, d, najdi_v_ceniku(session, d.kod)) for i, d in enumerate(dodaci_list.dily)]
+def nahled(session: Session, dodaci_list: DodaciList, katalog_id: int | None = None) -> list[RadekNahledu]:
+    katalog_id = katalogy.podle_id(session, katalog_id).id
+    return [RadekNahledu(i, d, najdi_v_ceniku(session, d.kod, katalog_id)) for i, d in enumerate(dodaci_list.dily)]
 
 
 # ---------------------------------------------------------------- přenos mezi náhledem a importem
@@ -178,18 +184,22 @@ class Souhrn:
         return "Import LKQ: " + ", ".join(casti) + "."
 
 
-def importuj(session: Session, dodaci_list: DodaciList, vybrane: list[int], zakazka_id: int | None = None) -> Souhrn:
-    """Zapíše vybrané díly (indexy) do ceníku a s `zakazka_id` je vloží i do zakázky.
+def importuj(session: Session, dodaci_list: DodaciList, vybrane: list[int], zakazka_id: int | None = None,
+             katalog_id: int | None = None) -> Souhrn:
+    """Zapíše vybrané díly (indexy) do katalogu `katalog_id` (výchozí, není-li zadán) a s `zakazka_id`
+    je vloží i do zakázky.
     Vše najednou – při chybě se neuloží nic."""
     dily = [dodaci_list.dily[i] for i in sorted(set(vybrane)) if 0 <= i < len(dodaci_list.dily)]
     if not dily:
         raise ChybaValidace("Není vybraný žádný díl.")
     souhrn = Souhrn()
+    katalog_id = katalogy.podle_id(session, katalog_id).id
     try:
         for dil in dily:
-            polozka = najdi_v_ceniku(session, dil.kod)
+            polozka = najdi_v_ceniku(session, dil.kod, katalog_id)
             if polozka is None:
-                polozka = PolozkaCeniku(kod=dil.kod, nazev=dil.nazev, typ=TypPolozky.MATERIAL, jednotka="ks")
+                polozka = PolozkaCeniku(kod=dil.kod, nazev=dil.nazev, typ=TypPolozky.MATERIAL, jednotka="ks",
+                                        katalog_id=katalog_id)
                 souhrn.zalozeno += 1
             else:
                 souhrn.aktualizovano += 1

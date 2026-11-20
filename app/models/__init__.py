@@ -4,7 +4,7 @@ from decimal import ROUND_HALF_UP, Decimal
 from typing import Optional
 
 from pydantic import NaiveDatetime
-from sqlalchemy import String, TypeDecorator
+from sqlalchemy import Index, String, TypeDecorator
 from sqlmodel import Field, Relationship, SQLModel
 
 
@@ -152,11 +152,30 @@ class Zakazka(SQLModel, table=True):
         return bool(self.je_otevrena and self.termin_dokonceni and self.termin_dokonceni < date.today())
 
 
-class PolozkaCeniku(SQLModel, table=True):
-    """Položka ceníku – práce (úkon) nebo materiál. Ceny jsou bez DPH."""
+class Katalog(SQLModel, table=True):
+    """Pojmenovaný katalog materiálu (Hlavní katalog, LKQ, …) s vlastními díly a cenami (#62).
+    Práce mají jeden společný katalog – patří do výchozího."""
 
     id: Optional[int] = Field(default=None, primary_key=True)
-    kod: Optional[str] = Field(default=None, index=True, unique=True)
+    nazev: str = Field(unique=True)
+    vychozi: bool = Field(default=False)
+    poradi: int = Field(default=0)
+
+    @property
+    def nadpis(self) -> str:
+        """„LKQ“ → „Katalog LKQ“; název, který slovo katalog už má („Hlavní katalog“), zůstane."""
+        return self.nazev if "katalog" in self.nazev.lower() else f"Katalog {self.nazev}"
+
+
+class PolozkaCeniku(SQLModel, table=True):
+    """Položka ceníku – práce (úkon) nebo materiál. Ceny jsou bez DPH.
+    Neprázdný kód je jedinečný jen uvnitř svého katalogu (#62)."""
+
+    __table_args__ = (Index("ux_polozkaceniku_katalog_kod", "katalog_id", "kod", unique=True),)
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    katalog_id: Optional[int] = Field(default=None, foreign_key="katalog.id", index=True)
+    kod: Optional[str] = Field(default=None, index=True)
     nazev: str = Field(index=True)
     typ: str = Field(default=TypPolozky.MATERIAL, index=True)
     jednotka: str = Field(default="ks")
@@ -203,6 +222,8 @@ class PolozkaZakazky(CenaRadku, SQLModel, table=True):
     polozka_ceniku_id: Optional[int] = Field(
         default=None, foreign_key="polozkaceniku.id", index=True, ondelete="SET NULL"
     )
+    # zdrojový katalog materiálu (#62) – zůstává i po změně vybraného katalogu nebo smazání dílu
+    katalog_id: Optional[int] = Field(default=None, foreign_key="katalog.id", ondelete="SET NULL")
     typ: str = Field(default=TypPolozky.MATERIAL)
     kod: Optional[str] = None
     nazev: str
@@ -215,6 +236,7 @@ class PolozkaZakazky(CenaRadku, SQLModel, table=True):
     cislo_dodaciho_listu: Optional[str] = None
 
     zakazka: Optional[Zakazka] = Relationship(back_populates="polozky")
+    katalog: Optional[Katalog] = Relationship()
 
 
 class TypDokladu:

@@ -22,7 +22,7 @@
 {% block content %}
 <div class="nadpis-radek">
   <h1>Import dodacího listu LKQ
-    <span class="oznaceni">{% if zakazka %}do zakázky <a href="/zakazky/{{ zakazka.id }}">{{ zakazka.cislo }}</a> a ceníku{% else %}do ceníku materiálu{% endif %}</span></h1>
+    <span class="oznaceni">{% if zakazka %}do zakázky <a href="/zakazky/{{ zakazka.id }}">{{ zakazka.cislo }}</a> a {% else %}do {% endif %}{{ katalog.nadpis }}</span></h1>
   {% if dodaci_list %}
   <p class="hlavicka-listu">Dodací list <strong>{{ dodaci_list.cislo or '—' }}</strong>{% if dodaci_list.datum %} · {{ dodaci_list.datum }}{% endif %}{% if dodaci_list.dodavatel %} · {{ dodaci_list.dodavatel }}{% endif %}
     {% if dodaci_list.bez_dph is not none %}<span class="tlumene"> · celkem {{ dodaci_list.bez_dph|penize }} bez DPH / {{ dodaci_list.s_dph|penize }} s DPH</span>{% endif %}</p>
@@ -34,6 +34,7 @@
       {% if okno %}hx-post="/cenik/import/nahled" hx-target="#okno-formular-obsah" hx-encoding="multipart/form-data"{% endif %}>
   {% if okno %}<input type="hidden" name="okno" value="1">{% endif %}
   {% if zakazka %}<input type="hidden" name="zakazka_id" value="{{ zakazka.id }}">{% endif %}
+  <input type="hidden" name="katalog_id" value="{{ katalog.id }}">
   <fieldset class="panel">
     <legend>Soubor</legend>
     <label>Dodací list LKQ (CSV)
@@ -49,6 +50,7 @@
   {% if okno %}<input type="hidden" name="okno" value="1">{% endif %}
   {% if zakazka %}<input type="hidden" name="zakazka_id" value="{{ zakazka.id }}">{% endif %}
   <input type="hidden" name="data_listu" value="{{ data_listu }}">
+  <input type="hidden" name="katalog_id" value="{{ katalog.id }}">
   {% set novych = radky|selectattr('je_novy')|list|length %}
   <div class="vyber-dilu">
     <button type="button" class="secondary outline maly" onclick="this.form.querySelectorAll('[name=vybrano]').forEach(c => c.checked = true)">Vybrat vše</button>
