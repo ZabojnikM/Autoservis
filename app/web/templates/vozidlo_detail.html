@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_makra.html" import spz, stav, tlacitko_smazat, adresa %}
+{% from "_makra.html" import spz, stav, tlacitko_smazat, adresa, kopirovat %}
 {% block title %}{{ vozidlo.spz }}{% endblock %}
 {% block akce %}
   <a href="/zakazky/nova?vozidlo_id={{ vozidlo.id }}" role="button" data-okno>Nová zakázka</a>
@@ -29,7 +29,7 @@
     <p class="hlavni-udaj hlavni-vozidla">{{ v.popis if (v.znacka or v.model) else '(značka neuvedena)' }}</p>
     <dl>
       {% if v.vin %}<dt>VIN</dt><dd class="vin-zakazky"><span id="vin-vozidla">{{ v.vin }}</span>
-        <button type="button" class="kopirovat maly neni-tisk" data-kopirovat="{{ v.vin }}" title="Zkopírovat VIN do schránky">Kopírovat</button></dd>{% endif %}
+        {{ kopirovat(v.vin) }}</dd>{% endif %}
       {% if v.rok_vyroby %}<dt>Rok výroby</dt><dd>{{ v.rok_vyroby }}</dd>{% endif %}
       {% if v.cislo_motoru %}<dt title="Typ / varianta / verze z technického průkazu">Typ vozidla (TP)</dt><dd>{{ v.cislo_motoru }}</dd>{% endif %}
       {% if motor %}<dt title="Kód motoru · objem · výkon">Motor</dt><dd>{{ motor }}</dd>{% endif %}

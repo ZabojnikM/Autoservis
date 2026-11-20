@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_makra.html" import spz %}
+{% from "_makra.html" import spz, kopirovat %}
 {% from "_prijem_makra.html" import stav_radku, hlavni_akce %}
 {# Příjem vozidel (#51, #85): návštěvy, které zpracoval Přijímací technik (OpenBot), od nejnovější.
    Klik na řádek otevře podrobnosti příjmu. Tlačítko v řádku udělá jen svou akci. #}
@@ -31,7 +31,7 @@
       <td class="hlavni spz-prijmu">{% if n.spz %}{{ spz(n.spz) }}{% if n.je_nejiste('spz') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td>{% if znacka or model %}<span{% if not (n.znacka or n.model) %} class="tlumene" title="Z naší databáze"{% endif %}>{{ [znacka, model]|select|join(' ') }}</span>{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td class="zakaznik-prijmu"{% if v and v.zakaznik %} title="{{ v.zakaznik.nazev }}"{% endif %}>{{ (v.zakaznik.nazev if v and v.zakaznik else none)|pomlcka }}</td>
-      <td class="kod vin">{% if n.vin %}<span class="vin-text">{{ n.vin }}{% if n.je_nejiste('vin') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}</span><button type="button" class="kopirovat neni-tisk" data-kopirovat="{{ n.vin }}" title="Zkopírovat VIN do schránky">Kopírovat</button>{% else %}{{ none|pomlcka }}{% endif %}</td>
+      <td class="kod vin">{% if n.vin %}<span class="vin-text">{{ n.vin }}{% if n.je_nejiste('vin') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}</span>{{ kopirovat(n.vin) }}{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td class="cislo">{% if n.km is not none %}{{ n.km|cislo }}{% if n.je_nejiste('odometer_km') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td>{{ (n.created_at|datumcas if n.created_at else '')|pomlcka }}</td>
     </tr>

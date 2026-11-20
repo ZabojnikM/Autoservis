@@ -378,6 +378,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-20 | Datum bez kalendáře: všechna pole s datem jsou textová 20.11.2026, se zkráceným zápisem (20.11., 20112026) a kontrolou (#94) |
 | 2026-11-20 | Okno Přidat materiál: tlačítka v titulku stejně velká (dlouhý název katalogu se zkrátí), okraj vlevo jako vpravo; Enter v hledání vloží díl s přesně shodným kódem, jinak otevře Nový materiál (#96) |
 | 2026-11-20 | Okno Přidat z ceníku (materiál i práce): tlačítka v titulku vysoká 36 px a s písmem jako Ceník / Nový v zakázce, v okně 1280 px se nezalomí (#98) |
+| 2026-11-20 | Seznam zakázek: místo Požadavku VIN s Kopírovat, kód motoru a platnost STK (propadlá červeně), řazení podle nich; tlačítko Kopírovat je v celé aplikaci jedno a stejné (#99) |
 
 ## Zdroje průzkumu
 
