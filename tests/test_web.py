@@ -688,7 +688,7 @@ def test_okno_cenik_radek_upravit_kartu():
     assert r.count("data-pridat") == 2 and 'name="mnozstvi" value="1"' in r
     assert "upravit-kartu" not in r and ">Upravit<" not in r
     okno = client.get(f"{loc}/cenik", params={"okno": "1"}).text
-    assert re.search(r'<input type="search"[^<]*>\s*<div id="cenik-vysledky"', okno)  # pole hledání uzavřené
+    assert re.search(r'<input type="search"[^<]*>\s*(<nav|</div>)', okno)  # pole hledání uzavřené
     cid = re.findall(r'name="polozka_ceniku_id" value="(\d+)"', r)[0]  # Brzdová kapalina (řazení podle názvu je první)
     # karta otevřená z okna ceníku: Zpět (do okna ceníku) místo Zrušit, bez mazání
     karta = client.get(f"/cenik/{cid}/upravit", params={"okno": "1", "z_ceniku": zid, "q": "kapal"}).text
@@ -968,11 +968,13 @@ def test_okno_ceniku_jen_pro_jeden_typ():
     assert "<th>Zaměnitelný díl</th>" in material and "BOSCH 0451" in material and "<th>Typ</th>" not in material
     assert '"typ": "material"' in material and "Nová položka ceníku" not in material  # #48: nahoře jen Zavřít
     # ruční položka se do okna ceníku nedává – je jen tlačítkem + Ruční v mřížce zakázky (#25)
-    assert "/polozky/nova" not in material and "Ruční položka" not in material
+    # #68: Nový u hledání otevře novou položku zakázky a převezme text hledání do kódu
+    assert "/polozky/nova?typ=material" in material and 'data-s-hledanim="kod"' in material
+    assert "Ruční položka" not in material
     # #3: tlačítka v liště nad seznamem, okno bez sloupce akcí vlevo (sloupec Kód je širší)
     assert '<aside class="akce"' not in material and 's-akcemi' not in material
     # #46 / #48: v titulku nahoře jen Zavřít, nápověda dole vpravo
-    hlavicka = material.split('class="okno-hlavicka"')[1].split("</header>")[0]
+    hlavicka = material.split('class="okno-hlavicka')[1].split("</header>")[0]
     assert "✕ Zavřít" in hlavicka and "Nová položka" not in hlavicka
     assert material.index('id="cenik-vysledky"') < material.index('class="tlumene napoveda-okna')
     prace = client.get(f"{loc}/cenik", params={"typ": "prace", "okno": "1"}).text
@@ -1305,3 +1307,18 @@ def test_seznamy_jeden_pokyn_ke_kliknuti():
     for url in ["/zakazky", "/vozidla", "/zakaznici", "/cenik", "/prace"]:
         text = re.sub(r"<script.*?</script>", "", client.get(url).text, flags=re.S).lower()  # jen viditelný text
         assert text.count("klik na řádek") == 1, url
+
+
+def test_nastaveni_instalator_zastupce():
+    """#71: v Nastavení jde stáhnout .bat s vyplněnou adresou serveru a skriptem zástupce."""
+    from app.services import zastupce
+    stranka = client.get("/nastaveni").text
+    assert 'action="/nastaveni/zastupce"' in stranka and "Windows 10 nebo 11" in stranka
+    r = client.get("/nastaveni/zastupce", params={"adresa": "server:8000/"})
+    assert r.status_code == 200 and zastupce.NAZEV_SOUBORU in r.headers["content-disposition"]
+    obsah = r.content.decode("utf-8")
+    assert obsah.startswith("@echo off\r\n") and "-Adresa 'http://server:8000'" in obsah
+    assert "\r\n#SKRIPT-AUTOSERVIS\r\n" in obsah and "CreateShortcut" in obsah and "﻿" not in obsah
+    # nebezpečné znaky v adrese (cmd / PowerShell) se odmítnou
+    r = client.get("/nastaveni/zastupce", params={"adresa": "http://x'; calc; '"}, follow_redirects=False)
+    assert r.status_code == 303

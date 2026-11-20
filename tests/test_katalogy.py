@@ -124,10 +124,85 @@ def test_web_prepinac_a_formular(session):
     r = klient.get("/cenik")
     assert "Díl z LKQ" in r.text and "Díl hlavní" not in r.text
 
+    # #70: nový materiál vždy předvybere hlavní katalog, i když je naposledy prohlížený jiný
+    hlavni = katalogy.vychozi(session)
     r = klient.get("/cenik/nova", params={"okno": "1"})
-    assert "Katalog LKQ" in r.text and f'name="katalog_id" value="{lkq.id}"' in r.text
+    assert f'<option value="{hlavni.id}" selected>' in r.text and f'<option value="{lkq.id}" >' in r.text
 
     z = _zakazka(session, "2KT2222")
     r = klient.get(f"/zakazky/{z.id}/cenik", params={"typ": "material", "okno": "1"})
     assert "Katalog LKQ" in r.text and "Díl z LKQ" in r.text and "Díl hlavní" not in r.text
     assert z.cislo not in r.text.split("</h1>")[0]
+
+
+def test_novy_material_do_hlavniho_nebo_zvoleneho_katalogu(session):
+    """#70: bez volby jde nový materiál do hlavního katalogu (ne do naposledy prohlíženého), volba platí."""
+    klient = TestClient(app)
+    lkq = katalogy.vytvor(session, "LKQ")
+    hlavni = katalogy.vychozi(session)
+    klient.cookies.set(katalogy.KLIC_COOKIE, str(lkq.id))
+    klient.post("/cenik/nova", data={"nazev": "Bez volby", "cena": "1", "typ": "material"})
+    klient.post("/cenik/nova", data={"nazev": "Do LKQ", "cena": "1", "typ": "material", "katalog_id": str(lkq.id)})
+    assert [p.katalog_id for p in cenik.seznam(session, "Bez volby")] == [hlavni.id]
+    assert [p.katalog_id for p in cenik.seznam(session, "Do LKQ")] == [lkq.id]
+
+    z = _zakazka(session, "3KT3333")
+    r = klient.get(f"/zakazky/{z.id}/polozky/nova", params={"typ": "material", "okno": "1"})
+    assert f'<option value="{hlavni.id}" selected>' in r.text
+    klient.post(f"/zakazky/{z.id}/polozky", data={"typ": "material", "nazev": "Ruční", "cena": "5", "mnozstvi": "1",
+                                                   "ulozit_do_ceniku": "1"})
+    assert [p.katalog_id for p in cenik.seznam(session, "Ruční")] == [hlavni.id]
+
+
+def test_okno_ceniku_novy_a_prepinac(session):
+    """#68: tlačítko Nový v okně Přidat z ceníku, předvyplněný kód; #69: přepínač katalogů si výběr pamatuje."""
+    klient = TestClient(app)
+    lkq = katalogy.vytvor(session, "LKQ")
+    cenik.vytvor(session, {"kod": "P1", "nazev": "Díl z LKQ", "cena": "1", "katalog_id": lkq.id})
+    z = _zakazka(session, "4KT4444")
+    for typ in ("material", "prace"):
+        r = klient.get(f"/zakazky/{z.id}/cenik", params={"typ": typ, "okno": "1"})
+        assert f'/zakazky/{z.id}/polozky/nova?typ={typ}' in r.text
+    r = klient.get(f"/zakazky/{z.id}/cenik", params={"typ": "material", "okno": "1"})
+    assert 'data-s-hledanim="kod"' in r.text and "Z historie" in r.text and "Díl z LKQ" not in r.text
+    r = klient.get(f"/zakazky/{z.id}/cenik", params={"typ": "material", "okno": "1", "katalog": str(lkq.id)})
+    assert "Díl z LKQ" in r.text and katalogy.KLIC_COOKIE in r.headers["set-cookie"]
+    r = klient.get(f"/zakazky/{z.id}/polozky/nova", params={"typ": "material", "okno": "1", "kod": "ABC 12"})
+    assert 'name="kod" value="ABC 12"' in r.text
+
+
+def test_material_z_historie_vozidla(session):
+    """#69: materiál ze starších zakázek vozidla – jeden řádek na díl, cena aktuální z ceníku."""
+    klient = TestClient(app)
+    dil = cenik.vytvor(session, {"kod": "H1", "nazev": "Filtr", "cena": "100"})
+    stara1, stara2 = _zakazka(session, "5KT5555"), _zakazka(session, "5KT5555")
+    polozky.pridej_z_ceniku(session, stara1.id, dil.id, "1")
+    polozky.pridej_z_ceniku(session, stara2.id, dil.id, "2")
+    rucni = polozky.pridej_rucne(session, stara2.id, {"typ": "material", "nazev": "Těsnění", "cena": "30",
+                                                       "mnozstvi": "1"})
+    polozky.pridej_rucne(session, stara2.id, {"typ": "prace", "nazev": "Výměna", "cena": "500", "mnozstvi": "1"})
+    cizi = _zakazka(session, "6KT6666")
+    polozky.pridej_rucne(session, cizi.id, {"typ": "material", "nazev": "Cizí díl", "cena": "1", "mnozstvi": "1"})
+    cenik.uprav(session, dil.id, {"cena": "120"})
+    nova = _zakazka(session, "5KT5555")
+
+    historie = polozky.historie_vozidla(session, nova)
+    assert sorted((h.radek.nazev, h.pocet, h.cena) for h in historie) == [("Filtr", 2, 120), ("Těsnění", 1, 30)]
+    assert [h.radek.nazev for h in polozky.historie_vozidla(session, nova, "těs")] == ["Těsnění"]
+
+    r = klient.get(f"/zakazky/{nova.id}/cenik", params={"typ": "material", "okno": "1", "zdroj": "historie"})
+    assert "Filtr" in r.text and "Těsnění" in r.text and "Cizí díl" not in r.text and "Výměna" not in r.text
+    klient.post(f"/zakazky/{nova.id}/polozky", data={"z_historie": str(rucni.id), "mnozstvi": "3", "okno": "1"})
+    filtr = next(h for h in historie if h.radek.nazev == "Filtr")
+    klient.post(f"/zakazky/{nova.id}/polozky", data={"z_historie": str(filtr.radek.id), "mnozstvi": "1", "okno": "1"})
+    session.refresh(nova)
+    assert sorted((r.nazev, r.mnozstvi, r.cena, r.polozka_ceniku_id) for r in nova.polozky) ==         [("Filtr", 1, 120, dil.id), ("Těsnění", 3, 30, None)]
+    # cizí vozidlo z historie vložit nejde
+    with pytest.raises(ChybaValidace):
+        polozky.pridej_z_historie(session, nova.id, cizi.polozky[0].id)
+
+    bez = zakazky.prijem(session, zakazka={"pozadavek": "x"})
+    r = klient.get(f"/zakazky/{bez.id}/cenik", params={"typ": "material", "okno": "1", "zdroj": "historie"})
+    assert "nemá přiřazené vozidlo" in r.text
+    r = klient.get("/cenik/vyber", params={"zakazka_id": cizi.id, "typ": "material", "zdroj": "historie"})
+    assert "zatím nebyl" in r.text

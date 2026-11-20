@@ -6,7 +6,52 @@
    bez typu oba ceníky se sloupcem Typ. #}
 {% set ukaz_typ = not typ_okna %}
 {% set ukaz_zamenitelny = typ_okna == 'material' %}
-{% if nalezene %}
+{% if historie %}
+{# #69: materiál dříve vydaný na vozidlo zakázky – jeden řádek na díl (poslední použití, počet použití).
+   Cena: díl v ceníku = aktuální cena z ceníku, jinak cena ze starší zakázky. #}
+{% if not zakazka.vozidlo_id %}
+<p class="tlumene" style="padding:.5rem .6rem">Zakázka nemá přiřazené vozidlo – historie materiálu není k dispozici.</p>
+{% elif radky_historie %}
+<table class="vyber-cenik striped vyber-historie">
+  <colgroup><col class="sl-kod"><col><col class="sl-naposledy"><col class="sl-pocet"><col class="sl-cena-mj"><col class="sl-cena"><col class="sl-mnozstvi"></colgroup>
+  <thead><tr><th>Kód</th><th>Název</th><th>Naposledy</th><th class="cislo">Použito</th>
+    <th class="cislo">Cena bez DPH</th>
+    <th class="cislo">{% if nast.platce_dph %}Cena s DPH{% endif %}</th><th class="cislo">Množství</th></tr></thead>
+  <tbody>
+  {% for h in radky_historie %}
+    {% set r = h.radek %}
+    <tr data-pridat title="Dvojklik nebo Enter = vložit do zakázky">
+      <td class="zkratit kod-polozky-okna" title="{{ r.kod or '' }}"><strong>{{ r.kod or '' }}</strong></td>
+      <td title="{{ r.nazev }}">{{ r.nazev }}{% if not h.vzor %} <span class="tlumene" title="Díl není v ceníku – cena ze starší zakázky">(mimo ceník)</span>{% endif %}</td>
+      <td class="tlumene zkratit" title="Zakázka {{ h.zakazka.cislo }}, množství {{ r.mnozstvi|mnozstvi }} {{ r.jednotka }}">{{ h.zakazka.datum_prijeti|datum }} · {{ h.zakazka.cislo }}</td>
+      <td class="cislo tlumene">{{ h.pocet }}×</td>
+      <td class="cislo">{{ h.cena|penize }} <span class="tlumene">/ {{ r.jednotka }}</span></td>
+      <td class="cislo tlumene">{% if nast.platce_dph %}{{ (h.cena * (100 + h.sazba_dph) / 100)|penize }}{% endif %}</td>
+      <td class="bunka-pridat"><div>
+        <form method="post" action="/zakazky/{{ zakazka_id }}/polozky" class="radek-pridat"
+              {% if okno %}hx-post="/zakazky/{{ zakazka_id }}/polozky" hx-target="#okno-formular-obsah"{% endif %}>
+          <input type="hidden" name="z_historie" value="{{ r.id }}">
+          {% if okno %}<input type="hidden" name="okno" value="1"><input type="hidden" name="q" value="{{ q }}">{% endif %}
+          <input type="hidden" name="typ_okna" value="material">
+          <span class="krokovac">
+            <button type="button" class="krok" data-krok="-1" tabindex="-1" aria-label="Ubrat 1">−</button>
+            <input type="text" name="mnozstvi" value="1" inputmode="decimal" aria-label="Množství – {{ r.nazev }}"
+                   class="vstup-mnozstvi" onfocus="this.select()">
+            <button type="button" class="krok" data-krok="1" tabindex="-1" aria-label="Přidat 1">+</button>
+          </span>
+          <button type="submit" class="maly vlozit-radek">Vložit</button>
+        </form>
+      </div></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% elif q %}
+<p class="tlumene" style="padding:.5rem .6rem">V historii vozidla nic nenalezeno.</p>
+{% else %}
+<p class="tlumene" style="padding:.5rem .6rem">Na vozidlo {{ zakazka.vozidlo.spz or '' }} zatím nebyl ve starších zakázkách vydán žádný materiál.</p>
+{% endif %}
+{% elif nalezene %}
 <table class="vyber-cenik striped vyber-{{ typ_okna or 'vse' }}">
   <colgroup>{% if ukaz_typ %}<col class="sl-typ">{% endif %}<col class="sl-kod"><col>{% if ukaz_zamenitelny %}<col class="sl-zamenitelny">{% endif %}<col class="sl-cena-mj"><col class="sl-cena"><col class="sl-mnozstvi"></colgroup>
   <thead><tr>{% if ukaz_typ %}<th>Typ</th>{% endif %}<th>Kód</th><th>Název</th>{% if ukaz_zamenitelny %}<th>Zaměnitelný díl</th>{% endif %}

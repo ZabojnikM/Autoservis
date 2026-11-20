@@ -144,6 +144,29 @@
   </fieldset>
 </section>
 
+{# #71: instalátor zástupce pro Windows – Autoservis ve vlastním okně (navazuje na #18) #}
+<section class="formular" id="zastupce">
+  <fieldset class="panel">
+    <legend>Aplikace v samostatném okně (Windows)</legend>
+    <p class="tlumene">Pro počítače s <strong>Windows 10 nebo 11</strong> (potřebuje prohlížeč Edge, nebo Chrome).
+      Instalátor vytvoří na ploše a v nabídce Start zástupce <strong>Autoservis</strong>, který otevře aplikaci
+      ve vlastním okně bez adresního řádku. Nic dalšího neinstaluje a zástupce jde kdykoli smazat.</p>
+    <form method="get" action="/nastaveni/zastupce" class="radek-katalogu">
+      <input type="text" name="adresa" value="{{ adresa_serveru }}" required aria-label="Adresa Autoservisu"
+             title="Adresa, na které ostatní počítače Autoservis otevírají" spellcheck="false">
+      <button type="submit" class="maly">Stáhnout instalátor pro Windows</button>
+    </form>
+    <ol class="tlumene">
+      <li>Zkontrolujte adresu – musí to být adresa, na které Autoservis otevírají ostatní počítače
+        (ne <code>localhost</code>).</li>
+      <li>Stáhněte soubor <code>Autoservis-zastupce.bat</code> a na počítači, kde má zástupce být, ho spusťte dvojklikem.
+        Pokud prohlížeč nebo Windows upozorní na neznámý soubor, zvolte <em>Ponechat</em>, případně
+        <em>Další informace → Přesto spustit</em>.</li>
+      <li>Okno instalátoru vypíše, kde zástupce vytvořil; zavře se libovolnou klávesou.</li>
+    </ol>
+  </fieldset>
+</section>
+
 {# verze a aktualizace z gitu – načte se zvlášť, aby git nezdržoval stránku #}
 <div hx-get="/nastaveni/aktualizace" hx-trigger="load" hx-swap="outerHTML"></div>
 {% endblock %}

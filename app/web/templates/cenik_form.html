@@ -19,13 +19,13 @@
 {% endblock %}
 {% block content %}
 <div class="nadpis-radek">
-  {# #62: nový materiál má v nadpisu jen katalog, do kterého se uloží #}
-  <h1>{% if polozka %}Upravit materiál <span class="oznaceni">{{ polozka.nazev }}{% if katalog %} · {{ katalog.nadpis }}{% endif %}</span>{% else %}{{ katalog.nadpis if katalog else 'Nový materiál' }}{% endif %}</h1>
+  {# #70: nový materiál – katalog se volí ve formuláři (výchozí hlavní); s jediným katalogem jen v nadpisu #}
+  <h1>{% if polozka %}Upravit materiál <span class="oznaceni">{{ polozka.nazev }}{% if katalog %} · {{ katalog.nadpis }}{% endif %}</span>{% else %}Nový materiál{% if katalog and katalogy|length <= 1 %} <span class="oznaceni">{{ katalog.nadpis }}</span>{% endif %}{% endif %}</h1>
 </div>
 
 {{ zacatek_formulare(akce_url, 'cenik-form', okno, 'uzky') }}
   <input type="hidden" name="typ" value="material">
-  {% if not polozka and katalog %}<input type="hidden" name="katalog_id" value="{{ katalog.id }}">{% endif %}
+  {% if not polozka and katalog and katalogy|length <= 1 %}<input type="hidden" name="katalog_id" value="{{ katalog.id }}">{% endif %}
   {{ skryta_pole_z_ceniku(z_ceniku, q_ceniku) }}
   {{ radek_zakazky_pole(radek_zakazky) }}
   {% include "_pole_materialu.html" %}

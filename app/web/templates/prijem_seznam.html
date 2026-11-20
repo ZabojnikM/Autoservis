@@ -16,16 +16,19 @@
 {% else %}
 <div class="overflow-auto">
 <table class="striped klik-otevre prijem-seznam">
-  {# #53: SPZ → Značka → Model → VIN → Km → Přijato; stav v databázi u SPZ, tlačítka na konci řádku #}
-  <thead><tr><th>SPZ</th><th>Značka</th><th>Model</th><th>VIN</th><th class="cislo">Km</th><th>Přijato</th><th></th></tr></thead>
+  {# #53: SPZ → Značka → Model → VIN → Km → Přijato; stav v databázi u SPZ.
+     #72: hlavní akce úplně vlevo (menší, barevně odlišená), bez tlačítka Podrobnosti – konflikt otevře
+     podrobnosti klikem na řádek. #}
+  <thead><tr><th></th><th>SPZ</th><th>Značka</th><th>Model</th><th>VIN</th><th class="cislo">Km</th><th>Přijato</th></tr></thead>
   <tbody>
   {% for n in prijmy.navstevy %}
     {% set shoda = shody[n.id] %}
     {% set detail = '/prijem/' ~ (n.id|urlencode) %}
     {% set a = shoda.akce %}
     {% set v = shoda.vozidlo %}
-    <tr data-otevrit="{{ a[1] if a else detail }}"{% if a and a[2] %} data-okno{% endif %}
+    <tr data-prijem="{{ n.id }}" data-otevrit="{{ a[1] if a else detail }}"{% if a and a[2] %} data-okno{% endif %}
         title="{{ ('Klik: ' ~ a[0]) if a else 'Klik otevře podrobnosti' }}">
+      <td class="tlacitka-prijmu">{{ hlavni_akce(shoda, 'maly') }}</td>
       <td class="hlavni spz-prijmu">{% if n.spz %}{{ spz(n.spz) }}{% if n.je_nejiste('spz') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}{{ none|pomlcka }}{% endif %}
         {{ stav_db(shoda) }}</td>
       <td>{% if n.znacka %}{{ n.znacka }}{% elif v and v.znacka %}<span class="tlumene" title="Z naší databáze">{{ v.znacka }}</span>{% else %}{{ none|pomlcka }}{% endif %}</td>
@@ -33,14 +36,12 @@
       <td class="kod vin">{% if n.vin %}{{ n.vin }}{% if n.je_nejiste('vin') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td class="cislo">{% if n.km is not none %}{{ n.km|cislo }}{% if n.je_nejiste('odometer_km') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td>{{ (n.created_at|datumcas if n.created_at else '')|pomlcka }}</td>
-      <td class="tlacitka-prijmu">{{ hlavni_akce(shoda, 'maly') }}
-        <a href="{{ detail }}" role="button" class="maly secondary outline">Podrobnosti</a></td>
     </tr>
   {% endfor %}
   </tbody>
 </table>
 </div>
 <div class="stavovy-radek"><span>Příjmů: {{ prijmy.navstevy|length }}{% if prijmy.updated_at %} · aktualizováno {{ prijmy.updated_at|datumcas }}{% endif %}</span>
-  <span>Klik na řádek: zakázka vozidla / založit vozidlo · Podrobnosti = údaje z příjmu</span></div>
+  <span>Klik na řádek: zakázka vozidla / založit vozidlo · konflikt SPZ / VIN = podrobnosti příjmu</span></div>
 {% endif %}
 {% endblock %}

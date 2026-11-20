@@ -4,6 +4,19 @@
 {% from "_makra.html" import pole, textove_pole %}
   <fieldset class="panel">
     <legend>Materiál</legend>
+    {% if katalogy is defined and katalogy|length > 1 and not polozka %}
+    {# #70: nový materiál se ukládá do hlavního katalogu, jiný jde zvolit výslovně #}
+    {% set zvoleny = (hodnoty.get('katalog_id') or '')|string %}
+    <div data-jen-cenik>
+      <label>Uložit do katalogu
+        <select name="katalog_id">
+          {% for k in katalogy %}
+          <option value="{{ k.id }}" {% if (zvoleny and zvoleny == k.id|string) or (not zvoleny and k.vychozi) %}selected{% endif %}>{{ k.nazev }}</option>
+          {% endfor %}
+        </select>
+      </label>
+    </div>
+    {% endif %}
     {# kód (číslo dílu) je první – podle něj se díl hledá; zůstává nepovinný #}
     <div class="mrizka">
       {{ pole('kod', 'Kód / číslo dílu', hodnoty, placeholder='např. GAT 6PK1018', extra='autofocus') }}

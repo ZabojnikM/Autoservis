@@ -3,15 +3,42 @@
 {# Okno „Přidat materiál / práci z ceníku“ – vypadá a funguje jako okno Databáze zákazníků (#46):
    nahoře titulek a jen tlačítko Zavřít, pod ním hledání a tabulka přes celou šířku.
    Vložit na řádku (i Enter / dvojklik) zapíše položku se zadaným množstvím do zakázky a okno zavře (#48);
-   detail zakázky se obnoví s hláškou „Přidáno: …“. Chyba (např. množství 0) zůstane v okně. #}
+   detail zakázky se obnoví s hláškou „Přidáno: …“. Chyba (např. množství 0) zůstane v okně.
+   #68: tlačítko Nový otevře novou položku zakázky (jako Nový v detailu) – vlevo v titulku, nadpis uprostřed;
+   u materiálu převezme text hledání do kódu. #73: u materiálu jsou vlevo nahoře i katalogy a Z historie,
+   hledání je pod nimi přes celou šířku.
+   #69: u materiálu přepínač katalogů (podle počtu založených) a „Z historie“ = materiál dříve vydaný na vozidlo. #}
 {% set nadpis_okna = {'material': 'Přidat materiál z ceníku', 'prace': 'Přidat práci z ceníku'}.get(typ_okna, 'Přidat z ceníku') %}
+{% set adresa_okna = '/zakazky/%d/cenik?typ=%s' % (zakazka.id, typ_okna or '') %}
+{% macro tlacitko_novy(s_hledanim=False) -%}
+  <a href="/zakazky/{{ zakazka.id }}/polozky/nova?typ={{ typ_okna }}" role="button" class="maly tlacitko-novy" data-okno
+     {% if s_hledanim %}data-s-hledanim="kod"{% endif %}
+     title="{{ 'Nový materiál – kód převezme z hledání' if typ_okna == 'material' else 'Nová práce' }} (jen do zakázky, nebo i do ceníku)">Nový</a>
+{%- endmacro %}
 {% block title %}{{ nadpis_okna }} – {{ zakazka.cislo }}{% endblock %}
 {% block content %}
 <div class="okno-cenik formular prijem siroky" data-bez-potvrzeni>
   {% if pridano %}<span data-obnovit-po-zavreni hidden></span>{% endif %}
-  <header class="okno-hlavicka">
-    {# #62: vedle nadpisu katalog, ze kterého okno nabízí materiál (vybírá se na kartě Materiál) #}
-    <h1>{{ nadpis_okna }}{% if typ_okna != 'prace' %} <span class="oznaceni">{{ katalog.nadpis }}</span>{% endif %}</h1>
+  <header class="okno-hlavicka hlavicka-na-stred">
+    <span class="tlacitka-hlavicky vlevo neni-tisk">
+      {% if typ_okna == 'prace' %}{{ tlacitko_novy() }}{% endif %}
+      {% if typ_okna == 'material' %}
+      {{ tlacitko_novy(s_hledanim=True) }}
+      {# přepínač: jedno tlačítko na každý založený katalog + Z historie; text hledání se přenese #}
+      <nav class="prepinac-katalogu" aria-label="Zdroj materiálu">
+        {% for k in katalogy %}
+        {% set aktivni = not historie and k.id == katalog.id %}
+        <a href="{{ adresa_okna }}&katalog={{ k.id }}" role="button" data-okno data-s-hledanim="q"
+           class="katalog-tlacitko{% if aktivni %} aktivni{% endif %}" {% if aktivni %}aria-current="true"{% endif %}
+           title="{{ k.nadpis }}">{{ k.nazev }}</a>
+        {% endfor %}
+        <a href="{{ adresa_okna }}&zdroj=historie" role="button" data-okno data-s-hledanim="q"
+           class="katalog-tlacitko{% if historie %} aktivni{% endif %}" {% if historie %}aria-current="true"{% endif %}
+           title="Materiál dříve vydaný na vozidlo této zakázky">Z historie</a>
+      </nav>
+      {% endif %}
+    </span>
+    <h1>{{ nadpis_okna }}</h1>
     <span class="tlacitka-hlavicky neni-tisk">
       {# TODO: tlačítko Import položek do zakázky se vrátí, až bude import hotový (#8) #}
       {% if okno %}
@@ -24,9 +51,11 @@
   {# pevný řádek pro hlášku – okno se po vložení neposune #}
   <p class="hlaseni-okna {% if hlaseni_chyba %}chyba{% elif hlaseni %}uspech{% endif %}" role="status">
     {{- hlaseni_chyba or hlaseni or '' -}}</p>
-  <input type="search" name="q" value="{{ q }}" placeholder="{{ 'Hledat materiál – kód, název nebo zaměnitelný díl…' if typ_okna == 'material' else 'Hledat práci – název nebo kód…' if typ_okna == 'prace' else 'Hledat v ceníku – název nebo kód…' }}" autocomplete="off" autofocus
-         hx-get="/cenik/vyber" hx-trigger="input changed delay:250ms, search" hx-target="#cenik-vysledky"
-         hx-vals='{{ {"zakazka_id": zakazka.id|string, "okno": "1" if okno else "", "typ": typ_okna or ""}|tojson }}'>
+  <div class="radek-hledani-okna">
+    <input type="search" name="q" value="{{ q }}" placeholder="{{ 'Hledat v historii vozidla – kód nebo název…' if historie else 'Hledat materiál – kód, název nebo zaměnitelný díl…' if typ_okna == 'material' else 'Hledat práci – název nebo kód…' if typ_okna == 'prace' else 'Hledat v ceníku – název nebo kód…' }}" autocomplete="off" autofocus
+           hx-get="/cenik/vyber" hx-trigger="input changed delay:250ms, search" hx-target="#cenik-vysledky"
+           hx-vals='{{ {"zakazka_id": zakazka.id|string, "okno": "1" if okno else "", "typ": typ_okna or "", "zdroj": "historie" if historie else ""}|tojson }}'>
+  </div>
   <div id="cenik-vysledky" class="vysledky-ceniku">
     {% include "_cenik_vyber_vysledky.html" %}
   </div>

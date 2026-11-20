@@ -245,6 +245,15 @@
           okno.querySelector("[autofocus]")?.focus();
         });
     }
+    // data-s-hledanim="kod" (okno Přidat z ceníku, #68/#69): do adresy přidá text z hledání okna jako parametr
+    function adresaSpoustece(a) {
+      const url = a.getAttribute("href");
+      const text = a.closest(".okno-cenik")?.querySelector("input[type=search]")?.value.trim();
+      if (!a.dataset.sHledanim || !text) return url;
+      const adresa = new URL(url, window.location.href);
+      adresa.searchParams.set(a.dataset.sHledanim, text);
+      return adresa.pathname + adresa.search;
+    }
     // na stránce, která už formulář zobrazuje celý, se okno neotvírá (duplicitní pole)
     const formularNaStrance = () =>
       [...document.querySelectorAll("form.prijem")].some((f) => !f.closest("#okno-formular"));
@@ -263,7 +272,7 @@
       const spoustec = e.target.closest("a[data-okno]");
       if (spoustec && !formularNaStrance() && !e.ctrlKey && !e.shiftKey && !e.metaKey) {
         e.preventDefault();
-        otevriOkno(spoustec.getAttribute("href"));
+        otevriOkno(adresaSpoustece(spoustec));
       }
       if (e.target.closest("[data-zavrit-okno]")) zavriOkno();
     });

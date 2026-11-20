@@ -2,7 +2,7 @@
 from dataclasses import dataclass, field
 from decimal import Decimal
 
-from sqlmodel import Session
+from sqlmodel import Session, select
 
 from app.models import PolozkaZakazky, TypPolozky, Zakazka, zaokrouhli
 from app.services import ChybaValidace, NenalezenoError, cisty_text, desetinne_nebo_none
@@ -252,3 +252,80 @@ def rekapitulace_radku(radky) -> Rekapitulace:
     for sazba, zaklad in sorted(rek.zaklady.items(), reverse=True):
         rek.dane[sazba] = zaokrouhli(zaklad * sazba / 100)
     return rek
+
+
+# ---------------------------------------------------------------- materiál z historie vozidla (#69)
+
+@dataclass
+class RadekHistorie:
+    """Díl dříve vydaný na vozidlo – jeden řádek na díl (nejnovější výskyt a počet použití)."""
+    radek: PolozkaZakazky          # nejnovější výskyt ve starší zakázce
+    zakazka: Zakazka               # zakázka nejnovějšího výskytu
+    vzor: object | None            # aktuální karta ceníku (je-li díl v ceníku), jinak None
+    pocet: int = 1                 # v kolika řádcích starších zakázek se díl objevil
+
+    @property
+    def cena(self) -> Decimal:
+        """Cena pro vložení: aktuální z ceníku, jinak ze starší zakázky."""
+        return self.vzor.cena if self.vzor else self.radek.cena
+
+    @property
+    def sazba_dph(self) -> Decimal:
+        return self.vzor.sazba_dph if self.vzor else self.radek.sazba_dph
+
+
+def _klic_historie(radek: PolozkaZakazky):
+    if radek.polozka_ceniku_id:
+        return ("cenik", radek.polozka_ceniku_id)
+    return ("rucne", (radek.kod or "").casefold(), radek.nazev.casefold())
+
+
+def _odpovida(radek: PolozkaZakazky, hledat: str) -> bool:
+    text = hledat.casefold()
+    kod = "".join(z for z in text if z not in " .-/")
+    kod_radku = "".join(z for z in (radek.kod or "").casefold() if z not in " .-/")
+    return text in radek.nazev.casefold() or text in (radek.kod or "").casefold() or bool(kod and kod in kod_radku)
+
+
+def historie_vozidla(session: Session, zakazka: Zakazka, hledat: str | None = None) -> list[RadekHistorie]:
+    """Materiál ze starších zakázek vozidla aktuální zakázky (bez ní samé), nejnovější nahoře."""
+    if not zakazka.vozidlo_id:
+        return []
+    dotaz = (select(PolozkaZakazky, Zakazka).join(Zakazka, PolozkaZakazky.zakazka_id == Zakazka.id)
+             .where(Zakazka.vozidlo_id == zakazka.vozidlo_id, Zakazka.id != zakazka.id,
+                    PolozkaZakazky.typ == TypPolozky.MATERIAL)
+             .order_by(Zakazka.datum_prijeti.desc(), Zakazka.id.desc(), PolozkaZakazky.id.desc()))
+    hledat = cisty_text(hledat)
+    vysledek: dict = {}
+    for radek, z in session.exec(dotaz):
+        if hledat and not _odpovida(radek, hledat):
+            continue
+        klic = _klic_historie(radek)
+        if klic in vysledek:
+            vysledek[klic].pocet += 1
+        else:
+            vzor = cenik_sluzba.najdi(session, radek.polozka_ceniku_id) if radek.polozka_ceniku_id else None
+            vysledek[klic] = RadekHistorie(radek, z, vzor)
+    return list(vysledek.values())
+
+
+def pridej_z_historie(session: Session, zakazka_id: int, radek_id: int, mnozstvi="1") -> PolozkaZakazky:
+    """Vloží díl ze starší zakázky: je-li v ceníku, jako z ceníku (aktuální cena),
+    jinak kopie starého řádku (jeho cena) se zadaným množstvím."""
+    zakazka = _otevrena_zakazka(session, zakazka_id)
+    puvodni = ziskej(session, radek_id)
+    if puvodni.zakazka.vozidlo_id is None or puvodni.zakazka.vozidlo_id != zakazka.vozidlo_id:
+        raise ChybaValidace("Položka nepatří do historie vozidla této zakázky.")
+    vzor = cenik_sluzba.najdi(session, puvodni.polozka_ceniku_id) if puvodni.polozka_ceniku_id else None
+    if vzor:
+        return pridej_z_ceniku(session, zakazka_id, vzor.id, mnozstvi=mnozstvi)
+    nast = nastaveni_sluzba.nacti(session)
+    radek = PolozkaZakazky(
+        zakazka_id=zakazka.id, typ=puvodni.typ, kod=puvodni.kod, nazev=puvodni.nazev, jednotka=puvodni.jednotka,
+        mnozstvi=_kladne_mnozstvi(mnozstvi), cena=puvodni.cena,
+        sazba_dph=puvodni.sazba_dph if nast.platce_dph else Decimal("0"), katalog_id=puvodni.katalog_id,
+    )
+    session.add(radek)
+    session.commit()
+    session.refresh(radek)
+    return radek

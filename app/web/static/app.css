@@ -929,7 +929,15 @@ dd .vedle { margin-left: 1rem; margin-right: .35rem; }
 .prijem-seznam td.spz-prijmu .stav-db { margin-left: 6px; }
 .prijem-seznam td.tlacitka-prijmu [role=button] { margin: 0 4px 0 0; width: auto; }
 .upozorneni-db { margin: 0 0 .75rem; }
-.prijem-seznam td.tlacitka-prijmu .hlavni-akce { display: inline-block; min-width: 8.5rem; text-align: center; }
+.prijem-seznam td.tlacitka-prijmu .hlavni-akce { display: inline-block; min-width: 7.5rem; text-align: center;
+  padding: 3px 10px; font-size: .82rem; }
+/* #72: barvy hlavních akcí příjmu – založit vozidlo (oranžová), otevřít zakázku (zelená), nová zakázka (modrá) */
+.hlavni-akce.akce-zalozit { background: #d97706; border-color: #d97706; color: #fff; }
+.hlavni-akce.akce-zalozit:hover { background: #b45309; border-color: #b45309; }
+.hlavni-akce.akce-otevrit { background: #2e8b3e; border-color: #2e8b3e; color: #fff; }
+.hlavni-akce.akce-otevrit:hover { background: #23702f; border-color: #23702f; }
+.hlavni-akce.akce-nova { background: #2f6fb3; border-color: #2f6fb3; color: #fff; }
+.hlavni-akce.akce-nova:hover { background: #245a93; border-color: #245a93; }
 
 /* #15: číslo dokladu při vystavení – pevná předpona řady + přepisovatelné pořadové číslo */
 .cislo-dokladu-pole { display: flex; align-items: center; gap: 6px; }
@@ -999,3 +1007,17 @@ tbody td.hlavni.doklad-vyuctovani, tbody td.hlavni.doklad-vyuctovani a { color: 
 .radek-katalogu { display: flex; gap: .4rem; align-items: center; }
 .radek-katalogu input[type=text] { margin: 0; width: 16rem; }
 .radek-katalogu button, .panel-katalogu button { margin: 0; width: auto; }
+
+/* ---------- okno Přidat z ceníku: Nový, nadpis uprostřed, katalogy a Z historie (#68, #69) ---------- */
+.okno-cenik .okno-hlavicka.hlavicka-na-stred { display: grid; grid-template-columns: 1fr auto 1fr; }
+.okno-cenik .hlavicka-na-stred h1 { text-align: center; }
+.okno-cenik .hlavicka-na-stred .tlacitka-hlavicky { justify-self: end; }
+.okno-cenik .hlavicka-na-stred .tlacitka-hlavicky.vlevo { justify-self: start; }
+.okno-cenik .radek-hledani-okna { display: flex; gap: .5rem; align-items: center; margin-bottom: .4rem; }
+.okno-cenik .radek-hledani-okna input[type=search] { flex: 1; margin: 0; }
+.okno-cenik .tlacitko-novy { width: auto; margin: 0; white-space: nowrap; }
+.okno-cenik .hlavicka-na-stred .tlacitka-hlavicky.vlevo { flex-wrap: wrap; }
+.okno-cenik .okno-hlavicka .katalog-tlacitko { padding: 4px 10px; font-size: .85rem; white-space: nowrap; }
+.okno-cenik .vyber-cenik .sl-naposledy { width: 10.5rem; }
+.okno-cenik .vyber-historie .sl-kod { width: 9rem; }
+.okno-cenik .vyber-cenik .sl-pocet { width: 5rem; }

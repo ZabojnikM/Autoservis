@@ -46,7 +46,7 @@ def test_seznam_od_nejnovejsiho_a_dve_navstevy_stejneho_auta(soubor):
     assert '<span class="prazdne">—</span>' in text and "Neuvedeno" not in text  # #57: chybějící VIN / km / značka = pomlčka
     # #53: SPZ → Značka → Model → VIN → Km → Přijato, tlačítka na konci
     hlavicka = re.findall(r"<th[^>]*>([^<]*)</th>", text.split("<thead>")[1].split("</thead>")[0])
-    assert hlavicka == ["SPZ", "Značka", "Model", "VIN", "Km", "Přijato", ""]
+    assert hlavicka == ["", "SPZ", "Značka", "Model", "VIN", "Km", "Přijato"]
     assert "tajne" not in text and "/fotky/" not in text  # sources, events, fotky se nezobrazují
 
 
@@ -89,7 +89,7 @@ def test_nova_navsteva_bez_restartu(soubor):
 # ---------------------------------------------------------------- je vozidlo v databázi?
 
 def _radek(text, id_):
-    return next(r for r in text.split("<tr ") if f'href="/prijem/{id_}"' in r).split("</tr>")[0]
+    return next(r for r in text.split("<tr ") if f'data-prijem="{id_}"' in r).split("</tr>")[0]
 
 
 def test_v_databazi_podle_spz_nebo_vin_a_konflikt(soubor, session):
@@ -113,9 +113,11 @@ def test_v_databazi_podle_spz_nebo_vin_a_konflikt(soubor, session):
     text = client.get("/prijem").text
     radek = _radek(text, "spz")
     assert f'data-otevrit="/zakazky/nova?vozidlo_id={a.id}&amp;tachometr=120000" data-okno' in radek
-    assert ">Nová zakázka</a>" in radek and "V databázi" in radek and ">Podrobnosti</a>" in radek
+    assert ">Nová zakázka</a>" in radek and "V databázi" in radek and "Podrobnosti" not in radek  # #72
+    assert "akce-nova" in radek and radek.index("hlavni-akce") < radek.index("V databázi")  # tlačítko vlevo
     radek = _radek(text, "nova")
     assert 'data-otevrit="/vozidla/nove?prijem=nova" data-okno' in radek and ">Založit vozidlo</a>" in radek
+    assert "akce-zalozit" in radek
     assert "Není v databázi" in radek
     radek = _radek(text, "konf")
     assert 'data-otevrit="/prijem/konf"' in radek and "Konflikt SPZ / VIN" in radek

@@ -12,6 +12,8 @@
 
 {% macro hlavni_akce(shoda, trida='') -%}
 {%- set a = shoda.akce -%}
-{%- if a %}<a href="{{ a[1] }}" role="button" class="hlavni-akce {{ trida }}"{% if a[2] %} data-okno{% endif %}>{{ a[0] }}</a>
+{#- #72: každá akce má vlastní barvu – založit vozidlo / otevřít zakázku / nová zakázka -#}
+{%- set druh = {'Založit vozidlo': 'akce-zalozit', 'Otevřít zakázku': 'akce-otevrit', 'Nová zakázka': 'akce-nova'} -%}
+{%- if a %}<a href="{{ a[1] }}" role="button" class="hlavni-akce {{ druh.get(a[0], '') }} {{ trida }}"{% if a[2] %} data-okno{% endif %}>{{ a[0] }}</a>
 {%- elif trida %}<span class="hlavni-akce misto-akce"></span>{% endif -%}
 {%- endmacro %}
