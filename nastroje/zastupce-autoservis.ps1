@@ -45,7 +45,12 @@ $cile = @(
 foreach ($cil in $cile) {
     $lnk = $shell.CreateShortcut((Join-Path $cil 'Autoservis.lnk'))
     $lnk.TargetPath = $prohlizec
-    $lnk.Arguments = "--app=$Adresa/"
+    # Volbu „Spustit: maximalizované“ ve vlastnostech zástupce prohlížeč ignoruje a běžící prohlížeč
+    # ignoruje i --start-maximized. Proto vlastní profil: okno Autoservisu je samostatný proces
+    # a přepínač se uplatní vždy (zároveň se nemíchá s ostatními okny prohlížeče).
+    $profil = Join-Path $slozka 'prohlizec'
+    $lnk.Arguments = "--app=$Adresa/ --user-data-dir=`"$profil`" --start-maximized --no-first-run --no-default-browser-check"
+    $lnk.WindowStyle = 3
     $lnk.IconLocation = "$ikona,0"
     $lnk.Description = 'Autoservis'
     $lnk.WorkingDirectory = Split-Path $prohlizec
