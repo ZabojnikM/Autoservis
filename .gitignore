@@ -22,3 +22,6 @@ Thumbs.db
 # Prostředí
 .env
 .claude/settings.local.json
+
+# Soukromé podklady k předání (ostrá data, nikdy necommitovat)
+predani-openbot/

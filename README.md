@@ -2,6 +2,7 @@
 
 Jednoduchý a lehký software pro správu malého autoservisu – příjem zakázek, databáze vozidel a zákazníků, ceník a sklad.
 Plán vývoje a stav jednotlivých kroků: [PLAN.md](PLAN.md).
+Pokyny pro AI agenty: [AGENTS.md](AGENTS.md), předání projektu do OpenBotu: [docs/OPENBOT.md](docs/OPENBOT.md).
 
 **Technologie:** Python 3.12, FastAPI, SQLite, Jinja2 + HTMX, Pico.css + vlastní desktopový styl (`app.css`).
 
