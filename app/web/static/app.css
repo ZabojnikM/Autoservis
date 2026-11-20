@@ -992,7 +992,7 @@ tbody td.hlavni.doklad-vyuctovani, tbody td.hlavni.doklad-vyuctovani a { color: 
 .prepinac-katalogu .katalog-tlacitko:hover { color: var(--akcent-tmavy); border-color: var(--akcent); background: var(--akcent-svetly); }
 .prepinac-katalogu .katalog-tlacitko.aktivni { background: var(--akcent); color: #fff; border-color: var(--akcent); cursor: default; }
 .zdroj-katalogu { display: inline-block; margin-left: .35rem; padding: 0 .4rem; border: 1px solid #d1d5db; border-radius: 4px;
-  color: #4b5563; font-size: .78rem; line-height: 1.5; vertical-align: 1px; }
+  color: #4b5563; font-size: .78rem; line-height: 1.5; vertical-align: 1px; white-space: nowrap; }
 .panel-katalogu table.katalogy { width: auto; margin: .3rem 0 .6rem; }
 .panel-katalogu table.katalogy td { padding: .2rem .8rem .2rem 0; border: 0; vertical-align: middle; }
 .panel-katalogu form { margin: 0; }
