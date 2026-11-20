@@ -163,6 +163,22 @@ Zatím naimportován testovací vzorek 50 zakázek (záznamy mají poznámku „
 Při spuštění se do existující databáze automaticky doplní nové tabulky i sloupce – data zůstanou.
 Před aktualizací programu přesto doporučujeme zálohu (zkopírovat `data/autoservis.db`).
 
+## Zálohy databáze
+
+*Nastavení → Zálohy databáze* (#76):
+
+- **Denní záloha** se dělá automaticky na serveru do `data/backups` (`denni-…db`), uchovává se posledních 14.
+- **Týdenní záloha** se ukládá do složky zadané v Nastavení, typicky na sdílený disk připojený k serveru.
+  Uchovávají se poslední 3 (`autoservis-tydenni-…db`). Prázdná složka týdenní zálohy vypne.
+  Ve složce musí být prázdný soubor `.autoservis-cil-zaloh`. Bez něj se do složky nezapisuje, takže při
+  nepřipojeném sdíleném disku záloha neskončí v prázdném přípojném bodu na lokálním disku.
+  Zálohy se nešifrují – cílové sdílení musí být soukromé.
+- **Zálohovat teď** udělá ruční zálohu (`rucni-…db`), ta se sama nemaže. Zálohy na serveru jdou stáhnout.
+- Každá záloha je konzistentní kopie přes SQLite backup a před uložením se kontroluje (`integrity_check`).
+  Aplikace maže jen své staré denní a týdenní zálohy, zálohy před aktualizací ani jiné soubory ve složce nemaže.
+- Plánovač běží uvnitř aplikace a každých 10 minut ověří, zda je záloha na řadě. Na vývojovém počítači
+  ho jde vypnout proměnnou `AUTOSERVIS_AUTOZALOHY=0`.
+
 ## Verze a vydání
 
 Číslování `MAJOR.MINOR.OPRAVA` (zatím `0.x` – vývoj; `1.0.0` = úplný přechod ze starého systému):

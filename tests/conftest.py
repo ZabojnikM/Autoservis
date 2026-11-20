@@ -1,9 +1,14 @@
+import os
+
 import pytest
 from sqlalchemy.pool import StaticPool
 from sqlmodel import Session, create_engine
 
 from app.db import get_session, init_db
 from app.main import app
+
+# plánovač záloh v testech nespouštět (TestClient v režimu `with` by spustil lifespan)
+os.environ.setdefault("AUTOSERVIS_AUTOZALOHY", "0")
 
 
 @pytest.fixture
