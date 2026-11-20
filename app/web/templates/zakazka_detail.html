@@ -162,7 +162,7 @@
         <a href="/polozky/{{ r.id }}/upravit" role="button" class="maly upravit-radek" data-okno
            title="Upravit položku (také dvojklik na řádek)">Upravit</a></td>{% endif %}
       <td class="tlumene">{{ r.kod or '' }}</td>
-      <td>{{ r.nazev }}{% if r.katalog and vice_katalogu %} <small class="zdroj-katalogu" title="Zdrojový katalog">{{ r.katalog.nazev }}</small>{% endif %}
+      <td>{{ r.nazev }}
         {%- if r.cislo_dodaciho_listu -%}
         <br><small>Dodací list <strong>{{ r.cislo_dodaciho_listu }}</strong></small>
       {%- endif %}</td>
