@@ -375,6 +375,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-20 | Příjem vozidel: kompaktní seznam se stavem u tlačítka, zákazník a kopírování VIN (#82) |
 | 2026-11-20 | Stavy zakázky: tlačítko bez dokladu se jmenuje „Uzavřít bez dokladu“, u Předáno je napsané, že zakázka zmizí z otevřených (#90). Příjem vozidel: klik na řádek otevře podrobnosti, tlačítko jen svou akci (#85). Seznamy zakázek a faktur se otevřou na aktuální rok (#91) |
 | 2026-11-20 | Vzhled: zakázka se jedním klikem otevře i ve vyhledávání, bublina i nápověda říkají totéž (#89). Červená jen u mazání, Zpět a Zrušit neutrální, jedna hlavní akce na obrazovce (#87). Seznam zakázek: stav hned za zákazníkem, vozidlo se nezkracuje, husté řádky (#88). Hledání v seznamu má štítek a krátkou nápovědu (#86) |
+| 2026-11-20 | Datum bez kalendáře: všechna pole s datem jsou textová 20.11.2026, se zkráceným zápisem (20.11., 20112026) a kontrolou (#94) |
 
 ## Zdroje průzkumu
 

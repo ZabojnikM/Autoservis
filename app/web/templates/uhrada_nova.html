@@ -1,5 +1,5 @@
 {% extends "_okno.html" if okno else "base.html" %}
-{% from "_makra.html" import zacatek_formulare, tlacitka_formulare %}
+{% from "_makra.html" import zacatek_formulare, tlacitka_formulare, pole_datum %}
 {# Zápis úhrady k dokladu (i částečné; záporná částka = vrácení peněz). #}
 {% block title %}Úhrada – {{ f.cislo }}{% endblock %}
 {% block akce %}
@@ -18,7 +18,7 @@
       <label>Částka <span class="povinne">*</span>
         <input type="text" name="castka" value="{{ hodnoty.get('castka') or f.zbyva|penize }}" inputmode="decimal" required autofocus
                pattern="[+\-]?[0-9\s]*([.,][0-9]+)?\s*(Kč|kč)?" title="Částka, např. 1 500,50"></label>
-      <label>Datum <input type="date" name="datum" value="{{ hodnoty.get('datum') or dnes()|iso }}"></label>
+      <label>Datum {{ pole_datum('datum', hodnoty.get('datum') or dnes()) }}</label>
     </div>
     <label>Způsob
       <select name="zpusob">

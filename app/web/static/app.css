@@ -810,7 +810,7 @@ article > header { margin: -18px -20px 14px; padding: 12px 20px; }
 .prijem .mrizka { gap: 0 12px; }
 .prijem .radek-s-tlacitky { margin-bottom: 12px; gap: 8px; }
 .prijem .radek-s-tlacitky .roztahnout { margin-bottom: 0; }
-.prijem .panel input[type=date], .prijem .panel input[type=datetime-local] { padding-left: 8px; padding-right: 6px; }
+.prijem .panel input.vstup-datum { padding-left: 8px; padding-right: 6px; }
 /* prostřední panel (Zakázka) širší, aby se vešlo datum a čas příjmu */
 .prijem-panely { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 /* panely vedle sebe začínají stejně vysoko (Pico dává další fieldset odsazení shora, #40) */

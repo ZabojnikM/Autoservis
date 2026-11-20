@@ -1,8 +1,17 @@
 {% macro pole(nazev, popisek, hodnoty, typ='text', povinne=False, placeholder='', extra='') -%}
 <label>{{ popisek }}{% if povinne %} <span class="povinne">*</span>{% endif %}
-  <input type="{{ typ }}" name="{{ nazev }}" value="{{ hodnoty.get(nazev) if hodnoty.get(nazev) is not none else '' }}"
-         {% if povinne %}required{% endif %} placeholder="{{ placeholder }}" {{ extra|safe }}>
+  {% if typ in ('date', 'datetime-local') %}{{ pole_datum(nazev, hodnoty.get(nazev), cas=typ == 'datetime-local', povinne=povinne, extra=extra) }}
+  {% else %}<input type="{{ typ }}" name="{{ nazev }}" value="{{ hodnoty.get(nazev) if hodnoty.get(nazev) is not none else '' }}"
+         {% if povinne %}required{% endif %} placeholder="{{ placeholder }}" {{ extra|safe }}>{% endif %}
 </label>
+{%- endmacro %}
+
+{# #94: datum jako obyčejné textové pole 20.11.2026 (bez kalendáře prohlížeče). Zkrácený zápis (20.11., 20112026)
+   doplní po opuštění pole skript v base.html (upravDatum), server přijme oba tvary. #}
+{% macro pole_datum(nazev, hodnota, cas=False, povinne=False, extra='') -%}
+<input type="text" name="{{ nazev }}" value="{{ hodnota|datum_pole(cas) }}" class="vstup-datum{% if cas %} vstup-datum-cas{% endif %}"
+       placeholder="{{ 'dd.mm.rrrr hh:mm' if cas else 'dd.mm.rrrr' }}" autocomplete="off" spellcheck="false"
+       maxlength="{{ 16 if cas else 10 }}" {% if povinne %}required{% endif %} {{ extra|safe }}>
 {%- endmacro %}
 
 {# Pole VIN s tlačítkem Načíst podle VIN – doplní údaje vozidla z registru vozidel (nactiZRegistru v base.html).
