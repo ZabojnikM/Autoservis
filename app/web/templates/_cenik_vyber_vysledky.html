@@ -20,7 +20,7 @@
   <tbody>
   {% for h in radky_historie %}
     {% set r = h.radek %}
-    <tr data-pridat title="Dvojklik nebo Enter = vložit do zakázky">
+    <tr data-pridat data-kod="{{ r.kod or '' }}" title="Dvojklik nebo Enter = vložit do zakázky">
       <td class="zkratit kod-polozky-okna" title="{{ r.kod or '' }}"><strong>{{ r.kod or '' }}</strong></td>
       <td title="{{ r.nazev }}">{{ r.nazev }}{% if not h.vzor %} <span class="tlumene" title="Díl není v ceníku – cena ze starší zakázky">(mimo ceník)</span>{% endif %}</td>
       <td class="tlumene zkratit" title="Zakázka {{ h.zakazka.cislo }}, množství {{ r.mnozstvi|mnozstvi }} {{ r.jednotka }}">{{ h.zakazka.datum_prijeti|datum }} · {{ h.zakazka.cislo }}</td>
@@ -60,7 +60,7 @@
   <tbody>
   {% for p in nalezene %}
     {% set cena = p.cena %}
-    <tr data-pridat title="Dvojklik nebo Enter = vložit do zakázky">
+    <tr data-pridat data-kod="{{ p.kod or '' }}" title="Dvojklik nebo Enter = vložit do zakázky">
       {% if ukaz_typ %}<td><span class="typ typ-{{ p.typ }}">{{ p.nazev_typu }}</span></td>{% endif %}
       {# kód je hlavní údaj – tučně, seznam je podle něj seřazený (#28) #}
       <td class="zkratit kod-polozky-okna" title="{{ p.kod or '' }}"><strong>{{ p.kod or '' }}</strong></td>
