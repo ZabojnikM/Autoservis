@@ -9,7 +9,10 @@ Postup: `nacti` (soubor → řádky) → `navrh` (ke každému řádku staré ka
   a vazbu, ceny v zakázkách a doklady se nemění, staré karty se vyřadí.
 
 Čte dodací list z e-shopu LKQ (`import_lkq`) i obecnou tabulku CSV, kde pozná sloupce podle záhlaví
-(kód, název, prodej / MOC / cena, nákup).
+(kód, název, prodej / MOC / cena, nákup, DPH) – tedy i vlastní export skladu ze Správy dat.
+
+Rozšíření (#137): režim (jen nové / jen aktualizace / obojí), párování (číslo dílu se sloučením starých karet,
+nebo jen přesný kód) a díly cílového skladu, které v souboru chybí (volitelně se vyřadí).
 """
 from __future__ import annotations
 
@@ -35,6 +38,7 @@ class Radek:
     nazev: str
     cena: Decimal | None      # prodejní bez DPH
     nakup: Decimal | None = None
+    dph: Decimal | None = None
 
 
 def _bez_diakritiky(text: str) -> str:
@@ -60,6 +64,7 @@ def _tabulka(text: str) -> list[Radek]:
     i_nazev = _sloupec(zahlavi, "nazev", "popis")
     i_cena = _sloupec(zahlavi, "prodej", "moc", "doporucena", "cena")
     i_nakup = _sloupec(zahlavi, "nakup", "cena/ks")
+    i_dph = _sloupec(zahlavi, "dph", "sazba dph")
     if i_kod is None or i_nazev is None or i_cena is None:
         raise ChybaValidace(CHYBA_SOUBORU)
     vysledek = []
@@ -70,7 +75,8 @@ def _tabulka(text: str) -> list[Radek]:
             continue
         vysledek.append(Radek(kod, bunka(i_nazev) or kod,
                               desetinne_nebo_none(bunka(i_cena), f"Řádek {cislo}: prodejní cena"),
-                              desetinne_nebo_none(bunka(i_nakup), f"Řádek {cislo}: nákupní cena") if i_nakup != i_cena else None))
+                              desetinne_nebo_none(bunka(i_nakup), f"Řádek {cislo}: nákupní cena") if i_nakup != i_cena else None,
+                              desetinne_nebo_none(bunka(i_dph), f"Řádek {cislo}: DPH")))
     return vysledek
 
 
@@ -80,7 +86,7 @@ def nacti(obsah: bytes) -> list[Radek]:
         raise ChybaValidace("Vyberte soubor se seznamem dílů.")
     try:
         dodaci_list = import_lkq.nacti_csv(obsah)
-        radky = [Radek(d.kod, d.nazev, d.moc, d.nakup) for d in dodaci_list.dily]
+        radky = [Radek(d.kod, d.nazev, d.moc, d.nakup, d.dph) for d in dodaci_list.dily]
     except ChybaValidace:
         radky = _tabulka(import_lkq._dekoduj(obsah))
     podle_kodu = {}
@@ -100,6 +106,7 @@ class RadekNavrhu:
     nazev: str
     cena: str            # text pro JSON a formulář („199.00“), prázdné = chybí
     nakup: str
+    dph: str = ""
     existujici_id: int | None = None          # karta se stejným kódem v cílovém katalogu
     existujici_cena: str = ""
     stare: list[dict] = field(default_factory=list)   # id, kod, nazev, katalog, cena, pouzito
@@ -110,8 +117,14 @@ def _text(cislo: Decimal | None) -> str:
     return "" if cislo is None else str(cislo)
 
 
-def navrh(session: Session, radky: list[Radek], katalog_id: int | None) -> list[RadekNavrhu]:
-    """Ke každému řádku staré aktivní karty materiálu se stejným číslem dílu (jiný kód nebo jiný katalog)."""
+REZIMY = {"obe": "nové díly i aktualizace cen", "nove": "jen nové díly", "aktualizace": "jen aktualizace cen"}
+PAROVANI = {"cislo": "podle čísla dílu (sloučit staré karty)", "kod": "jen podle přesného kódu"}
+
+
+def navrh(session: Session, radky: list[Radek], katalog_id: int | None, rezim: str = "obe",
+          parovani: str = "cislo") -> list[RadekNavrhu]:
+    """Ke každému řádku staré aktivní karty materiálu se stejným číslem dílu (jiný kód nebo jiný katalog);
+    při párování „kod“ se staré karty nehledají. Řádky mimo zvolený režim dostanou důvod v `chyba`."""
     nazvy_katalogu = {k.id: k.nazev for k in katalogy.seznam(session)}
     pouziti = slouceni._pocty_pouziti(session)
     podle_klice: dict[str, list[PolozkaCeniku]] = {}
@@ -122,18 +135,37 @@ def navrh(session: Session, radky: list[Radek], katalog_id: int | None) -> list[
     vysledek = []
     for i, r in enumerate(radky):
         klic = slouceni.klic_kodu(r.kod)
-        radek = RadekNavrhu(i, r.kod, r.nazev, _text(r.cena), _text(r.nakup))
-        for p in podle_klice.get(klic, []) if len(klic) >= slouceni.NEJKRATSI_KLIC else []:
-            if p.kod == r.kod and p.katalog_id == katalog_id:
-                radek.existujici_id, radek.existujici_cena = p.id, _text(p.cena)
+        radek = RadekNavrhu(i, r.kod, r.nazev, _text(r.cena), _text(r.nakup), _text(r.dph))
+        existujici = cenik.najdi_podle_kodu(session, r.kod, katalog_id) if katalog_id else None
+        if existujici is not None:
+            radek.existujici_id, radek.existujici_cena = existujici.id, _text(existujici.cena)
+        kandidati = podle_klice.get(klic, []) if parovani == "cislo" and len(klic) >= slouceni.NEJKRATSI_KLIC else []
+        for p in kandidati:
+            if p.id == radek.existujici_id:
                 continue
             radek.stare.append({"id": p.id, "kod": p.kod, "nazev": p.nazev, "katalog": nazvy_katalogu.get(p.katalog_id, ""),
                                 "cena": _text(p.cena), "pouzito": pouziti.get(p.id, 0)})
-        if r.cena is None and radek.existujici_id is None:
+        if rezim == "nove" and radek.existujici_id:
+            radek.chyba = "Už je ve skladu – režim „jen nové díly“."
+        elif rezim == "aktualizace" and not radek.existujici_id:
+            radek.chyba = "Ve skladu není – režim „jen aktualizace cen“."
+        elif r.cena is None and radek.existujici_id is None:
             radek.chyba = "Chybí prodejní cena – nový díl nejde založit."
         vysledek.append(radek)
     # nahoru řádky se starými kartami (ty se slučují), pak nejpoužívanější
     return sorted(vysledek, key=lambda r: (bool(r.chyba), not r.stare, -sum(s["pouzito"] for s in r.stare), r.kod))
+
+
+def chybejici(session: Session, radky: list[Radek] | list[RadekNavrhu], katalog_id: int | None) -> list[PolozkaCeniku]:
+    """Aktivní díly cílového skladu, jejichž kód v souboru není (kandidáti na vyřazení)."""
+    if not katalog_id:
+        return []
+    kody = {r.kod.strip() for r in radky}
+    return [p for p in session.exec(select(PolozkaCeniku).where(PolozkaCeniku.katalog_id == katalog_id,
+                                                                PolozkaCeniku.typ == TypPolozky.MATERIAL,
+                                                                PolozkaCeniku.aktivni == True)  # noqa: E712
+                                    .order_by(PolozkaCeniku.kod))
+            if (p.kod or "").strip() not in kody]
 
 
 def do_json(navrh_: list[RadekNavrhu]) -> str:
@@ -188,6 +220,7 @@ def importuj(session: Session, radky: list[RadekNavrhu], katalog_id: int, stare:
         try:
             cena = desetinne_nebo_none(r.cena, "Prodejní cena")
             nakup = desetinne_nebo_none(r.nakup, "Nákupní cena")
+            dph = desetinne_nebo_none(r.dph, "DPH")
             karta = cenik.najdi_podle_kodu(session, r.kod, katalog.id)
             if karta is not None:
                 if not karta.aktivni:
@@ -196,6 +229,8 @@ def importuj(session: Session, radky: list[RadekNavrhu], katalog_id: int, stare:
                     karta.cena = cena
                 if nakup is not None:
                     karta.nakupni_cena = nakup
+                if dph is not None:
+                    karta.sazba_dph = dph
                 session.add(karta)
                 session.commit()
                 souhrn.aktualizovano += 1
@@ -205,6 +240,8 @@ def importuj(session: Session, radky: list[RadekNavrhu], katalog_id: int, stare:
                 data = {"kod": r.kod, "nazev": r.nazev, "cena": str(cena), "katalog_id": str(katalog.id)}
                 if nakup is not None:
                     data["nakupni_cena"] = str(nakup)
+                if dph is not None:
+                    data["sazba_dph"] = str(dph)
                 karta = cenik.vytvor(session, data)
                 souhrn.zalozeno += 1
             ids = [i for i in stare.get(r.index, []) if i != karta.id]

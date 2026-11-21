@@ -144,10 +144,18 @@ async def sluc_seznam(request: Request, db: DB):
 
 # ---------------------------------------------------------------- Import do skladu (#134)
 
-def _str_importu(request, db, navrh=None, katalog="", novy_nazev=NOVY_KATALOG, chyba=None):
+def _str_importu(request, db, navrh=None, katalog="", novy_nazev=NOVY_KATALOG, chyba=None, rezim="obe",
+                 parovani="cislo", chybejici=()):
     return _stranka(request, "sprava_import.html", 400 if chyba else 200, aktivni="sprava",
                     katalogy=katalogy.seznam(db), katalog=katalog, novy_nazev=novy_nazev, navrh=navrh,
-                    data_navrhu=import_skladu.do_json(navrh) if navrh else "", nast=nastaveni.nacti(db), chyba=chyba)
+                    data_navrhu=import_skladu.do_json(navrh) if navrh else "", nast=nastaveni.nacti(db), chyba=chyba,
+                    rezim=rezim, parovani=parovani, rezimy=import_skladu.REZIMY, parovani_volby=import_skladu.PAROVANI,
+                    chybejici=list(chybejici))
+
+
+def _volba(hodnota, volby: dict) -> str:
+    hodnota = str(hodnota or "")
+    return hodnota if hodnota in volby else next(iter(volby))
 
 
 def _cilovy_katalog(db, katalog: str, novy_nazev: str, zalozit: bool = False) -> int | None:
@@ -172,13 +180,15 @@ async def import_nahled(request: Request, db: DB):
     form = await request.form()
     soubor, katalog = form.get("soubor"), str(form.get("katalog") or "")
     novy_nazev = cisty_text(form.get("novy_nazev")) or NOVY_KATALOG
+    rezim, parovani = _volba(form.get("rezim"), import_skladu.REZIMY), _volba(form.get("parovani"), import_skladu.PAROVANI)
     try:
         katalog_id = _cilovy_katalog(db, katalog, novy_nazev)
         radky = import_skladu.nacti(await soubor.read() if hasattr(soubor, "read") else b"")
-        navrh = import_skladu.navrh(db, radky, katalog_id)
+        navrh = import_skladu.navrh(db, radky, katalog_id, rezim, parovani)
     except ChybaValidace as e:
-        return _str_importu(request, db, katalog=katalog, novy_nazev=novy_nazev, chyba=e)
-    return _str_importu(request, db, navrh=navrh, katalog=katalog, novy_nazev=novy_nazev)
+        return _str_importu(request, db, katalog=katalog, novy_nazev=novy_nazev, chyba=e, rezim=rezim, parovani=parovani)
+    return _str_importu(request, db, navrh=navrh, katalog=katalog, novy_nazev=novy_nazev, rezim=rezim,
+                        parovani=parovani, chybejici=import_skladu.chybejici(db, radky, katalog_id))
 
 
 @router.post("/import-skladu")
@@ -190,7 +200,8 @@ async def import_uloz(request: Request, db: DB):
         navrh = import_skladu.z_json(str(form.get("data_navrhu") or ""))
         vybrane = {int(v) for v in form.getlist("vybrano") if str(v).isdigit()}
         radky = [r for r in navrh if r.index in vybrane and not r.chyba]
-        if not radky:
+        vyradit = bool(form.get("vyradit_chybejici")) and katalog != "novy"
+        if not radky and not vyradit:
             raise ChybaValidace("Není vybraný žádný díl k importu.")
         stare, nenalezene = {}, []
         for r in radky:
@@ -207,9 +218,15 @@ async def import_uloz(request: Request, db: DB):
         db.rollback()
         return _presmeruj(IMPORT, str(e), chyba=True)
     souhrn = import_skladu.importuj(db, radky, katalog_id, stare)
-    sprava.zapis(db, "Import do skladu", souhrn.text + (" " + " ".join(souhrn.chyby) if souhrn.chyby else ""),
-                 souhrn.zalozeno + souhrn.aktualizovano, zaloha)
-    zprava = f"{souhrn.text} Záloha: {zaloha}"
+    vyrazeno = 0
+    if vyradit:   # díly skladu, které v souboru nejsou (porovnává se s celým souborem, ne jen s vybranými řádky)
+        ids = [p.id for p in import_skladu.chybejici(db, navrh, katalog_id)]
+        if ids:
+            vyrazeno = hromadne.proved(db, hromadne.planuj(db, "vyradit", ids, {}))
+    text = souhrn.text + (f" Vyřazeno dílů chybějících v souboru: {vyrazeno}." if vyradit else "")
+    sprava.zapis(db, "Import do skladu", text + (" " + " ".join(souhrn.chyby) if souhrn.chyby else ""),
+                 souhrn.zalozeno + souhrn.aktualizovano + vyrazeno, zaloha)
+    zprava = f"{text} Záloha: {zaloha}"
     if souhrn.chyby:
         zprava += " " + " ".join(souhrn.chyby[:3])
     return _presmeruj(IMPORT, zprava, chyba=bool(souhrn.chyby) and not (souhrn.zalozeno or souhrn.aktualizovano))

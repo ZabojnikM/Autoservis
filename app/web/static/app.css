@@ -1115,3 +1115,5 @@ tbody td.hlavni.doklad-vyuctovani, tbody td.hlavni.doklad-vyuctovani a { color: 
 .akce-spravy .napoveda { margin: 0; font-size: .8rem; }
 .tabulka-dilu-spravy tr.vyrazeno td { opacity: .6; }
 .tabulka-dilu-spravy th a { color: inherit; text-decoration: none; }
+.chybejici-v-souboru { padding: .5rem .8rem; margin-bottom: .6rem; background: #fff; border: 1px solid var(--ram); border-radius: 12px; }
+.chybejici-v-souboru summary label { display: inline; margin: 0; }
