@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import csv
 import io
+import re
 from dataclasses import dataclass, fields
 from datetime import date, datetime
 from decimal import Decimal
@@ -25,11 +26,47 @@ RAZENI = {"kod": "Kód", "nazev": "Název", "katalog": "Sklad", "cena": "Prodej"
           "pouzito": "Použito", "posledni": "Naposledy"}
 
 
+def vzor_kodu(vzor: str) -> "re.Pattern":
+    """#151: vzor kódu se zástupnými znaky jako v Excelu / Accessu (operátor Like) → regulární výraz.
+    * = libovolné znaky (i žádný), ? = jeden znak, # = jedna číslice, [abc] / [a-c] = jeden znak ze seznamu,
+    [!abc] = jeden znak mimo seznam; ostatní znaky (tečka, mezera, pomlčka…) doslova. Platí na celý kód,
+    velikost písmen nevadí."""
+    vysledek, i = [], 0
+    while i < len(vzor):
+        z = vzor[i]
+        if z == "*":
+            vysledek.append(".*")
+        elif z == "?":
+            vysledek.append(".")
+        elif z == "#":
+            vysledek.append("[0-9]")
+        elif z == "[":
+            konec = vzor.find("]", i + 2 if vzor[i + 1:i + 2] == "!" else i + 1)
+            if konec == -1:
+                raise ChybaValidace(f"Vzor kódu „{vzor}“: chybí zavírací závorka ].")
+            obsah = vzor[i + 1:konec]
+            negace = obsah.startswith("!")
+            obsah = obsah[1:] if negace else obsah
+            if not obsah:
+                raise ChybaValidace(f"Vzor kódu „{vzor}“: prázdný výběr [ ].")
+            casti = "".join(re.escape(c) if c != "-" or j in (0, len(obsah) - 1) else "-" for j, c in enumerate(obsah))
+            vysledek.append(f"[{'^' if negace else ''}{casti}]")
+            i = konec
+        else:
+            vysledek.append(re.escape(z))
+        i += 1
+    try:
+        return re.compile("".join(vysledek), re.IGNORECASE)
+    except re.error:
+        raise ChybaValidace(f"Vzor kódu „{vzor}“ nejde použít (např. rozsah [z-a]).") from None
+
+
 @dataclass
 class Filtr:
     katalog: str = ""        # id skladu, prázdné = všechny
     q: str = ""              # text v kódu / názvu / zaměnitelném dílu (kód i bez oddělovačů)
     predpona: str = ""       # předpona výrobce, např. UFI
+    vzor: str = ""           # #151: vzor celého kódu se zástupnými znaky jako v Excelu / Accessu (* ? # [ ])
     stav: str = "aktivni"
     pouziti: str = ""
     pouzito_min: str = ""    # použito aspoň N×
@@ -142,6 +179,7 @@ def vyber(session: Session, filtr: Filtr) -> list[Radek]:
     marze_pod = desetinne_nebo_none(filtr.marze_pod, "Marže pod")
     text, text_bez = filtr.q.casefold(), _bez(filtr.q)
     predpona = filtr.predpona.strip().upper()
+    vzor = vzor_kodu(filtr.vzor.strip()) if filtr.vzor.strip() else None
     vysledek = []
     for p in session.exec(dotaz):
         pocet, posledni = pouzite.get(p.id, (0, None))
@@ -151,6 +189,8 @@ def vyber(session: Session, filtr: Filtr) -> list[Radek]:
                          or text in (p.zamenitelny_dil or "").casefold() or (text_bez and text_bez in _bez(kod))):
             continue
         if predpona and not kod.strip().upper().startswith(predpona + " ") and kod.strip().upper() != predpona:
+            continue
+        if vzor and not vzor.fullmatch(kod.strip()):
             continue
         if filtr.pouziti == "nikdy" and pocet:
             continue

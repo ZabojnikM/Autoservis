@@ -222,6 +222,9 @@ zrušit jde kdykoli.
 - **MCP server** na `/mcp/` (streamable HTTP, stejný klíč v hlavičce) nabízí stejné funkce jako nástroje pro boty
   (`hledej_dily`, `nahled_hromadne_akce`, `proved_hromadnou_akci`, `hledej_radky_zakazek`, `prijem_zakazky`…).
 - Přeformátování kódu podle vzoru (`UFI ##.###.##`) je i ve Správě dat → Díly → Úprava kódů.
+- **Vzor kódu** ve filtru Správy dat → Díly (a `kod_vzor` v API / MCP, #151): zástupné znaky jako v Excelu a Accessu –
+  `*` cokoli, `?` jeden znak, `#` číslice, `[abc]` / `[a-c]` výběr, `[!abc]` mimo výběr, ostatní znaky doslova; platí na
+  celý kód (`30 ## ####`, `UFI 30.*`). Předpona jde napsat (např. `30`). Tlačítko **Nápověda k hledání** otevře návod.
 
 ## Import ze starého systému
 

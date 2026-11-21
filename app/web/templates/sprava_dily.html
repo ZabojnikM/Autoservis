@@ -17,8 +17,12 @@
   <label>Sklad <select name="katalog"><option value="">všechny</option>
     {% for k in katalogy %}<option value="{{ k.id }}" {% if filtr.katalog == k.id|string %}selected{% endif %}>{{ k.nazev }}</option>{% endfor %}</select></label>
   <label class="siroke">Hledat <input type="search" name="q" value="{{ filtr.q }}" placeholder="kód, číslo dílu, název"></label>
-  <label>Výrobce (předpona) <select name="predpona"><option value="">všichni</option>
-    {% for p, pocet in predpony %}<option value="{{ p }}" {% if filtr.predpona == p %}selected{% endif %}>{{ p }} ({{ pocet }})</option>{% endfor %}</select></label>
+  {# #151: předpona jde napsat (např. 30), nabídka výrobců zůstává #}
+  <label>Výrobce (předpona) <input name="predpona" value="{{ filtr.predpona }}" list="predpony-vyrobcu" class="kratke"
+         placeholder="všichni" autocomplete="off" title="První slovo kódu, např. UFI nebo 30">
+    <datalist id="predpony-vyrobcu">{% for p, pocet in predpony %}<option value="{{ p }}">{{ p }} ({{ pocet }})</option>{% endfor %}</datalist></label>
+  <label title="Tvar celého kódu: * cokoli, ? jeden znak, # číslice, [abc] výběr – viz Nápověda k hledání">Vzor kódu
+    <input name="vzor" value="{{ filtr.vzor }}" placeholder="např. 30 ## ####" autocomplete="off" spellcheck="false"></label>
   <label>Stav <select name="stav">{% for k, n in stavy.items() %}<option value="{{ k }}" {% if filtr.stav == k %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></label>
   <label>Použití <select name="pouziti">{% for k, n in pouziti.items() %}<option value="{{ k }}" {% if filtr.pouziti == k %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></label>
   <label>Použito aspoň × <input name="pouzito_min" value="{{ filtr.pouzito_min }}" inputmode="numeric" class="kratke"></label>
@@ -30,6 +34,7 @@
   <div class="tlacitka-filtru">
     <button type="submit">Filtrovat</button>
     <a href="/sprava-dat/dily" role="button" class="secondary outline">Zrušit filtr</a>
+    <button type="button" class="secondary outline" onclick="document.getElementById('napoveda-hledani').showModal()">Nápověda k hledání</button>
     <a href="/sprava-dat" class="zpet" role="button">Zpět</a>
   </div>
 </form>
@@ -127,4 +132,65 @@
     prepni();
   })();
 </script>
+
+{# #151: Nápověda k hledání – okno nad stránkou (Esc nebo Zavřít) #}
+<dialog id="napoveda-hledani" class="napoveda-okno" onclick="if (event.target === this) this.close()">
+  <article>
+    <header class="okno-hlavicka">
+      <h3>Nápověda k hledání a filtrování dílů</h3>
+      <button type="button" class="zpet maly" onclick="this.closest('dialog').close()">✕ Zavřít</button>
+    </header>
+    <p>Pole filtru se kombinují – díl se ukáže, jen když splní <strong>všechna</strong> vyplněná pole.
+      Prázdné pole se nebere v úvahu. Filtr se použije tlačítkem <strong>Filtrovat</strong> (nebo Enter),
+      <strong>Zrušit filtr</strong> vrátí výchozí stav.</p>
+
+    <h4>Pole filtru</h4>
+    <dl class="napoveda-pole">
+      <dt>Sklad</dt><dd>Jen díly z vybraného skladu (katalogu). „všechny“ = ze všech skladů.</dd>
+      <dt>Hledat</dt><dd>Text <strong>kdekoli</strong> v kódu, názvu nebo zaměnitelném dílu. U kódu se nehledí na tečky,
+        mezery a pomlčky: <code>2501100</code> najde <code>UFI 25.011.00</code>. Velikost písmen nevadí.</dd>
+      <dt>Výrobce (předpona)</dt><dd>První slovo kódu před mezerou – vyberte z nabídky (UFI, BO…), nebo napište,
+        např. <code>30</code> najde kódy <code>30 93 3391</code>, <code>30 71 0040</code>.</dd>
+      <dt>Vzor kódu</dt><dd>Tvar <strong>celého</strong> kódu se zástupnými znaky (tabulka níže).</dd>
+      <dt>Stav</dt><dd>Aktivní (výchozí), Vyřazené, nebo Aktivní i vyřazené. Hledáte-li díl, který „není vidět“,
+        zkuste <em>Aktivní i vyřazené</em>.</dd>
+      <dt>Použití</dt><dd>Nikdy nepoužité / Použité – podle řádků zakázek napojených na kartu.</dd>
+      <dt>Použito aspoň ×</dt><dd>Jen díly použité v zakázkách aspoň tolikrát, např. <code>3</code>.</dd>
+      <dt>Nepoužité od</dt><dd>Díly naposledy použité před datem (nebo nikdy), např. <code>1.1.2024</code> = ležáky.</dd>
+      <dt>Prodej od / do</dt><dd>Prodejní cena bez DPH v Kč, např. od <code>100</code> do <code>500</code>.</dd>
+      <dt>Marže pod %</dt><dd>Díly s marží nižší než zadané procento. Marže = (prodej − nákup) / prodej × 100.</dd>
+      <dt>Problém</dt><dd>Prodej pod nákupní cenou, Nulová prodejní cena, Bez nákupní ceny, Podezřelý zápis kódu,
+        Bez kódu.</dd>
+    </dl>
+
+    <h4>Zástupné znaky ve Vzoru kódu (jako v Excelu a Accessu)</h4>
+    <table class="napoveda-tabulka">
+      <thead><tr><th>Znak</th><th>Znamená</th><th>Příklad</th><th>Najde</th></tr></thead>
+      <tbody>
+        <tr><td><code>*</code></td><td>libovolné znaky (i žádný)</td><td><code>30 *</code></td><td>všechny kódy začínající „30 “</td></tr>
+        <tr><td><code>?</code></td><td>právě jeden libovolný znak</td><td><code>UFI 2?.011.00</code></td><td>UFI 25.011.00, UFI 27.011.00…</td></tr>
+        <tr><td><code>#</code></td><td>právě jedna číslice</td><td><code>30 ## ####</code></td><td>30 93 3391 (ne 30 93 339)</td></tr>
+        <tr><td><code>[ ]</code></td><td>jeden znak ze seznamu nebo rozsahu</td><td><code>UFI [23]5.*</code></td><td>UFI 25… i UFI 35…</td></tr>
+        <tr><td><code>[! ]</code></td><td>jeden znak, který v seznamu není</td><td><code>[!0-9]*</code></td><td>kódy, které nezačínají číslicí</td></tr>
+      </tbody>
+    </table>
+    <p>Ostatní znaky – <strong>tečka, mezera, pomlčka, lomítko, písmena</strong> – platí doslova. Vzor musí sedět na
+      <strong>celý</strong> kód: <code>30</code> najde jen kód „30“, kódy začínající na 30 hledejte <code>30*</code>,
+      obsahující 30 <code>*30*</code>. Velikost písmen nevadí.</p>
+    <p><strong>Další příklady:</strong>
+      <code>UFI 30.*</code> vzduchové filtry UFI ·
+      <code>*.###.##</code> kódy končící „.xxx.xx“ ·
+      <code>BO 3397######</code> stěrače BOSCH ·
+      <code>## ## ####</code> kódy ve tvaru „12 34 5678“ bez předpony.</p>
+
+    <h4>Tipy</h4>
+    <ul>
+      <li>Kliknutím na záhlaví sloupce se seznam seřadí, druhým kliknutím obráceně (▲ ▼).</li>
+      <li><strong>Hromadná akce</strong> pracuje buď se zaškrtnutými díly, nebo se <em>všemi díly podle filtru</em> –
+        vždy nejdřív ukáže náhled, nic se nezmění bez potvrzení.</li>
+      <li>Akce <strong>Export</strong> stáhne vyfiltrované díly jako CSV pro Excel (sloupce si vyberete).</li>
+      <li>Filtr zůstane v adrese stránky – stránku si můžete uložit do záložek.</li>
+    </ul>
+  </article>
+</dialog>
 {% endblock %}

@@ -1127,3 +1127,13 @@ tbody td.hlavni.doklad-vyuctovani, tbody td.hlavni.doklad-vyuctovani a { color: 
 /* #145 API pro boty */
 .novy-klic { border: 2px solid var(--akcent); padding: .8rem 1rem; background: #fff; border-radius: 12px; }
 .novy-klic input { font-family: monospace; width: 100%; }
+
+/* #151: okno Nápověda k hledání (Správa dat → Díly) */
+dialog.napoveda-okno { background: rgba(0,0,0,.25); }
+dialog.napoveda-okno article { width: min(900px, 96vw); max-width: none; max-height: 88vh; overflow: auto; margin: 0; }
+dialog.napoveda-okno h4 { margin: 1rem 0 .4rem; font-size: 1rem; }
+.napoveda-pole { display: grid; grid-template-columns: 11rem 1fr; gap: .3rem 1rem; margin: 0; }
+.napoveda-pole dt { font-weight: 600; }
+.napoveda-pole dd { margin: 0; }
+.napoveda-tabulka { font-size: .9rem; margin-bottom: .5rem; }
+.napoveda-okno code { white-space: nowrap; }

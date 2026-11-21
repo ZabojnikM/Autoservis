@@ -26,6 +26,8 @@ def _dil(r: sprava.Radek) -> dict:
 def _radky(session: Session, filtr: dict | None) -> list[sprava.Radek]:
     filtr = {k: str(v) for k, v in (filtr or {}).items() if v is not None}
     regex = filtr.pop("kod_regex", None)
+    if filtr.get("kod_vzor"):  # #151: vzor se zástupnými znaky jako v Excelu / Accessu (* ? # [ ])
+        filtr["vzor"] = filtr.pop("kod_vzor")
     radky = sprava.vyber(session, sprava.Filtr.z_dat(filtr))
     if regex:
         import re
@@ -39,7 +41,8 @@ def _radky(session: Session, filtr: dict | None) -> list[sprava.Radek]:
 
 def dily(session: Session, filtr: dict | None = None, limit: int = 100, od: int = 0) -> dict:
     """Díly materiálu podle filtru (klíče jako v Správě dat: katalog, q, predpona, stav, pouziti, pouzito_min,
-    nepouzito_od, cena_od, cena_do, marze_pod, problem, razeni; navíc kod_regex)."""
+    nepouzito_od, cena_od, cena_do, marze_pod, problem, razeni; navíc kod_vzor (zástupné znaky * ? # [ ])
+    a kod_regex)."""
     radky = _radky(session, filtr)
     limit = max(1, min(int(limit or 100), 1000))
     return {"celkem": len(radky), "od": od, "dily": [_dil(r) for r in radky[od:od + limit]]}

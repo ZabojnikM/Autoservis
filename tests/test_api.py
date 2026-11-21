@@ -166,3 +166,12 @@ def test_nastaveni_api_stranka(session):
     klic = re.search(r'value="(as_[^"]+)"', odpoved.text).group(1)
     assert klient.get("/api/v1/ja", headers={"Authorization": f"Bearer {klic}"}).json()["opravneni"] == ["sklad", "zakazky"]
     assert klic not in klient.get("/nastaveni/api").text   # podruhé se už neukáže
+
+
+def test_api_dily_kod_vzor(session, klient, data):
+    """#151: vzor kódu se zástupnými znaky i v API."""
+    h = _klic(session, "sklad")
+    r = klient.get("/api/v1/sklad/dily", params={"kod_vzor": "UFI ##.###.##"}, headers=h).json()
+    assert [d["kod"] for d in r["dily"]] == ["UFI 25.011.00"]
+    r = klient.get("/api/v1/sklad/dily", params={"kod_vzor": "##.###.##"}, headers=h).json()
+    assert [d["kod"] for d in r["dily"]] == ["25.011.00"]
