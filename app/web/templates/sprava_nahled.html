@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{# #136: náhled hromadné akce – co se změní (stará → nová hodnota) a co se přeskočí; Provést uloží se zálohou #}
+{% block title %}Náhled – {{ nazev_akce }}{% endblock %}
+{% block content %}
+<div class="nadpis-radek">
+  <h1>Náhled: {{ nazev_akce }} <span class="oznaceni">Správa dat</span></h1>
+</div>
+<p><strong>{{ plan.popis[0]|upper }}{{ plan.popis[1:] }}</strong> ·
+  změní se <strong>{{ plan.provede_se|length }}</strong> dílů{% if plan.preskoci_se %}, přeskočí se {{ plan.preskoci_se|length }}{% endif %}.</p>
+
+<form method="post" action="{{ cil }}" class="lista-filtru-seznamu lista-importu"
+      onsubmit="return confirm('Provést změny u {{ plan.provede_se|length }} dílů? Před uložením se databáze zazálohuje.')">
+  <input type="hidden" name="akce" value="{{ akce }}">
+  <input type="hidden" name="ids" value="{{ ids }}">
+  {% for k, v in par.items() %}<input type="hidden" name="p_{{ k }}" value="{{ v }}">{% endfor %}
+  {% if filtr %}{% for k, v in filtr.parametry().items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}{% endif %}
+  <button type="submit" {% if not plan.provede_se %}disabled{% endif %}>Provést</button>
+  <a href="{{ zpet }}" role="button" class="secondary outline zpet" title="Zpět bez uložení změn">Zpět</a>
+</form>
+
+{% if plan.provede_se %}
+<h2>Změní se</h2>
+<div class="overflow-auto">
+<table class="striped tabulka-slouceni">
+  <thead><tr><th>Kód</th><th>Název</th><th>Co</th><th class="cislo">Teď</th><th class="cislo">Nově</th></tr></thead>
+  <tbody>
+  {% for z in plan.provede_se[:1000] %}
+    <tr><td class="hlavni kod-dilu">{{ z.kod|pomlcka }}</td><td>{{ z.nazev }}</td><td class="tlumene">{{ z.co }}</td>
+      <td class="cislo tlumene">{{ z.pred }}</td><td class="cislo castka-hlavni">{{ z.po }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if plan.provede_se|length > 1000 %}<p class="tlumene">… a dalších {{ plan.provede_se|length - 1000 }} dílů.</p>{% endif %}
+{% endif %}
+
+{% if plan.preskoci_se %}
+<h2>Přeskočí se</h2>
+<div class="overflow-auto">
+<table class="striped tabulka-slouceni">
+  <thead><tr><th>Kód</th><th>Název</th><th>Důvod</th></tr></thead>
+  <tbody>
+  {% for z in plan.preskoci_se[:500] %}
+    <tr><td class="kod-dilu">{{ z.kod|pomlcka }}</td><td>{{ z.nazev }}</td><td class="tlumene">{{ z.preskoceno }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% if plan.preskoci_se|length > 500 %}<p class="tlumene">… a dalších {{ plan.preskoci_se|length - 500 }} dílů.</p>{% endif %}
+{% endif %}
+{% endblock %}

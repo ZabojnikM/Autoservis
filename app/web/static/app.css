@@ -1095,3 +1095,23 @@ tbody td.hlavni.doklad-vyuctovani, tbody td.hlavni.doklad-vyuctovani a { color: 
 .tabulka-importu-skladu .stara-karta { display: block; margin: 0 0 .15rem; font-size: .9rem; }
 .tabulka-importu-skladu .stara-karta input { margin: 0 .35rem 0 0; }
 .tabulka-importu-skladu .dalsi-kod { margin: .2rem 0 0; padding: .2rem .4rem; height: auto; font-size: .85rem; max-width: 16rem; }
+
+/* #136 Správa dat – Díly */
+.filtr-spravy { display: flex; flex-wrap: wrap; gap: .5rem .8rem; align-items: flex-end; padding: .7rem .9rem; margin-bottom: .8rem;
+  background: #fff; border: 1px solid var(--ram); border-radius: 12px; box-shadow: var(--stin); }
+.filtr-spravy label { margin: 0; font-size: .85rem; flex: 0 1 11rem; }
+.filtr-spravy label.siroke { flex-basis: 16rem; }
+.filtr-spravy input, .filtr-spravy select { margin: .15rem 0 0; padding: .3rem .5rem; height: auto; font-size: .9rem; }
+.filtr-spravy .kratke { max-width: 8rem; }
+.tlacitka-filtru { display: flex; gap: .5rem; align-items: flex-end; }
+.tlacitka-filtru > * { margin: 0; width: auto; padding: .35rem .9rem; }
+.akce-spravy { padding: .6rem .9rem; margin-bottom: .6rem; background: #fff; border: 1px solid var(--ram); border-radius: 12px; }
+.akce-spravy legend { font-weight: 600; }
+.radek-akce, .parametry-akce { display: flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: flex-end; margin: .2rem 0 .4rem; }
+.radek-akce label, .parametry-akce label { margin: 0; font-size: .9rem; }
+.radek-akce select, .parametry-akce select, .parametry-akce input { margin: .15rem 0 0; padding: .3rem .5rem; height: auto; width: auto; }
+.parametry-akce .kratke { max-width: 9rem; }
+.radek-akce button { margin: 0; width: auto; }
+.akce-spravy .napoveda { margin: 0; font-size: .8rem; }
+.tabulka-dilu-spravy tr.vyrazeno td { opacity: .6; }
+.tabulka-dilu-spravy th a { color: inherit; text-decoration: none; }

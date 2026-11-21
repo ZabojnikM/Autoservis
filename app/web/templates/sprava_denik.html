@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{# #136: deník hromadných úprav ze Správy dat #}
+{% block title %}Deník úprav – Správa dat{% endblock %}
+{% block content %}
+<div class="nadpis-radek">
+  <h1>Deník úprav <span class="oznaceni">Správa dat</span></h1>
+</div>
+<p class="tlumene napoveda">Každá hromadná úprava se před uložením zazálohuje. Stav před úpravou jde vrátit obnovou zálohy
+  v <a href="/nastaveni">Nastavení → Zálohy databáze</a> (vrátí celou databázi k času zálohy). Uchovává se posledních 10 záloh před úpravou.</p>
+{% if zaznamy %}
+<div class="overflow-auto">
+<table class="striped tabulka-slouceni">
+  <thead><tr><th>Kdy</th><th>Akce</th><th>Co se stalo</th><th class="cislo">Záznamů</th><th>Záloha před úpravou</th></tr></thead>
+  <tbody>
+  {% for z in zaznamy %}
+    <tr><td class="tlumene">{{ z.cas.strftime('%d.%m.%Y %H:%M') }}</td><td class="hlavni">{{ z.akce }}</td><td>{{ z.popis }}</td>
+      <td class="cislo">{{ z.pocet }}</td><td class="tlumene kod">{{ z.zaloha|pomlcka }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="tlumene prazdna-mrizka">Zatím žádné hromadné úpravy.</p>
+{% endif %}
+<p><a href="/sprava-dat" class="zpet" role="button">Zpět</a></p>
+{% endblock %}
