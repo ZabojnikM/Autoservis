@@ -1068,3 +1068,16 @@ tbody td.hlavni.doklad-vyuctovani, tbody td.hlavni.doklad-vyuctovani a { color: 
 .okno-cenik .vyber-cenik tbody tr.oddelovac-pouziti > td { background: #fff; padding: .45rem .6rem .25rem; font-size: .78rem;
   font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: #6b7280; border-top: 2px solid var(--akcent);
   cursor: default; }
+
+/* #130 Sloučit díly */
+.skupina-slouceni { margin: 0 0 1rem; padding: .6rem .8rem; background: #fff; border: 1px solid var(--ram);
+  border-radius: 12px; box-shadow: var(--stin); }
+.skupina-slouceni .nadpis-skupiny { margin: 0 0 .3rem; }
+.tabulka-slouceni { margin: 0 0 .4rem; }
+.tabulka-slouceni td, .tabulka-slouceni th { padding: .25rem .5rem; }
+.radek-slouceni { display: flex; gap: .8rem; align-items: flex-end; flex-wrap: wrap; }
+.radek-slouceni label { margin: 0; flex: 0 1 18rem; }
+.radek-slouceni input { margin: 0; }
+.radek-slouceni button { margin: 0; width: auto; }
+.nahrat-seznam { margin: 0; }
+.nahrat-seznam label { margin: 0; cursor: pointer; }

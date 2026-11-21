@@ -392,6 +392,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-20 | Upravit materiál: volba katalogu jako u nového materiálu, změna díl přesune; duplicitní kód v cílovém katalogu se odmítne s hláškou (#124) |
 | 2026-11-20 | Hromadné doplnění údajů vozidel z registru v Nastavení: kód motoru, stav v registru a STK (provozované = STK z registru, mimo provoz = stav místo STK), na pozadí 22 VIN/min s průběhem a přehledem (#126) |
 | 2026-11-20 | **Verze 0.8.0**: hromadné doplnění údajů vozidel z registru (#126), volba katalogu v úpravě materiálu (#124) |
+| 2026-11-21 | Sloučit díly v ceníku materiálu: návrh skupin podle čísla dílu, ruční skupina, hromadně ze seznamu CSV; staré zakázky dostanou nový kód a vazbu na kartu, ceny a doklady beze změny, záloha před sloučením (#130) |
 
 ## Zdroje průzkumu
 

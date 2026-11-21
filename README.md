@@ -133,6 +133,18 @@ tests/
 - **Nastavení** (`/nastaveni`): plátce DPH, výchozí sazba DPH, měna, API klíč registru vozidel.
 - Řádek zakázky je kopie ceníku – pozdější změna ceníku už vystavené zakázky nemění.
 - Peníze se ukládají přesně (desetinná čísla jako text, žádné zaokrouhlovací chyby float).
+- **Sloučit díly** (*Materiál → Sloučit díly*, #130): stejný díl vedený pod více kódy („2501100“, „25.011.00“)
+  se sloučí do jedné karty s novým kódem (např. `UFI 25.011.00`), názvem a cenou.
+  - Návrh skupin vznikne sám podle čísla dílu bez mezer, teček, pomlček a předpony výrobce. Díly s úplně jiným
+    číslem jde sloučit ručně přes hledání.
+  - Ostatní karty se nesmažou, jen vyřadí (s poznámkou, kam byly sloučeny). Staré kódy s jiným číslem dílu se
+    zapíšou do „Zaměnitelný díl“, ať je hledání najde.
+  - Ve starých zakázkách se přepíše kód a řádky se napojí na ponechanou kartu: historie vozidla ukáže jeden díl
+    s novým kódem a vložení z historie vezme novou cenu. **Ceny v zakázkách a vystavené doklady se nemění.**
+  - Hromadně: *Stáhnout návrh (CSV)* → v Excelu upravit sloupce Ponechat, Sloučit, Nový kód, Nový název,
+    Nová cena → *Nahrát seznam (CSV)* → náhled → *Sloučit vybrané skupiny*. Do skupiny jde přidat i jinou kartu
+    řádkem se stejným číslem skupiny a jejím ID.
+  - Před každým sloučením se databáze zazálohuje do `data/backups` (`pred-sloucenim-…db`, posledních 10).
 
 ## Faktury a vyúčtování (fáze 3)
 

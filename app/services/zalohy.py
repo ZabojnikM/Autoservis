@@ -266,6 +266,20 @@ def rucni(db_path: Path = None, zalohy: Path | None = None) -> Path:
     return cil
 
 
+PRED_SLOUCENIM = 10  # uchovávaných záloh před sloučením dílů v ceníku (#130)
+
+
+def pred_sloucenim(db_path: Path = None, zalohy: Path | None = None) -> Path:
+    """Záloha před sloučením karet ceníku (#130) – uchovává se posledních `PRED_SLOUCENIM`."""
+    zalohy = Path(zalohy or ZALOHY)
+    db_path = Path(db_path or config.DB_PATH)
+    predpona = _predpona("pred-sloucenim", db_path)
+    with _zamek:
+        cil = vytvor(db_path, zalohy, predpona)
+        promaz(zalohy, predpona, PRED_SLOUCENIM)
+    return cil
+
+
 def _posledni_uspech(zalohy: Path, druh: str) -> datetime | None:
     hodnota = nacti_stav(zalohy).get(druh, {}).get("uspech")
     try:
@@ -328,7 +342,8 @@ def tydenni_ted(cilova_slozka: str, db_path: Path = None, zalohy: Path | None = 
 def _druh(nazev: str) -> str:
     for predpona, druh in (("denni-", "denní"), ("rucni-", "ruční"), ("pred-aktualizaci-", "před aktualizací"),
                            ("autoservis-tydenni-", "týdenní"), ("pred-obnovou-", "před obnovou"),
-                           ("pred-migraci-", "před migrací")):
+                           ("pred-migraci-", "před migrací"),
+                           ("pred-sloucenim-", "před sloučením")):
         if nazev.startswith(predpona):
             return druh
     return "jiná"
