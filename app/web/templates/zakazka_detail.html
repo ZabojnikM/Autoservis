@@ -73,8 +73,7 @@
     <p class="hlavni-udaj"><a href="/vozidla/{{ v.id }}">{{ spz(v.spz) }}</a>
       {% if v.znacka or v.model %}{{ v.popis }}{% endif %}</p>
     <dl>
-      {% if v.vin %}<dt>VIN</dt><dd class="vin-zakazky">{{ v.vin }}
-        {{ kopirovat(v.vin) }}</dd>{% endif %}
+      {% if v.vin %}<dt>VIN</dt><dd class="vin-zakazky">{{ kopirovat(v.vin) }}<span>{{ v.vin }}</span></dd>{% endif %}
       {% if v.rok_vyroby %}<dt>Rok</dt><dd>{{ v.rok_vyroby }}</dd>{% endif %}
       {% if v.kod_motoru or v.objem or v.vykon %}<dt>Motor</dt>
         <dd>{{ [v.kod_motoru, v.objem, v.vykon]|select|join(' · ') }}</dd>{% endif %}
@@ -164,7 +163,7 @@
       {% if lze_menit %}<td class="sl-upravit neni-tisk">
         <a href="/polozky/{{ r.id }}/upravit" role="button" class="maly upravit-radek" data-okno
            title="Upravit položku (také dvojklik na řádek)">Upravit</a></td>{% endif %}
-      <td class="tlumene">{{ r.kod or '' }}</td>
+      <td class="tlumene kod-s-kopii">{% if r.kod and r.typ == 'material' %}{{ kopirovat(r.kod, 'kód') }}{% endif %}{{ r.kod or '' }}</td>
       <td>{{ r.nazev }}
         {%- if r.cislo_dodaciho_listu -%}
         <br><small>Dodací list <strong>{{ r.cislo_dodaciho_listu }}</strong></small>

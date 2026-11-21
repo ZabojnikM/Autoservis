@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% from "_makra.html" import kopirovat %}
 {# #136: Správa dat → Díly – filtr a řazení dílů napříč sklady, export a hromadné akce (náhled → provést) #}
 {% block title %}Díly – Správa dat{% endblock %}
 
@@ -100,7 +101,7 @@
     {% for r in radky %}{% set p = r.karta %}
       <tr class="{% if not p.aktivni %}vyrazeno{% endif %}">
         <td class="sl-vyber"><input type="checkbox" name="id" value="{{ p.id }}" aria-label="Vybrat {{ p.kod or p.nazev }}" onchange="pocitejVybrane()"></td>
-        <td class="hlavni kod-dilu"><a href="/cenik/{{ p.id }}/upravit" target="_blank" rel="noopener">{{ p.kod|pomlcka }}</a></td>
+        <td class="hlavni kod-dilu kod-s-kopii">{% if p.kod %}{{ kopirovat(p.kod, 'kód') }}{% endif %}<a href="/cenik/{{ p.id }}/upravit" target="_blank" rel="noopener">{{ p.kod|pomlcka }}</a></td>
         <td>{{ p.nazev }}{% if not p.aktivni %} <span class="tlumene">(vyřazeno)</span>{% endif %}</td>
         <td class="tlumene">{{ r.katalog }}</td>
         <td class="cislo">{{ p.cena|penize }}</td>

@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_makra.html" import zahlavi, hledani_seznamu, stavovy_radek with context %}
+{% from "_makra.html" import zahlavi, hledani_seznamu, stavovy_radek, kopirovat with context %}
 {# Ceník materiálu – samostatný seznam (práce mají vlastní stránku /prace) #}
 {% block title %}Materiál{% endblock %}
 {% block content %}
@@ -40,7 +40,7 @@
   {% for p in polozky %}
     <tr data-otevrit="/cenik/{{ p.id }}/upravit" data-upravit="/cenik/{{ p.id }}/upravit" data-okno
         class="{% if not p.aktivni %}vyrazeno{% endif %}{% if zvyraznit == p.id|string %} zvyrazneny{% endif %}">
-      <td class="hlavni kod-dilu" title="{{ p.kod or '' }}">{{ p.kod|pomlcka }}</td>
+      <td class="hlavni kod-dilu kod-s-kopii" title="{{ p.kod or '' }}">{% if p.kod %}{{ kopirovat(p.kod, 'kód') }}{% endif %}{{ p.kod|pomlcka }}</td>
       <td title="{{ p.nazev }}">{{ p.nazev }}{% if not p.aktivni %} <span class="tlumene">(vyřazeno)</span>{% endif %}</td>
       <td class="kod" title="{{ p.zamenitelny_dil or '' }}">{{ p.zamenitelny_dil|pomlcka }}</td>
       <td class="tlumene">{{ p.jednotka }}</td>

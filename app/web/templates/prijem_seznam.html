@@ -31,7 +31,7 @@
       <td class="hlavni spz-prijmu">{% if n.spz %}{{ spz(n.spz) }}{% if n.je_nejiste('spz') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td>{% if znacka or model %}<span{% if not (n.znacka or n.model) %} class="tlumene" title="Z naší databáze"{% endif %}>{{ [znacka, model]|select|join(' ') }}</span>{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td class="zakaznik-prijmu"{% if v and v.zakaznik %} title="{{ v.zakaznik.nazev }}"{% endif %}>{{ (v.zakaznik.nazev if v and v.zakaznik else none)|pomlcka }}</td>
-      <td class="kod vin">{% if n.vin %}<span class="vin-text">{{ n.vin }}{% if n.je_nejiste('vin') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}</span>{{ kopirovat(n.vin) }}{% else %}{{ none|pomlcka }}{% endif %}</td>
+      <td class="kod vin">{% if n.vin %}{{ kopirovat(n.vin) }}<span class="vin-text">{{ n.vin }}{% if n.je_nejiste('vin') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}</span>{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td class="cislo">{% if n.km is not none %}{{ n.km|cislo }}{% if n.je_nejiste('odometer_km') %} <span class="nejiste" title="Hodnota není potvrzená">nejisté</span>{% endif %}{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td>{{ (n.created_at|datumcas if n.created_at else '')|pomlcka }}</td>
     </tr>

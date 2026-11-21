@@ -719,7 +719,7 @@ table.seznam-zakazek { width: 100%; }
 table.seznam-zakazek th, table.seznam-zakazek td { white-space: nowrap; }
 table.seznam-zakazek td, table.seznam-zakazek th.razeni a { padding-right: 16px; }
 /* #99: místo Požadavku VIN (s Kopírovat), kód motoru a platnost STK; šířky podle obsahu, volné místo rovnoměrně */
-table.seznam-zakazek td.sl-vin button.kopirovat { margin-left: 6px; }
+table.seznam-zakazek td.sl-vin button.kopirovat { margin-right: 6px; }
 thead th { font-size: .8rem; }
 .overflow-auto:has(> table) { margin-bottom: var(--mezera); border-radius: 12px; overflow: auto; }
 .stav, .stav-dokladu { padding: 2px 9px; font-size: .8rem; }
@@ -787,12 +787,19 @@ button.kopirovat { width: auto; margin: 0; padding: 3px !important; font-size: .
   display: inline-flex; align-items: center; justify-content: center; line-height: 0; }
 /* #154: ikona místo nápisu; po zkopírování fajfka */
 button.kopirovat svg { display: block; }
+/* #156: ikona před VIN a před kódem materiálu */
+.kod-s-kopii { white-space: nowrap; }
+.kod-s-kopii button.kopirovat { margin-right: 6px; padding: 2px !important; }
+.kod-s-kopii button.kopirovat svg { width: 14px; height: 14px; }
 button.kopirovat:not(.zkopirovano) { background: transparent !important; color: var(--pico-muted-color) !important;
   border: 1px solid var(--pico-muted-border-color) !important; box-shadow: none !important; }
 button.kopirovat:not(.zkopirovano):hover { color: var(--pico-primary) !important; border-color: var(--pico-primary) !important; }
 button.kopirovat .ik-hotovo, button.kopirovat.zkopirovano .ik-kopie { display: none; }
 button.kopirovat.zkopirovano .ik-hotovo { display: block; }
-.vin-zakazky { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.vin-zakazky { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+/* #156: ikona před VIN (menší, jako u kódu materiálu); v úzkém okně se VIN zalomí pod ni */
+.vin-zakazky button.kopirovat { flex: none; padding: 2px !important; }
+.vin-zakazky button.kopirovat svg { width: 14px; height: 14px; }
 button.kopirovat.zkopirovano { background: var(--c-hotovo, #15803d) !important; border-color: var(--c-hotovo, #15803d) !important; color: #fff !important; }
 .karta-vozidla .po-terminu { color: var(--c-chyba); font-weight: 700; }
 /* #107: STK – propadlá červeně tučně se štítkem „po termínu“, prázdná šedě „nevyplněno“ */
@@ -969,7 +976,7 @@ dd .vedle { margin-left: 1rem; margin-right: .35rem; }
 .prijem-seznam .stav-radku { display: inline-block; min-width: 8.6rem; font-size: .8rem; color: var(--pico-muted-color, #6b7280); vertical-align: middle; }
 .prijem-seznam .stav-radku.konflikt { color: #b91c1c; font-weight: 600; cursor: help; }
 .prijem-seznam td.vin .vin-text { display: inline-block; min-width: 12.2rem; }
-.prijem-seznam td.vin button.kopirovat { margin-left: 6px; }
+.prijem-seznam td.vin button.kopirovat { margin-right: 6px; }
 
 /* #15: číslo dokladu při vystavení – pevná předpona řady + přepisovatelné pořadové číslo */
 /* #106: předpona řady a pořadové číslo jako jedno pole – předpona šedě uvnitř rámečku, číslo za ní */
