@@ -508,7 +508,7 @@
     // Tlačítka − / + u množství (okno ceníku, řádky zakázky). Minus nejde pod 1 (menší množství se píše ručně).
     // V řádku zakázky se uloží až chvíli po posledním kliknutí (víc kliknutí = jedno uložení).
     let casovacKroku = null;
-    // Tlačítko Kopírovat (např. VIN na kartě vozidla): text z data-kopirovat do schránky, krátce „Zkopírováno ✓“
+    // Tlačítko Kopírovat (např. VIN na kartě vozidla): text z data-kopirovat do schránky, krátce zelená fajfka (#154)
     document.addEventListener("click", async (e) => {
       const b = e.target.closest("[data-kopirovat]");
       if (!b) return;
@@ -519,10 +519,10 @@
         const pole = Object.assign(document.createElement("textarea"), {value: text});  // starší prohlížeč / http
         document.body.append(pole); pole.select(); document.execCommand("copy"); pole.remove();
       }
-      const puvodni = b.dataset.puvodni ||= b.textContent;
-      b.textContent = "Zkopírováno ✓"; b.classList.add("zkopirovano");
+      const popisek = b.dataset.popisek ||= b.title;
+      b.classList.add("zkopirovano"); b.title = "Zkopírováno";
       clearTimeout(b._casovac);
-      b._casovac = setTimeout(() => { b.textContent = puvodni; b.classList.remove("zkopirovano"); }, 1500);
+      b._casovac = setTimeout(() => { b.classList.remove("zkopirovano"); b.title = popisek; }, 1500);
     });
     document.addEventListener("click", (e) => {
       const tlacitko = e.target.closest("[data-krok]");

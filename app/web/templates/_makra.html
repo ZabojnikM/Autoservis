@@ -185,9 +185,13 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
 {%- endmacro %}
 
 {# #99: jedno tlačítko Kopírovat pro celou aplikaci (karta zakázky, karta vozidla, příjem, seznam zakázek).
-   Zkopíruje text do schránky a krátce ukáže „Zkopírováno ✓“ (base.html); klik neotevře řádek seznamu. #}
+   Zkopíruje text do schránky a krátce ukáže zelenou fajfku (base.html); klik neotevře řádek seznamu.
+   #154: ikona Tabler „copy“ místo nápisu, popisek v title a aria-label. #}
 {% macro kopirovat(text, co='VIN') -%}
-<button type="button" class="kopirovat maly neni-tisk" data-kopirovat="{{ text }}" title="Zkopírovat {{ co }} do schránky">Kopírovat</button>
+<button type="button" class="kopirovat maly neni-tisk" data-kopirovat="{{ text }}" title="Zkopírovat {{ co }} do schránky" aria-label="Zkopírovat {{ co }} do schránky">
+<svg class="ik-kopie" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 9.667a2.667 2.667 0 0 1 2.667 -2.667h8.666a2.667 2.667 0 0 1 2.667 2.667v8.666a2.667 2.667 0 0 1 -2.667 2.667h-8.666a2.667 2.667 0 0 1 -2.667 -2.667z"/><path d="M4.012 16.737a2.005 2.005 0 0 1 -1.012 -1.737v-10c0 -1.1 .9 -2 2 -2h10c.75 0 1.158 .385 1.5 1"/></svg>
+<svg class="ik-hotovo" viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5l10 -10"/></svg>
+</button>
 {%- endmacro %}
 
 {% macro tabulka_zakazek(zakazky, ukaz_vozidlo=True, ukaz_zakaznika=True, stranka=None) -%}
