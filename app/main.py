@@ -8,6 +8,7 @@ from fastapi.staticfiles import StaticFiles
 from app import config
 from app.db import engine, init_db
 from app.api.rest import router as api_router
+from app.mcp_server import server as mcp_server
 from app.services import ChybaValidace, NenalezenoError, zalohy
 from app.services.api_klice import ChybaPristupu
 from app.web.aktualizace import router as aktualizace_router
@@ -22,7 +23,8 @@ from app.web.sablony import templates
 async def lifespan(_app: FastAPI):
     init_db()
     zalohy.spust_planovac(_slozka_zaloh)
-    yield
+    async with mcp_server.mcp.session_manager.run():   # MCP pro boty (#148)
+        yield
     zalohy.zastav_planovac()
 
 
@@ -40,6 +42,7 @@ app.include_router(zalohy_router)
 app.include_router(sprava_dat_router)
 app.include_router(api_router)
 app.include_router(api_klice_router)
+app.mount("/mcp", mcp_server.asgi)
 
 
 def _je_api(request: Request) -> bool:

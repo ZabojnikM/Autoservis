@@ -5,6 +5,7 @@ python-multipart>=0.0.12
 sqlmodel>=0.0.22
 alembic>=1.14
 segno>=1.6          # QR platba (QR code on invoices)
+mcp>=2.3,<3         # MCP server pro boty (#148)
 
 # testy
 pytest>=8.3
