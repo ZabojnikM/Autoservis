@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{# #160: Statistiky – výkon servisu z uzavřených zakázek po měsících a za rok #}
+{% block title %}Statistiky {{ s.rok }}{% endblock %}
+{% macro radek(m, tag='td') -%}
+  <{{ tag }} class="cislo">{{ m.zakazek or '–' }}</{{ tag }}>
+  <{{ tag }} class="cislo">{{ m.material_prodej|penize }}</{{ tag }}>
+  <{{ tag }} class="cislo tlumene">{{ m.material_nakup|penize }}</{{ tag }}>
+  <{{ tag }} class="cislo">{{ m.material_vydelek|penize }}</{{ tag }}>
+  <{{ tag }} class="cislo">{{ m.prace|penize }}</{{ tag }}>
+  <{{ tag }} class="cislo tlumene">{{ m.hodiny|mnozstvi }}</{{ tag }}>
+  <{{ tag }} class="cislo"><strong>{{ m.celkem|penize }}</strong></{{ tag }}>
+  <{{ tag }} class="cislo">{{ m.vydelek_celkem|penize }}</{{ tag }}>
+{%- endmacro %}
+{% block content %}
+<div class="nadpis-radek">
+  <h1>Statistiky <span class="oznaceni">rok {{ s.rok }}</span></h1>
+  <form method="get" action="/statistiky" class="vyber-roku">
+    <label>Rok
+      <select name="rok" onchange="this.form.submit()">
+        {% for r in s.roky %}<option value="{{ r }}" {% if r == s.rok %}selected{% endif %}>{{ r }}</option>{% endfor %}
+        {% if s.rok not in s.roky %}<option value="{{ s.rok }}" selected>{{ s.rok }}</option>{% endif %}
+      </select></label>
+  </form>
+</div>
+<p class="tlumene napoveda">Z uzavřených zakázek podle data uzavření, částky bez DPH.
+  <strong>Výdělek na materiálu je odhad</strong> = prodej − nákup podle dnešní nákupní ceny v ceníku (zakázka nákupní cenu
+  z doby prodeje neukládá).{% if s.rok_celkem.bez_nakupu %} Bez nákupní ceny: {{ s.rok_celkem.bez_nakupu }} řádků materiálu
+  – do výdělku se nepočítají.{% endif %}
+  Výdělek celkem = práce + výdělek na materiálu.</p>
+
+<div class="overflow-auto">
+<table class="striped statistiky">
+  <thead><tr><th>Měsíc</th><th class="cislo">Zakázek</th><th class="cislo">Materiál prodej</th><th class="cislo">Materiál nákup</th>
+    <th class="cislo">Výdělek materiál</th><th class="cislo">Práce</th><th class="cislo">Hodin</th>
+    <th class="cislo">Celkem</th><th class="cislo">Výdělek celkem</th></tr></thead>
+  <tbody>
+  {% for m in s.mesice %}
+    <tr{% if not m.zakazek %} class="tlumene"{% endif %}><td class="hlavni">{{ m.nazev }}</td>{{ radek(m) }}</tr>
+  {% endfor %}
+  </tbody>
+  <tfoot><tr><th>Rok {{ s.rok }}</th>{{ radek(s.rok_celkem, 'th') }}</tr></tfoot>
+</table>
+</div>
+
+<section class="panel srovnani-roku">
+  <h2>Srovnání s rokem {{ s.rok - 1 }}{% if s.do_mesice %} <span class="oznaceni">leden až {{ s.mesice[s.do_mesice - 1].nazev }} v obou letech</span>{% endif %}</h2>
+  <table class="striped">
+    <thead><tr><th></th><th class="cislo">{{ s.rok }}</th><th class="cislo">{{ s.rok - 1 }}</th><th class="cislo">Rozdíl</th><th class="cislo">%</th></tr></thead>
+    <tbody>
+    {% for r in s.srovnani %}
+      {% set cele = loop.first %}{% set hod = r.nazev == 'Hodiny práce' %}
+      <tr><td class="hlavni">{{ r.nazev }}</td>
+        <td class="cislo">{{ r.letos|mnozstvi if (cele or hod) else r.letos|penize }}</td>
+        <td class="cislo tlumene">{{ r.loni|mnozstvi if (cele or hod) else r.loni|penize }}</td>
+        <td class="cislo {% if r.rozdil < 0 %}chyba-text{% else %}kladne{% endif %}">{{ '+' if r.rozdil > 0 }}{{ r.rozdil|mnozstvi if (cele or hod) else r.rozdil|penize }}</td>
+        <td class="cislo {% if r.procent is not none and r.procent < 0 %}chyba-text{% else %}kladne{% endif %}">{% if r.procent is none %}–{% else %}{{ '+' if r.procent > 0 }}{{ (r.procent|string).replace('.', ',') }} %{% endif %}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

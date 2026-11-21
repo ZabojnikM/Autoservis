@@ -122,6 +122,14 @@
     <p class="tlumene">Záložka v horním menu s hromadnými úpravami skladu a databáze (např. sloučení dílů vedených
       pod více kódy). Běžně je skrytá – zapněte ji, jen když s daty pracujete.</p>
   </fieldset>
+
+  <fieldset class="panel">
+    <legend>Statistiky</legend>
+    <label><input type="checkbox" name="statistiky" value="1" {% if nast.statistiky %}checked{% endif %}>
+      zobrazit záložku <strong>Statistiky</strong></label>
+    <p class="tlumene">Výkon servisu po měsících a za rok: zakázky, materiál (prodej, nákup a výdělek jako odhad),
+      práce a hodiny, srovnání s minulým rokem. Běžně je skrytá.</p>
+  </fieldset>
 </form>
 
 {# #126: hromadné doplnění údajů vozidel z registru – mimo formulář nastavení #}

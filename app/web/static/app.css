@@ -791,6 +791,17 @@ button.kopirovat svg { display: block; }
 .kod-s-kopii { white-space: nowrap; }
 /* #158: kód materiálu v zakázce a na kartě vozidla tučně a tmavě (kódy práce zůstávají šedé) */
 td.kod-materialu { color: var(--text); font-weight: 700; }
+/* #160: Statistiky */
+/* se Správou dat i Statistikami má menu 9 záložek – menší písmo, aby zůstalo na jednom řádku */
+.jedna-lista .menu.menu-husta a { font-size: 1rem; padding: 6px 7px; white-space: nowrap; }
+.srovnani-roku { background: #fff; border: 1px solid var(--ram); border-radius: 12px; box-shadow: var(--stin); }
+.nadpis-radek .vyber-roku { margin: 0 0 0 auto; }
+.nadpis-radek .vyber-roku label { display: flex; align-items: center; gap: 8px; margin: 0; }
+.nadpis-radek .vyber-roku select { margin: 0; width: auto; }
+table.statistiky tfoot th { font-weight: 700; color: var(--text); background: #fafafa; border-top: 2px solid var(--ram); }
+.srovnani-roku { margin-top: var(--mezera); padding: 16px; }
+.srovnani-roku h2 { margin-bottom: 8px; }
+.kladne { color: var(--c-hotovo); }
 .kod-s-kopii button.kopirovat { margin-right: 6px; padding: 2px !important; }
 .kod-s-kopii button.kopirovat svg { width: 14px; height: 14px; }
 button.kopirovat:not(.zkopirovano) { background: transparent !important; color: var(--pico-muted-color) !important;

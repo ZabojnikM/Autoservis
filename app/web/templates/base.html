@@ -16,7 +16,7 @@
      vpravo hledání a ozubené kolo (Nastavení) #}
   {% set lista = lista if lista is defined else {'nazev': 'Autoservis', 'logo': ''} %}
   <header class="horni-lista jedna-lista">
-    <nav class="menu" aria-label="Hlavní menu">
+    <nav class="menu{% if lista.sprava_dat and lista.statistiky %} menu-husta{% endif %}" aria-label="Hlavní menu">
       <ul>
         <li><a href="/zakazky" {% if aktivni == 'zakazky' %}aria-current="page"{% endif %}>Zakázky</a></li>
         <li><a href="/vozidla" {% if aktivni == 'vozidla' %}aria-current="page"{% endif %}>Vozidla</a></li>
@@ -26,6 +26,7 @@
         <li><a href="/faktury" {% if aktivni == 'faktury' %}aria-current="page"{% endif %}>Faktury</a></li>
         <li><a href="/prijem" {% if aktivni == 'prijem' %}aria-current="page"{% endif %} title="Návštěvy zpracované Přijímacím technikem">Příjem vozidel</a></li>
         {% if lista.sprava_dat %}<li><a href="/sprava-dat" {% if aktivni == 'sprava' %}aria-current="page"{% endif %} title="Hromadné úpravy skladu a databáze">Správa dat</a></li>{% endif %}
+        {% if lista.statistiky %}<li><a href="/statistiky" {% if aktivni == 'statistiky' %}aria-current="page"{% endif %} title="Výkon servisu po měsících a za rok">Statistiky</a></li>{% endif %}
       </ul>
     </nav>
     <a href="/" class="firma" title="{{ lista.nazev }} · verze {{ APP_VERSION }}">
