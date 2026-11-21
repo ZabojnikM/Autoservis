@@ -218,7 +218,7 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
       <td class="hlavni"><a href="/zakazky/{{ z.id }}">{{ z.cislo }}</a></td>
       <td>{{ z.datum_prijeti|datum }}</td>
       {% if ukaz_vozidlo %}{% set v = z.vozidlo %}<td>{% if v %}{{ spz(v.spz) }} <span class="popis-vozidla">{{ v.popis }}</span>{% else %}<span class="tlumene">bez vozidla</span>{% endif %}</td>
-      <td class="kod vin sl-vin">{% if v and v.vin %}<span class="vin-text">{{ v.vin }}</span> {{ kopirovat(v.vin) }}{% else %}{{ none|pomlcka }}{% endif %}</td>
+      <td class="kod vin sl-vin">{% if v and v.vin %}{{ kopirovat(v.vin) }}<span class="vin-text">{{ v.vin }}</span>{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td class="sl-motor">{{ (v.kod_motoru if v else none)|pomlcka }}</td>
       <td class="sl-stk">{% if v %}{{ stk(v.termin_stk, v.stav_registru) }}{% else %}{{ none|pomlcka }}{% endif %}</td>{% endif %}
       {% if ukaz_zakaznika %}<td>{{ (z.zakaznik.nazev if z.zakaznik else '')|pomlcka }}</td>{% endif %}

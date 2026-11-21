@@ -28,8 +28,7 @@
     {# značka a typ větším písmem (SPZ je v liště nahoře) #}
     <p class="hlavni-udaj hlavni-vozidla">{{ v.popis if (v.znacka or v.model) else '(značka neuvedena)' }}</p>
     <dl>
-      {% if v.vin %}<dt>VIN</dt><dd class="vin-zakazky"><span id="vin-vozidla">{{ v.vin }}</span>
-        {{ kopirovat(v.vin) }}</dd>{% endif %}
+      {% if v.vin %}<dt>VIN</dt><dd class="vin-zakazky">{{ kopirovat(v.vin) }}<span id="vin-vozidla">{{ v.vin }}</span></dd>{% endif %}
       {% if v.rok_vyroby %}<dt>Rok výroby</dt><dd>{{ v.rok_vyroby }}</dd>{% endif %}
       {% if v.cislo_motoru %}<dt title="Typ / varianta / verze z technického průkazu">Typ vozidla (TP)</dt><dd>{{ v.cislo_motoru }}</dd>{% endif %}
       {% if motor %}<dt title="Kód motoru · objem · výkon">Motor</dt><dd>{{ motor }}</dd>{% endif %}
@@ -117,7 +116,7 @@
         <td>{{ r.zakazka.datum_prijeti|datum }}</td>
         <td><a href="/zakazky/{{ r.zakazka_id }}">{{ r.zakazka.cislo }}</a></td>
         <td class="cislo">{{ r.zakazka.tachometr|cislo }}</td>
-        <td class="tlumene">{{ r.kod or '' }}</td>
+        <td class="tlumene kod-s-kopii">{% if r.kod and r.typ == 'material' %}{{ kopirovat(r.kod, 'kód') }}{% endif %}{{ r.kod or '' }}</td>
         <td>{{ r.nazev }}</td>
         <td class="cislo">{{ r.mnozstvi|mnozstvi }}</td>
         <td>{{ r.jednotka }}</td>
