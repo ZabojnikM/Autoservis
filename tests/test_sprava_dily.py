@@ -253,3 +253,34 @@ def test_preformatovani_podle_vzoru(session, sklad):
     assert holy.kod == "UFI 23.135.00"
     with pytest.raises(ChybaValidace, match="vzor"):
         hromadne.planuj(session, "kody", [holy.id], {"operace": "vzor", "vzor": "UFI"})
+
+
+# ---------------------------------------------------------------- #151 vzor kódu, předpona pro psaní, nápověda
+
+@pytest.mark.parametrize("vzor, kod, sedi", [
+    ("30 *", "30 93 3391", True), ("30 *", "UFI 30.779.00", False), ("30 ## ####", "30 93 3391", True),
+    ("30 ## ####", "30 93 339", False), ("UFI 30.*", "ufi 30.779.00", True), ("UFI 2?.011.00", "UFI 25.011.00", True),
+    ("UFI [23]5.*", "UFI 35.011.00", True), ("UFI [!2]5.*", "UFI 25.011.00", False), ("*.###.##", "23.135.00", True),
+    ("[!0-9]*", "23.135.00", False), ("30", "30 93 3391", False), ("*30*", "UFI 30.779.00", True),
+    ("23.135.00", "23x135x00", False),  # tečka doslova
+])
+def test_vzor_kodu(vzor, kod, sedi):
+    assert bool(sprava.vzor_kodu(vzor).fullmatch(kod)) is sedi
+
+
+def test_vzor_kodu_chyba():
+    with pytest.raises(ChybaValidace):
+        sprava.vzor_kodu("UFI [23")
+
+
+def test_filtr_vzor_a_predpona_ve_sprave_dat(session, sklad, web):
+    cenik.vytvor(session, {"kod": "30 93 3391", "nazev": "Horní uložení", "cena": "500"})
+    kody = lambda f: [r.karta.kod for r in sprava.vyber(session, sprava.Filtr(**f))]  # noqa: E731
+    assert kody({"vzor": "30 *"}) == ["30 93 3391"]
+    assert kody({"predpona": "30"}) == ["30 93 3391"]
+    assert set(kody({"vzor": "UFI ##.###.##"})) == {"UFI 25.011.00", "UFI 30.779.00"}
+    klient, _ = web
+    stranka = klient.get("/sprava-dat/dily", params={"vzor": "30 ## ####"}).text
+    assert "Horní uložení" in stranka and "Vzduchový filtr" not in stranka
+    assert 'list="predpony-vyrobcu"' in stranka and 'id="napoveda-hledani"' in stranka and "Nápověda k hledání" in stranka
+    assert "chybí zavírací závorka" in klient.get("/sprava-dat/dily", params={"vzor": "UFI [2"}).text

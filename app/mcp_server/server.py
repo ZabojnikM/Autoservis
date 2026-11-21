@@ -59,11 +59,14 @@ def kdo_jsem() -> dict:
 @mcp.tool(description="Hledá díly materiálu v ceníku (skladu). Filtr: q (kód i bez teček, název), predpona (výrobce, "
                       "např. UFI), katalog (id skladu), stav (aktivni/vyrazene/vse), pouziti (nikdy/pouzite), pouzito_min, "
                       "nepouzito_od (d.m.rrrr), cena_od, cena_do, marze_pod, problem (pod_nakupem/nulova_cena/bez_nakupu/"
-                      "kod_podezrely/bez_kodu), kod_regex (regulární výraz na kód), razeni (kod/nazev/cena/nakup/marze/"
+                      "kod_podezrely/bez_kodu), kod_vzor (vzor celého kódu jako v Excelu/Accessu: * cokoli, ? jeden znak, "
+                      "# číslice, [abc] výběr, [!abc] mimo výběr – např. „30 ## ####“, „UFI 30.*“), "
+                      "kod_regex (regulární výraz na kód), razeni (kod/nazev/cena/nakup/marze/"
                       "pouzito/posledni, „-“ = sestupně).")
 def hledej_dily(q: str = "", predpona: str = "", katalog: str = "", stav: str = "aktivni", pouziti: str = "",
                 pouzito_min: str = "", nepouzito_od: str = "", cena_od: str = "", cena_do: str = "", marze_pod: str = "",
-                problem: str = "", kod_regex: str = "", razeni: str = "kod", limit: int = 100, od: int = 0) -> dict:
+                problem: str = "", kod_regex: str = "", kod_vzor: str = "", razeni: str = "kod", limit: int = 100,
+                od: int = 0) -> dict:
     filtr = {k: v for k, v in locals().items() if k not in ("limit", "od") and v}
     with _spojeni("sklad") as (s, _):
         return api_sklad.dily(s, filtr, limit, od)

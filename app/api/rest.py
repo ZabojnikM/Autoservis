@@ -38,8 +38,8 @@ def ja(klic: Klic):
 @router.get("/sklad/dily")
 def sklad_dily(db: DB, _: Sklad, katalog: str = "", q: str = "", predpona: str = "", stav: str = "aktivni",
                pouziti: str = "", pouzito_min: str = "", nepouzito_od: str = "", cena_od: str = "", cena_do: str = "",
-               marze_pod: str = "", problem: str = "", razeni: str = "kod", kod_regex: str = "", limit: int = 100,
-               od: int = 0):
+               marze_pod: str = "", problem: str = "", razeni: str = "kod", kod_regex: str = "", kod_vzor: str = "",
+               limit: int = 100, od: int = 0):
     filtr = {k: v for k, v in locals().items() if k not in ("db", "_", "limit", "od") and v}
     return sklad.dily(db, filtr, limit, od)
 
