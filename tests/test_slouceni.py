@@ -195,7 +195,12 @@ def test_zaloha_pred_sloucenim(tmp_path):
 # ---------------------------------------------------------------- web
 
 @pytest.fixture
-def zalohy_web(monkeypatch):
+def zapnuta_sprava(session):
+    nastaveni.uloz(session, {"sprava_dat": "1"})
+
+
+@pytest.fixture
+def zalohy_web(monkeypatch, zapnuta_sprava):
     vytvorene = []
     monkeypatch.setattr(zalohy, "pred_sloucenim", lambda: vytvorene.append(1) or Path("pred-sloucenim-test.db"))
     return vytvorene
@@ -204,25 +209,25 @@ def zalohy_web(monkeypatch):
 def test_stranka_a_slouceni_pres_web(session, dva_filtry, zalohy_web):
     stary, novejsi, r1, _ = dva_filtry
     klient = TestClient(app)
-    assert "Sloučit díly" in klient.get("/cenik").text
-    stranka = klient.get("/cenik/slouceni")
+    assert "/sprava-dat/slouceni-dilu" in klient.get("/sprava-dat").text
+    stranka = klient.get("/sprava-dat/slouceni-dilu")
     assert stranka.status_code == 200 and "2501100" in stranka.text and "25.011.00" in stranka.text
-    odpoved = klient.post("/cenik/slouceni", data={"cil": str(novejsi.id), "karty": [str(stary.id), str(novejsi.id)],
+    odpoved = klient.post("/sprava-dat/slouceni-dilu", data={"cil": str(novejsi.id), "karty": [str(stary.id), str(novejsi.id)],
                                                    "kod": "UFI 25.011.00", "nazev": "Olejový filtr", "cena": "199"},
                           follow_redirects=False)
     assert odpoved.status_code == 303 and zalohy_web == [1]
     session.refresh(r1)
     assert r1.kod == "UFI 25.011.00"
-    assert "V ceníku nejsou díly" in klient.get("/cenik/slouceni").text
+    assert "V ceníku nejsou díly" in klient.get("/sprava-dat/slouceni-dilu").text
 
 
-def test_web_bez_zalohy_neslucuje(session, dva_filtry, monkeypatch):
+def test_web_bez_zalohy_neslucuje(session, dva_filtry, monkeypatch, zapnuta_sprava):
     stary, novejsi, r1, _ = dva_filtry
 
     def selze():
         raise zalohy.ChybaZalohy("Disk je plný.")
     monkeypatch.setattr(zalohy, "pred_sloucenim", selze)
-    odpoved = TestClient(app).post("/cenik/slouceni", data={"cil": str(novejsi.id), "karty": [str(stary.id)],
+    odpoved = TestClient(app).post("/sprava-dat/slouceni-dilu", data={"cil": str(novejsi.id), "karty": [str(stary.id)],
                                                             "kod": "UFI 25.011.00"}, follow_redirects=False)
     assert odpoved.status_code == 303
     session.refresh(r1)
@@ -232,13 +237,54 @@ def test_web_bez_zalohy_neslucuje(session, dva_filtry, monkeypatch):
 def test_web_rucni_skupina_a_csv(session, dva_filtry, zalohy_web):
     stary, novejsi, *_ = dva_filtry
     klient = TestClient(app)
-    assert "Ruční sloučení" in klient.get("/cenik/slouceni?q=filtr").text
-    csv_odpoved = klient.get("/cenik/slouceni/navrh.csv")
+    assert "Ruční sloučení" in klient.get("/sprava-dat/slouceni-dilu?q=filtr").text
+    csv_odpoved = klient.get("/sprava-dat/slouceni-dilu/navrh.csv")
     assert csv_odpoved.headers["content-type"].startswith("text/csv") and "25.011.00" in csv_odpoved.text
-    nahled = klient.post("/cenik/slouceni/nahled", files={"soubor": ("s.csv", csv_odpoved.content, "text/csv")})
+    nahled = klient.post("/sprava-dat/slouceni-dilu/nahled", files={"soubor": ("s.csv", csv_odpoved.content, "text/csv")})
     assert nahled.status_code == 200 and "Sloučit vybrané skupiny" in nahled.text
     data = slouceni.do_json(slouceni.nacti_csv(session, csv_odpoved.content))
-    odpoved = klient.post("/cenik/slouceni/seznam", data={"data_planu": data, "vybrano": "1"}, follow_redirects=False)
+    odpoved = klient.post("/sprava-dat/slouceni-dilu/seznam", data={"data_planu": data, "vybrano": "1"}, follow_redirects=False)
     assert odpoved.status_code == 303 and zalohy_web == [1]
     session.refresh(stary), session.refresh(novejsi)
     assert stary.aktivni != novejsi.aktivni
+
+
+def test_sprava_dat_je_bez_prepinace_skryta(session, dva_filtry):
+    klient = TestClient(app)
+    assert nastaveni.nacti(session).sprava_dat is False
+    assert ">Správa dat</a>" not in klient.get("/zakazky").text
+    for adresa in ("/sprava-dat", "/sprava-dat/slouceni-dilu", "/sprava-dat/slouceni-dilu/navrh.csv"):
+        assert klient.get(adresa).status_code == 404
+    stary, novejsi, r1, _ = dva_filtry
+    assert klient.post("/sprava-dat/slouceni-dilu", data={"cil": str(novejsi.id), "karty": [str(stary.id)],
+                                                         "kod": "X"}).status_code == 404
+    session.refresh(r1)
+    assert r1.kod == "2501100"
+    # Materiál zůstal bez tlačítka slučování
+    assert "slouceni" not in klient.get("/cenik").text
+
+
+def test_prepinac_v_nastaveni_zobrazi_zalozku(session):
+    klient = TestClient(app)
+    assert 'name="sprava_dat"' in klient.get("/nastaveni").text
+    klient.post("/nastaveni", data={"sprava_dat": "1", "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    assert nastaveni.nacti(session).sprava_dat is True
+    stranka = klient.get("/zakazky").text
+    assert ">Správa dat</a>" in stranka and 'href="/sprava-dat"' in stranka
+    assert klient.get("/sprava-dat").status_code == 200
+    # nezaškrtnuté políčko formulář nepošle → vypnuto
+    klient.post("/nastaveni", data={"rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    session.expire_all()
+    assert nastaveni.nacti(session).sprava_dat is False
+
+
+def test_web_seznam_s_chybnou_skupinou_hlasi_chybu(session, dva_filtry, zalohy_web):
+    stary, novejsi, *_ = dva_filtry
+    plany = slouceni.nacti_csv(session, slouceni.navrh_csv(session))
+    plany[0].kod = "UFI 25.011.00"
+    cenik.vytvor(session, {"kod": "UFI 25.011.00", "nazev": "Už je", "cena": "1"})   # sloučení skupiny selže
+    odpoved = TestClient(app).post("/sprava-dat/slouceni-dilu/seznam",
+                                   data={"data_planu": slouceni.do_json(plany), "vybrano": "1"}, follow_redirects=False)
+    assert odpoved.status_code == 303
+    session.refresh(stary)
+    assert stary.aktivni

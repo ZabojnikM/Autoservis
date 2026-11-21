@@ -25,6 +25,7 @@
         <li><a href="/prace" {% if aktivni == 'prace' %}aria-current="page"{% endif %} title="Ceník prací">Práce</a></li>
         <li><a href="/faktury" {% if aktivni == 'faktury' %}aria-current="page"{% endif %}>Faktury</a></li>
         <li><a href="/prijem" {% if aktivni == 'prijem' %}aria-current="page"{% endif %} title="Návštěvy zpracované Přijímacím technikem">Příjem vozidel</a></li>
+        {% if lista.sprava_dat %}<li><a href="/sprava-dat" {% if aktivni == 'sprava' %}aria-current="page"{% endif %} title="Hromadné úpravy skladu a databáze">Správa dat</a></li>{% endif %}
       </ul>
     </nav>
     <a href="/" class="firma" title="{{ lista.nazev }} · verze {{ APP_VERSION }}">

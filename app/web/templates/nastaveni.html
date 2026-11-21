@@ -108,6 +108,14 @@
       <a href="https://dataovozidlech.cz/registraceapi" target="_blank" rel="noopener">dataovozidlech.cz/registraceapi</a>
       přijde e-mailem. Limit 27 dotazů za minutu.</p>
   </fieldset>
+
+  <fieldset class="panel">
+    <legend>Správa dat</legend>
+    <label><input type="checkbox" name="sprava_dat" value="1" {% if nast.sprava_dat %}checked{% endif %}>
+      zobrazit záložku <strong>Správa dat</strong></label>
+    <p class="tlumene">Záložka v horním menu s hromadnými úpravami skladu a databáze (např. sloučení dílů vedených
+      pod více kódy). Běžně je skrytá – zapněte ji, jen když s daty pracujete.</p>
+  </fieldset>
 </form>
 
 {# #126: hromadné doplnění údajů vozidel z registru – mimo formulář nastavení #}

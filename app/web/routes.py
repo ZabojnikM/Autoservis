@@ -36,9 +36,9 @@ def _udaje_listy(request: Request) -> dict:
     gen = zdroj()
     try:
         nast = nastaveni.nacti(next(gen))
-        return {"nazev": nast.nazev_do_listy, "logo": nast.logo}
+        return {"nazev": nast.nazev_do_listy, "logo": nast.logo, "sprava_dat": nast.sprava_dat}
     except Exception:  # lišta nesmí shodit stránku
-        return {"nazev": "Autoservis", "logo": ""}
+        return {"nazev": "Autoservis", "logo": "", "sprava_dat": False}
     finally:
         gen.close()
 
@@ -1206,7 +1206,7 @@ async def nastaveni_uloz(request: Request, db: DB):
     form = await request.form()
     soubor = form.get("logo_soubor")
     data = {k: str(v) for k, v in form.items() if k != "logo_soubor"}
-    for zaskrtavatko in ("platce_dph", "zaokrouhlit_hotovost"):
+    for zaskrtavatko in ("platce_dph", "zaokrouhlit_hotovost", "sprava_dat"):
         data.setdefault(zaskrtavatko, "")
     try:
         nastaveni.uloz(db, data)
