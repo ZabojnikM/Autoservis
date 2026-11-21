@@ -415,3 +415,14 @@ class Nastaveni(SQLModel, table=True):
 
     klic: str = Field(primary_key=True)
     hodnota: str = ""
+
+
+class UpravaDat(SQLModel, table=True):
+    """Deník hromadných úprav ze záložky Správa dat (#136): co se kdy změnilo a ze které zálohy jde stav vrátit."""
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    cas: NaiveDatetime = Field(default_factory=datetime.now, index=True)
+    akce: str
+    popis: str = ""
+    pocet: int = 0
+    zaloha: str = ""

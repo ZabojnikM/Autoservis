@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{# #141: kontroly kvality ceníku – počty problémů s odkazem na opravu #}
+{% block title %}Kontroly ceníku – Správa dat{% endblock %}
+{% block content %}
+<div class="nadpis-radek">
+  <h1>Kontroly ceníku <span class="oznaceni">Správa dat</span></h1>
+</div>
+<p class="tlumene napoveda">Počítá se z aktivních dílů materiálu. Kliknutím na kontrolu otevřete seznam, kde jde problém hromadně opravit.</p>
+<div class="rozcestnik-spravy">
+  {% for k in kontroly %}
+  <a href="{{ k.odkaz }}" class="panel funkce-spravy{% if not k.pocet %} bez-problemu{% endif %}">
+    <strong>{{ k.nazev }} <span class="{% if k.pocet %}chyba-text{% else %}tlumene{% endif %}">{{ k.pocet }}</span></strong>
+    <span class="tlumene">{{ k.popis }}</span>
+  </a>
+  {% endfor %}
+</div>
+<p><a href="/sprava-dat" class="zpet" role="button">Zpět</a></p>
+{% endblock %}

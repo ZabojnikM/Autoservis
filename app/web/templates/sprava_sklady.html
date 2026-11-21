@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{# #140: Správa dat → Sklady – přehled katalogů a smazání celého skladu (nepoužité díly se smažou, použité přesunou) #}
+{% block title %}Sklady – Správa dat{% endblock %}
+{% block content %}
+<div class="nadpis-radek">
+  <h1>Sklady <span class="oznaceni">Správa dat</span></h1>
+</div>
+<p class="tlumene napoveda">Nový sklad založíte v <a href="/nastaveni">Nastavení → Katalogy materiálu</a> nebo při Importu do skladu.
+  Při smazání skladu se nikdy nepoužité díly smažou a použité se přesunou do zvoleného skladu (stejný kód tam = sloučí se),
+  historie zakázek zůstane. Nejdřív se ukáže náhled.</p>
+<div class="overflow-auto">
+<table class="striped tabulka-slouceni">
+  <thead><tr><th>Sklad</th><th class="cislo">Dílů</th><th class="cislo">Aktivních</th><th class="cislo">Použitých</th><th>Smazat sklad</th></tr></thead>
+  <tbody>
+  {% for s in prehled %}{% set k = s.katalog %}
+    <tr>
+      <td class="hlavni"><a href="/sprava-dat/dily?katalog={{ k.id }}">{{ k.nazev }}</a>{% if k.vychozi %} <span class="tlumene">(výchozí)</span>{% endif %}</td>
+      <td class="cislo">{{ s.dilu }}</td><td class="cislo">{{ s.aktivnich }}</td><td class="cislo">{{ s.pouzitych }}</td>
+      <td>
+        {% if k.vychozi %}<span class="tlumene">výchozí sklad nejde smazat</span>
+        {% else %}
+        <form method="post" action="/sprava-dat/sklady/{{ k.id }}/nahled" class="radek-slouceni">
+          {% if s.pouzitych %}
+          <label>Použité díly přesunout do <select name="katalog_cil" required><option value="">— vyberte —</option>
+            {% for jiny in katalogy if jiny.id != k.id %}<option value="{{ jiny.id }}">{{ jiny.nazev }}</option>{% endfor %}</select></label>
+          <label><input type="checkbox" name="vyradit" value="1"> a vyřadit je</label>
+          {% endif %}
+          <button type="submit" class="secondary">Náhled smazání</button>
+        </form>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+<p><a href="/sprava-dat" class="zpet" role="button">Zpět</a></p>
+{% endblock %}

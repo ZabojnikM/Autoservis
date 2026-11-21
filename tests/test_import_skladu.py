@@ -138,3 +138,42 @@ def test_web_nenalezeny_rucni_kod_nic_neulozi(session, stare, web):
 
 def test_web_import_skryty_bez_prepinace(session):
     assert TestClient(app).get("/sprava-dat/import-skladu").status_code == 404
+
+
+# ---------------------------------------------------------------- režimy, párování, chybějící díly (#137)
+
+def test_rezimy_a_parovani(session, stare):
+    a, b, *_ = stare
+    sklad = katalogy.vychozi(session)
+    radky = import_skladu.nacti(b"Kod;Nazev;Prodej;DPH %\n25.011.00;Filtr;180;12\nNOVY 1;Novy dil;50;21\n")
+    obe = import_skladu.navrh(session, radky, sklad.id)
+    filtr = next(r for r in obe if r.kod == "25.011.00")
+    assert filtr.existujici_id == b.id and [s["id"] for s in filtr.stare] == [a.id] and filtr.dph == "12"
+    jen_kod = import_skladu.navrh(session, radky, sklad.id, parovani="kod")
+    assert all(r.stare == [] for r in jen_kod)
+    nove = {r.kod: r.chyba for r in import_skladu.navrh(session, radky, sklad.id, rezim="nove")}
+    assert nove["25.011.00"].startswith("Už je ve skladu") and nove["NOVY 1"] == ""
+    aktualizace = {r.kod: r.chyba for r in import_skladu.navrh(session, radky, sklad.id, rezim="aktualizace")}
+    assert aktualizace["25.011.00"] == "" and aktualizace["NOVY 1"].startswith("Ve skladu není")
+    import_skladu.importuj(session, [r for r in jen_kod if r.kod == "25.011.00"], sklad.id, {})
+    session.refresh(b)
+    assert (b.cena, b.sazba_dph) == (Decimal("180"), Decimal("12"))
+    assert [p.id for p in import_skladu.chybejici(session, radky, sklad.id)] == [a.id]
+
+
+def test_web_import_vyradi_chybejici(session, stare, web):
+    klient, _ = web
+    a, b, *_ = stare
+    sklad = katalogy.vychozi(session)
+    soubor = b"Kod;Nazev;Prodej\n25.011.00;Filtr;180\n"
+    nahled = klient.post("/sprava-dat/import-skladu/nahled",
+                         data={"katalog": str(sklad.id), "rezim": "aktualizace", "parovani": "kod"},
+                         files={"soubor": ("s.csv", soubor, "text/csv")})
+    assert "vyřadit díly skladu, které v souboru nejsou" in nahled.text and "jen aktualizace cen" in nahled.text
+    navrh = import_skladu.navrh(session, import_skladu.nacti(soubor), sklad.id, "aktualizace", "kod")
+    odpoved = klient.post("/sprava-dat/import-skladu", follow_redirects=False, data={
+        "data_navrhu": import_skladu.do_json(navrh), "katalog": str(sklad.id), "vybrano": "0",
+        "vyradit_chybejici": "1"})
+    assert odpoved.status_code == 303
+    session.refresh(a), session.refresh(b)
+    assert not a.aktivni and b.aktivni and b.cena == Decimal("180")

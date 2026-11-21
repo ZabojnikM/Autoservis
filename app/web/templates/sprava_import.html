@@ -27,6 +27,11 @@
       </select></label>
     <label {% if katalog != 'novy' %}hidden{% endif %}>Název nového skladu
       <input name="novy_nazev" value="{{ novy_nazev }}"></label>
+    <label>Režim <select name="rezim">{% for k, n in rezimy.items() %}<option value="{{ k }}" {% if rezim == k %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></label>
+    <label>Párování se starými díly <select name="parovani">{% for k, n in parovani_volby.items() %}<option value="{{ k }}" {% if parovani == k %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></label>
+    <p class="tlumene napoveda">Podle čísla dílu: <code>UFI 25.011.00</code> najde i <code>25.011.00</code> a <code>2501100</code> a staré karty
+      do nového dílu sloučí. Jen podle přesného kódu: aktualizují se jen díly se stejným kódem v cílovém skladu.
+      Vlastní export ze Správy dat → Díly jde nahrát zpět.</p>
     <button type="submit">Načíst a napárovat</button>
     <a href="/sprava-dat" class="zpet" role="button">Zpět</a>
   </fieldset>
@@ -39,6 +44,15 @@
   <input type="hidden" name="data_navrhu" value="{{ data_navrhu }}">
   <input type="hidden" name="katalog" value="{{ katalog }}">
   <input type="hidden" name="novy_nazev" value="{{ novy_nazev }}">
+  <p class="tlumene">Režim: <strong>{{ rezimy[rezim] }}</strong> · párování: <strong>{{ parovani_volby[parovani] }}</strong></p>
+  {% if chybejici %}
+  <details class="panel chybejici-v-souboru">
+    <summary><label><input type="checkbox" name="vyradit_chybejici" value="1"> vyřadit díly skladu, které v souboru nejsou
+      (<strong>{{ chybejici|length }}</strong>)</label></summary>
+    <p class="tlumene">{% for p in chybejici[:300] %}<span class="kod-dilu">{{ p.kod or '–' }}</span> {{ p.nazev }}{% if not loop.last %} · {% endif %}{% endfor %}
+      {% if chybejici|length > 300 %}… a dalších {{ chybejici|length - 300 }}{% endif %}</p>
+  </details>
+  {% endif %}
   <div class="lista-filtru-seznamu lista-importu">
     <button type="submit">Importovat vybrané</button>
     <a href="/sprava-dat/import-skladu" role="button" class="secondary outline">Jiný soubor</a>

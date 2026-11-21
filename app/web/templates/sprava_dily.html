@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{# #136: Správa dat → Díly – filtr a řazení dílů napříč sklady, export a hromadné akce (náhled → provést) #}
+{% block title %}Díly – Správa dat{% endblock %}
+
+{% macro th(klic, nazev, trida='') -%}
+{% set sestupne = filtr.razeni == klic %}
+<th class="{{ trida }}"><a href="{{ adresa(razeni=('-' ~ klic) if sestupne else klic) }}">{{ nazev }}{% if filtr.razeni == klic %} ▲{% elif filtr.razeni == '-' ~ klic %} ▼{% endif %}</a></th>
+{%- endmacro %}
+
+{% block content %}
+<div class="nadpis-radek">
+  <h1>Díly a hromadné úpravy <span class="oznaceni">Správa dat</span></h1>
+</div>
+
+<form method="get" action="/sprava-dat/dily" class="panel filtr-spravy">
+  <input type="hidden" name="razeni" value="{{ filtr.razeni }}">
+  <label>Sklad <select name="katalog"><option value="">všechny</option>
+    {% for k in katalogy %}<option value="{{ k.id }}" {% if filtr.katalog == k.id|string %}selected{% endif %}>{{ k.nazev }}</option>{% endfor %}</select></label>
+  <label class="siroke">Hledat <input type="search" name="q" value="{{ filtr.q }}" placeholder="kód, číslo dílu, název"></label>
+  <label>Výrobce (předpona) <select name="predpona"><option value="">všichni</option>
+    {% for p, pocet in predpony %}<option value="{{ p }}" {% if filtr.predpona == p %}selected{% endif %}>{{ p }} ({{ pocet }})</option>{% endfor %}</select></label>
+  <label>Stav <select name="stav">{% for k, n in stavy.items() %}<option value="{{ k }}" {% if filtr.stav == k %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></label>
+  <label>Použití <select name="pouziti">{% for k, n in pouziti.items() %}<option value="{{ k }}" {% if filtr.pouziti == k %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></label>
+  <label>Použito aspoň × <input name="pouzito_min" value="{{ filtr.pouzito_min }}" inputmode="numeric" class="kratke"></label>
+  <label title="Díly naposledy použité před tímto datem, nebo nikdy">Nepoužité od <input name="nepouzito_od" value="{{ filtr.nepouzito_od }}" placeholder="1.1.2024" class="kratke"></label>
+  <label>Prodej od <input name="cena_od" value="{{ filtr.cena_od }}" inputmode="decimal" class="kratke"></label>
+  <label>do <input name="cena_do" value="{{ filtr.cena_do }}" inputmode="decimal" class="kratke"></label>
+  <label title="Marže = (prodej − nákup) / prodej">Marže pod % <input name="marze_pod" value="{{ filtr.marze_pod }}" inputmode="decimal" class="kratke"></label>
+  <label>Problém <select name="problem">{% for k, n in problemy.items() %}<option value="{{ k }}" {% if filtr.problem == k %}selected{% endif %}>{{ n }}</option>{% endfor %}</select></label>
+  <div class="tlacitka-filtru">
+    <button type="submit">Filtrovat</button>
+    <a href="/sprava-dat/dily" role="button" class="secondary outline">Zrušit filtr</a>
+    <a href="/sprava-dat" class="zpet" role="button">Zpět</a>
+  </div>
+</form>
+
+<form id="hromadne" method="post" action="/sprava-dat/dily/nahled">
+  {% for k, v in filtr.parametry().items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}
+  <fieldset class="panel akce-spravy">
+    <legend>Hromadná akce</legend>
+    <div class="radek-akce">
+      <label><input type="radio" name="rozsah" value="vybrane" checked> zaškrtnuté díly (<span id="pocet-vybranych">0</span>)</label>
+      <label><input type="radio" name="rozsah" value="filtr"> všechny díly podle filtru ({{ celkem }})</label>
+      <label>Akce <select name="akce" id="vyber-akce" required>
+        <option value="">— vyberte —</option>
+        <option value="export">Export do CSV (Excel)</option>
+        {% for k, n in akce_seznam.items() %}<option value="{{ k }}">{{ n }}</option>{% endfor %}
+      </select></label>
+      <button type="submit" id="tlacitko-akce">Náhled změn</button>
+    </div>
+
+    <div class="parametry-akce" data-akce="export" hidden>
+      <span class="tlumene">Sloupce:</span>
+      {% for k, n in sloupce.items() %}<label><input type="checkbox" name="sloupce" value="{{ k }}" {% if k in vychozi_sloupce %}checked{% endif %}> {{ n }}</label>{% endfor %}
+      <a href="/sprava-dat/dily/export.csv{{ adresa()[('/sprava-dat/dily'|length):] }}" class="tlumene">celý filtr s výchozími sloupci</a>
+    </div>
+    <div class="parametry-akce" data-akce="ceny" hidden>
+      <label>Co měnit <select name="cil"><option value="prodej">prodejní cenu</option><option value="nakup">nákupní cenu</option><option value="dph">sazbu DPH</option></select></label>
+      <label>Způsob <select name="zpusob"><option value="procenta">o procenta (+ zdražit, − zlevnit)</option><option value="marze">prodej podle nákupu a marže</option></select></label>
+      <label>Hodnota (% / marže % / sazba) <input name="hodnota" inputmode="decimal" class="kratke" placeholder="např. 5"></label>
+      <label>Zaokrouhlit <select name="zaokrouhleni">{% for k, n in zaokrouhleni.items() %}<option value="{{ k }}">{{ n }}</option>{% endfor %}</select></label>
+    </div>
+    <div class="parametry-akce" data-akce="presun kopie" hidden>
+      <label>Cílový sklad <select name="katalog_cil"><option value="">— vyberte —</option>
+        {% for k in katalogy %}<option value="{{ k.id }}">{{ k.nazev }}</option>{% endfor %}</select></label>
+      <label>Když tam už díl se stejným kódem je <select name="kolize">{% for k, n in kolize.items() %}<option value="{{ k }}">{{ n }}</option>{% endfor %}</select></label>
+      <span class="tlumene">Sloučit jde jen při přesunu. Zakázky se dál odkazují na stejnou kartu.</span>
+    </div>
+    <div class="parametry-akce" data-akce="kody" hidden>
+      <label>Úprava <select name="operace"><option value="predpona">doplnit předponu výrobce</option>
+        <option value="sjednotit">sjednotit zápis kódu (mezery, velká písmena)</option><option value="nahradit">hledat a nahradit</option></select></label>
+      <label>Předpona <input name="predpona_kodu" class="kratke" placeholder="UFI"></label>
+      <label>V poli <select name="pole"><option value="kod">kód</option><option value="nazev">název</option></select></label>
+      <label>Hledat <input name="hledat" class="kratke"></label>
+      <label>Nahradit za <input name="nahradit" class="kratke"></label>
+      <span class="tlumene">Nový kód se propíše i do starých zakázek, ceny v nich se nemění.</span>
+    </div>
+    <p class="tlumene napoveda">Nejdřív se ukáže náhled. Teprve po potvrzení se změny uloží, předtím se databáze zazálohuje.</p>
+  </fieldset>
+
+  <p class="tlumene">Nalezeno <strong>{{ celkem }}</strong> dílů{% if not vse and celkem > radky|length %}, zobrazeno prvních {{ radky|length }} –
+    <a href="{{ adresa(vse='1') }}">zobrazit všechny</a>{% endif %}.</p>
+  {% if radky %}
+  <div class="overflow-auto">
+  <table class="striped tabulka-slouceni tabulka-dilu-spravy">
+    <thead><tr>
+      <th class="sl-vyber"><input type="checkbox" aria-label="Vybrat vše na stránce" onchange="document.querySelectorAll('#hromadne [name=id]').forEach(c => c.checked = this.checked); pocitejVybrane()"></th>
+      {{ th('kod', 'Kód') }}{{ th('nazev', 'Název') }}{{ th('katalog', 'Sklad') }}{{ th('cena', 'Prodej', 'cislo') }}
+      {{ th('nakup', 'Nákup', 'cislo') }}{{ th('marze', 'Marže', 'cislo') }}<th class="cislo">DPH</th>
+      {{ th('pouzito', 'Použito', 'cislo') }}{{ th('posledni', 'Naposledy') }}
+    </tr></thead>
+    <tbody>
+    {% for r in radky %}{% set p = r.karta %}
+      <tr class="{% if not p.aktivni %}vyrazeno{% endif %}">
+        <td class="sl-vyber"><input type="checkbox" name="id" value="{{ p.id }}" aria-label="Vybrat {{ p.kod or p.nazev }}" onchange="pocitejVybrane()"></td>
+        <td class="hlavni kod-dilu"><a href="/cenik/{{ p.id }}/upravit" target="_blank" rel="noopener">{{ p.kod|pomlcka }}</a></td>
+        <td>{{ p.nazev }}{% if not p.aktivni %} <span class="tlumene">(vyřazeno)</span>{% endif %}</td>
+        <td class="tlumene">{{ r.katalog }}</td>
+        <td class="cislo">{{ p.cena|penize }}</td>
+        <td class="cislo tlumene">{{ (p.nakupni_cena|penize if p.nakupni_cena is not none else '')|pomlcka }}</td>
+        <td class="cislo {% if r.marze is not none and r.marze < 0 %}chyba-text{% else %}tlumene{% endif %}">{{ ((r.marze|string).replace('.', ',') ~ ' %') if r.marze is not none else '–' }}</td>
+        <td class="cislo tlumene">{{ p.sazba_dph|mnozstvi }} %</td>
+        <td class="cislo">{{ (r.pouzito ~ '×') if r.pouzito else '–' }}</td>
+        <td class="tlumene">{{ r.posledni.strftime('%d.%m.%Y') if r.posledni else '–' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% endif %}
+</form>
+<script>
+  function pocitejVybrane() {
+    const n = document.querySelectorAll('#hromadne [name=id]:checked').length;
+    document.getElementById('pocet-vybranych').textContent = n;
+  }
+  (function () {
+    const akce = document.getElementById('vyber-akce');
+    const tlacitko = document.getElementById('tlacitko-akce');
+    const prepni = () => {
+      document.querySelectorAll('.parametry-akce').forEach(d => d.hidden = !d.dataset.akce.split(' ').includes(akce.value));
+      tlacitko.textContent = akce.value === 'export' ? 'Stáhnout CSV' : 'Náhled změn';
+    };
+    akce.addEventListener('change', prepni);
+    prepni();
+  })();
+</script>
+{% endblock %}
