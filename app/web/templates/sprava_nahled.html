@@ -10,7 +10,7 @@
 
 <form method="post" action="{{ cil }}" class="lista-filtru-seznamu lista-importu"
       onsubmit="return confirm('Provést změny u {{ plan.provede_se|length }} dílů? Před uložením se databáze zazálohuje.')">
-  <input type="hidden" name="akce" value="{{ akce }}">
+  <input type="hidden" name="akce" value="{{ kod_akce }}">{# „akce“ je v base.html jméno bloku #}
   <input type="hidden" name="ids" value="{{ ids }}">
   {% for k, v in par.items() %}<input type="hidden" name="p_{{ k }}" value="{{ v }}">{% endfor %}
   {% if filtr %}{% for k, v in filtr.parametry().items() %}<input type="hidden" name="{{ k }}" value="{{ v }}">{% endfor %}{% endif %}

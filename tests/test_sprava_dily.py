@@ -224,3 +224,16 @@ def test_web_akce_skryte_bez_prepinace(session):
     klient = TestClient(app)
     for adresa in ("/sprava-dat/dily", "/sprava-dat/sklady", "/sprava-dat/denik", "/sprava-dat/dily/export.csv"):
         assert klient.get(adresa).status_code == 404
+
+
+def test_web_provest_z_formulare_nahledu(session, sklad, web):
+    """Provést odešle přesně skrytá pole z náhledu (jméno akce nesmí zmizet – „akce“ je i blok v base.html)."""
+    import re
+    klient, zalohy_ = web
+    nahled = klient.post("/sprava-dat/dily/nahled", data={"rozsah": "vybrane", "id": [str(sklad["holy"].id)],
+                                                          "akce": "kody", "operace": "predpona", "predpona_kodu": "UFI"})
+    pole = dict(re.findall(r'<input type="hidden" name="([^"]+)" value="([^"]*)"', nahled.text))
+    assert pole["akce"] == "kody" and pole["p_predpona"] == "UFI"
+    assert klient.post("/sprava-dat/dily/provest", data=pole, follow_redirects=False).status_code == 303
+    session.refresh(sklad["holy"])
+    assert sklad["holy"].kod == "UFI 23.135.00" and zalohy_ == [1]

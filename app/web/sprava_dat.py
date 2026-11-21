@@ -299,7 +299,7 @@ async def dily_nahled(request: Request, db: DB):
     except ChybaValidace as e:
         return _presmeruj(_adresa_dilu(filtr), str(e), chyba=True)
     return _stranka(request, "sprava_nahled.html", aktivni="sprava", plan=plan, nazev_akce=hromadne.AKCE[akce],
-                    akce=akce, ids=",".join(map(str, ids)), par=par, filtr=filtr, zpet=_adresa_dilu(filtr),
+                    kod_akce=akce, ids=",".join(map(str, ids)), par=par, filtr=filtr, zpet=_adresa_dilu(filtr),
                     cil="/sprava-dat/dily/provest")
 
 
@@ -353,7 +353,7 @@ async def sklad_smazat_nahled(request: Request, db: DB, katalog_id: int):
     except ChybaValidace as e:
         return _presmeruj(SKLADY, str(e), chyba=True)
     return _stranka(request, "sprava_nahled.html", aktivni="sprava", plan=plan, nazev_akce="Smazat sklad",
-                    akce="smazat_sklad", ids="", par=par, filtr=None, zpet=SKLADY,
+                    kod_akce="smazat_sklad", ids="", par=par, filtr=None, zpet=SKLADY,
                     cil=f"/sprava-dat/sklady/{katalog_id}/smazat")
 
 
