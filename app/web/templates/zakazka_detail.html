@@ -163,7 +163,7 @@
       {% if lze_menit %}<td class="sl-upravit neni-tisk">
         <a href="/polozky/{{ r.id }}/upravit" role="button" class="maly upravit-radek" data-okno
            title="Upravit položku (také dvojklik na řádek)">Upravit</a></td>{% endif %}
-      <td class="tlumene kod-s-kopii">{% if r.kod and r.typ == 'material' %}{{ kopirovat(r.kod, 'kód') }}{% endif %}{{ r.kod or '' }}</td>
+      <td class="{{ 'kod-materialu' if r.typ == 'material' else 'tlumene' }} kod-s-kopii">{% if r.kod and r.typ == 'material' %}{{ kopirovat(r.kod, 'kód') }}{% endif %}{{ r.kod or '' }}</td>
       <td>{{ r.nazev }}
         {%- if r.cislo_dodaciho_listu -%}
         <br><small>Dodací list <strong>{{ r.cislo_dodaciho_listu }}</strong></small>

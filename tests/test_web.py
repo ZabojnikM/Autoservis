@@ -1585,3 +1585,19 @@ def test_ikona_kopirovani_pred_vin_a_kodem_materialu():
     assert re.search(r'data-kopirovat="OPT FAF10128" title="Zkopírovat kód do schránky".*?</button>OPT FAF10128</td>', detail, re.S)
     assert 'data-kopirovat="MECH"' not in detail
     assert 'data-kopirovat="TMBKOPIE00000156A"' in client.get("/zakazky").text
+
+
+def test_kod_materialu_tucne_v_zakazce_a_na_karte_vozidla():
+    """#158: kód materiálu tučně (třída kod-materialu), kód práce šedě."""
+    r = _prijem(spz="1TU1580", v_vin="TMBTUCNE0000158AB")
+    loc = r.headers["location"].split("?")[0]
+    client.post(f"{loc}/polozky", data={"typ": "material", "kod": "UFI 25.023.00", "nazev": "Olejový filtr",
+                                        "mnozstvi": "1", "cena": "209"})
+    client.post(f"{loc}/polozky", data={"typ": "prace", "kod": "MECH", "nazev": "Mechanická práce",
+                                        "mnozstvi": "1", "cena": "450"})
+    detail = client.get(loc).text
+    assert re.search(r'<td class="kod-materialu kod-s-kopii">.*?</button>UFI 25\.023\.00</td>', detail, re.S)
+    assert '<td class="tlumene kod-s-kopii">MECH</td>' in detail
+    vozidlo = re.search(r'href="(/vozidla/\d+)"', detail).group(1)
+    karta = client.get(vozidlo, params={"zalozka": "material"}).text
+    assert '<td class="kod-materialu kod-s-kopii">' in karta
