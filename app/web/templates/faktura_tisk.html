@@ -53,7 +53,9 @@
 
   {% include "_polozky_dokladu.html" %}
 
-  {% if f.poznamka %}<div class="poznamka">{{ f.poznamka }}</div>{% endif %}
+  {# #127: interní poznámka importu se netiskne, zůstává jen v detailu #}
+  {% set poznamka = f.poznamka|bez_poznamky_importu %}
+  {% if poznamka %}<div class="poznamka">{{ poznamka }}</div>{% endif %}
   {% if nast.text_pod_fakturou %}<div class="poznamka tlumene">{{ nast.text_pod_fakturou }}</div>{% endif %}
   {% if f.je_uhrazena and f.typ == 'faktura' %}<div class="uhrazeno">Uhrazeno – neplaťte.</div>{% endif %}
 

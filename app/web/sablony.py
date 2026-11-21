@@ -131,6 +131,16 @@ def _pomlcka(hodnota):
 
 
 templates.env.filters["pomlcka"] = _pomlcka
+
+
+def _bez_poznamky_importu(text) -> str:
+    """#127: z poznámky dokladu vynechá řádky s interní poznámkou importu (na tisk nepatří)."""
+    from app.importers.stary_system import POZNAMKA_IMPORTU
+    radky = [r for r in (text or "").splitlines() if r.strip() != POZNAMKA_IMPORTU]
+    return "\n".join(radky).strip()
+
+
+templates.env.filters["bez_poznamky_importu"] = _bez_poznamky_importu
 templates.env.globals["StavZakazky"] = StavZakazky
 templates.env.globals["TypPolozky"] = TypPolozky
 templates.env.globals["TypDokladu"] = TypDokladu
