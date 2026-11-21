@@ -789,6 +789,8 @@ button.kopirovat { width: auto; margin: 0; padding: 3px !important; font-size: .
 button.kopirovat svg { display: block; }
 /* #156: ikona před VIN a před kódem materiálu */
 .kod-s-kopii { white-space: nowrap; }
+/* #158: kód materiálu v zakázce a na kartě vozidla tučně a tmavě (kódy práce zůstávají šedé) */
+td.kod-materialu { color: var(--text); font-weight: 700; }
 .kod-s-kopii button.kopirovat { margin-right: 6px; padding: 2px !important; }
 .kod-s-kopii button.kopirovat svg { width: 14px; height: 14px; }
 button.kopirovat:not(.zkopirovano) { background: transparent !important; color: var(--pico-muted-color) !important;
