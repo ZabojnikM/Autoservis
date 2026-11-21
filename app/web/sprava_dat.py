@@ -12,8 +12,8 @@ from urllib.parse import quote
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, Response
 
-from app.services import (ChybaValidace, NenalezenoError, cisty_text, hromadne, import_skladu, katalogy, nastaveni,
-                          slouceni, sprava, zalohy)
+from app.services import (ChybaValidace, NenalezenoError, cisty_text, hromadne, import_skladu, katalogy, kontroly,
+                          nastaveni, slouceni, sprava, zalohy)
 from app.web.routes import DB, _presmeruj, _stranka
 
 VYPNUTO = "Záložka Správa dat je vypnutá. Zapnete ji v Nastavení (Správa dat)."
@@ -381,3 +381,36 @@ async def sklad_smazat(request: Request, db: DB, katalog_id: int):
 @router.get("/denik", response_class=HTMLResponse)
 def denik(request: Request, db: DB):
     return _stranka(request, "sprava_denik.html", aktivni="sprava", zaznamy=sprava.denik(db))
+
+
+# ---------------------------------------------------------------- Kontroly (#141) a přehledy (#143)
+
+@router.get("/kontroly", response_class=HTMLResponse)
+def kontroly_stranka(request: Request, db: DB):
+    return _stranka(request, "sprava_kontroly.html", aktivni="sprava", kontroly=kontroly.prehled_kontrol(db))
+
+
+@router.get("/kontroly/bez-vazby", response_class=HTMLResponse)
+def bez_vazby_stranka(request: Request, db: DB):
+    return _stranka(request, "sprava_bez_vazby.html", aktivni="sprava", skupiny=kontroly.bez_vazby(db))
+
+
+@router.post("/kontroly/bez-vazby")
+async def bez_vazby_napoj(request: Request, db: DB):
+    form = await request.form()
+    kody = [str(k) for k in form.getlist("kod")]
+    try:
+        if not kody:
+            raise ChybaValidace("Zaškrtněte kódy, které se mají napojit.")
+        zaloha = _zaloha()
+    except ChybaValidace as e:
+        return _presmeruj("/sprava-dat/kontroly/bez-vazby", str(e), chyba=True)
+    pocet = kontroly.napoj(db, kody)
+    text = f"Napojeno řádků zakázek na ceník: {pocet} (kódů {len(kody)})."
+    sprava.zapis(db, "Napojit řádky bez vazby", text, pocet, zaloha)
+    return _presmeruj("/sprava-dat/kontroly/bez-vazby", f"{text} Záloha: {zaloha}")
+
+
+@router.get("/prehledy", response_class=HTMLResponse)
+def prehledy_stranka(request: Request, db: DB):
+    return _stranka(request, "sprava_prehledy.html", aktivni="sprava", **kontroly.prehledy(db))

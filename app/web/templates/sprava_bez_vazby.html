@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{# #141: řádky materiálu v zakázkách bez vazby na ceník – napojit podle stejného kódu (ceny v zakázkách se nemění) #}
+{% block title %}Řádky bez vazby – Správa dat{% endblock %}
+{% block content %}
+<div class="nadpis-radek">
+  <h1>Řádky zakázek bez vazby na ceník <span class="oznaceni">Správa dat · kontroly</span></h1>
+</div>
+<p class="tlumene napoveda">Materiál zapsaný do zakázek ručně, nebo z karty, která už neexistuje. Napojit jde řádky, jejichž kód má
+  v ceníku právě jedna aktivní karta. Napojení nemění ceny ani názvy v zakázkách – jen je propojí s kartou, takže je uvidí
+  historie vozidla, počty použití a hromadné úpravy kódů. Před napojením se databáze zazálohuje.</p>
+{% set napojitelne = skupiny|selectattr('karta')|list %}
+<form method="post" action="/sprava-dat/kontroly/bez-vazby"
+      onsubmit="return confirm('Napojit zaškrtnuté řádky na karty ceníku? Před uložením se databáze zazálohuje.')">
+  <div class="lista-filtru-seznamu lista-importu">
+    <button type="submit" {% if not napojitelne %}disabled{% endif %}>Napojit zaškrtnuté</button>
+    <a href="/sprava-dat/kontroly" class="zpet" role="button">Zpět</a>
+    <span class="tlumene">{{ skupiny|length }} kódů, {{ skupiny|sum(attribute='radku') }} řádků · napojit jde {{ napojitelne|length }} kódů
+      ({{ napojitelne|sum(attribute='radku') }} řádků)</span>
+  </div>
+  {% if skupiny %}
+  <div class="overflow-auto">
+  <table class="striped tabulka-slouceni">
+    <thead><tr><th class="sl-vyber"><input type="checkbox" checked aria-label="Vybrat vše" onchange="this.form.querySelectorAll('[name=kod]').forEach(c => c.checked = this.checked)"></th>
+      <th>Kód v zakázkách</th><th>Název</th><th class="cislo">Řádků</th><th>Karta v ceníku</th></tr></thead>
+    <tbody>
+    {% for s in skupiny %}
+      <tr>
+        <td class="sl-vyber">{% if s.karta %}<input type="checkbox" name="kod" value="{{ s.kod }}" checked aria-label="Napojit {{ s.kod }}">{% endif %}</td>
+        <td class="hlavni kod-dilu">{{ s.kod|pomlcka }}</td><td>{{ s.nazev }}</td><td class="cislo">{{ s.radku }}</td>
+        <td>{% if s.karta %}<span class="kod-dilu">{{ s.karta.kod }}</span> {{ s.karta.nazev }}
+          {% elif s.karty %}<span class="tlumene">víc karet se stejným kódem – nejdřív sloučit</span>
+          {% else %}<span class="tlumene">v ceníku není</span>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+  {% else %}
+  <p class="tlumene prazdna-mrizka">Všechny řádky materiálu v zakázkách jsou napojené na ceník.</p>
+  {% endif %}
+</form>
+{% endblock %}

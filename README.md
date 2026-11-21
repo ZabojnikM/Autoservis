@@ -155,6 +155,29 @@ tests/
   - Import založí kartu v cílovém skladu (existující se stejným kódem dostane nové ceny) a staré karty do ní
     sloučí stejně jako Sloučit díly. Ceny v zakázkách a vystavené doklady se nemění. Před importem záloha.
   - Díl bez prodejní ceny se nezaloží (v náhledu je označený).
+  - Režim *jen nové / jen aktualizace cen / obojí*, párování *podle čísla dílu* (se sloučením starých karet) nebo
+    *jen podle přesného kódu*, volitelně vyřadit díly skladu, které v souboru nejsou (#137). Čte i sloupec DPH,
+    takže jde nahrát zpět vlastní export.
+- **Díly a hromadné úpravy** (*Správa dat → Díly*, #136): tabulka dílů napříč sklady s filtrem (sklad, text, výrobce
+  podle předpony, aktivní / vyřazené, použití, nepoužité od data, cena od–do, marže pod %, problém) a řazením
+  kliknutím na záhlaví. Akce běží nad zaškrtnutými díly nebo nad všemi podle filtru, vždy přes náhled
+  (stará → nová hodnota, přeskočené s důvodem), potvrzení a zálohu:
+  - **Export do CSV** s volbou sloupců (jde nahrát zpět Importem do skladu).
+  - **Změna cen** (#138): prodej / nákup ± %, prodej podle nákupu a marže, sazba DPH; zaokrouhlení na haléře,
+    koruny nebo nahoru na …9 Kč. Ceny ve starých zakázkách se nemění.
+  - **Přesun a kopie do jiného skladu** (#139): při stejném kódu v cílovém skladu přeskočit, přepsat ceny, nebo
+    (u přesunu) sloučit do cílové karty. Zakázky zůstávají napojené.
+  - **Vyřadit, obnovit, trvale smazat** (#140) – smazat jde jen díl, který nikdy nebyl v zakázce.
+  - **Úprava kódů a názvů** (#142): doplnit předponu výrobce, sjednotit zápis kódu, hledat a nahradit. Nový kód se
+    propíše do starých zakázek, kolize kódu ve skladu se v náhledu přeskočí.
+  - Marže = (prodej − nákup) / prodej.
+- **Sklady** (#140): počty dílů a smazání celého skladu – nepoužité díly se smažou, použité se přesunou
+  do zvoleného skladu (stejný kód = sloučí se), volitelně se vyřadí.
+- **Kontroly ceníku** (#141): duplicity, prodej pod nákupem, nulové ceny, bez nákupní ceny, podezřelé kódy, díly bez
+  kódu a řádky zakázek bez vazby na ceník (napojit podle kódu, ceny se nemění).
+- **Přehledy** (#143): díly bez pohybu, marže podle skladu a výrobce, nejpoužívanější díly.
+- **Deník úprav** (#136): každá hromadná úprava se zapíše s názvem zálohy, ze které jde stav vrátit
+  (*Nastavení → Zálohy databáze*).
 
 ## Faktury a vyúčtování (fáze 3)
 

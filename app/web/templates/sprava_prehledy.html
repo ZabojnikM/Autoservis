@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{# #143: přehledy skladu – nejpoužívanější díly, díly bez pohybu, marže podle skladu a výrobce #}
+{% block title %}Přehledy – Správa dat{% endblock %}
+{% macro procenta(hodnota) -%}{{ ((hodnota|string).replace('.', ',') ~ ' %') if hodnota is not none else '–' }}{%- endmacro %}
+{% macro tabulka_marzi(skupiny, nazev) -%}
+<table class="striped tabulka-slouceni">
+  <thead><tr><th>{{ nazev }}</th><th class="cislo">Aktivních dílů</th><th class="cislo">S nákupní cenou</th>
+    <th class="cislo">Průměrná marže</th><th class="cislo">Pod nákupní cenou</th></tr></thead>
+  <tbody>
+  {% for s in skupiny %}
+    <tr><td class="hlavni">{{ s.nazev or '–' }}</td><td class="cislo">{{ s.dilu }}</td><td class="cislo tlumene">{{ s.s_nakupem }}</td>
+      <td class="cislo">{{ procenta(s.prumer) }}</td><td class="cislo {% if s.pod_nakupem %}chyba-text{% else %}tlumene{% endif %}">{{ s.pod_nakupem }}</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{%- endmacro %}
+{% block content %}
+<div class="nadpis-radek">
+  <h1>Přehledy <span class="oznaceni">Správa dat</span></h1>
+</div>
+<p class="tlumene napoveda">Z aktivních dílů materiálu ({{ aktivnich }}). Marže = (prodej − nákup) / prodej, počítá se jen u dílů s nákupní cenou.
+  Vývoj nákupních cen v čase zatím nejde ukázat – historie nákupů se neukládá (doplní se s napojením na LKQ).</p>
+
+<div class="mrizka-prehledu">
+  <section class="panel prehled-panel">
+    <h2>Díly bez pohybu</h2>
+    <table class="striped tabulka-slouceni">
+      <tbody>
+        <tr><td><a href="/sprava-dat/dily?pouziti=nikdy">nikdy nepoužité</a></td><td class="cislo">{{ nikdy }}</td></tr>
+        {% for nazev, pocet, odkaz in bez_pohybu %}<tr><td><a href="{{ odkaz }}">{{ nazev }}</a></td><td class="cislo">{{ pocet }}</td></tr>{% endfor %}
+      </tbody>
+    </table>
+    <p class="tlumene">Odkaz otevře díly v Díly a hromadné úpravy – odtud jde vyřadit nebo smazat.</p>
+  </section>
+  <section class="panel prehled-panel">
+    <h2>Marže podle skladu</h2>
+    {{ tabulka_marzi(podle_skladu, 'Sklad') }}
+  </section>
+</div>
+
+<section class="panel prehled-panel">
+  <h2>Marže podle výrobce <span class="tlumene">(předpona kódu, 25 nejčastějších)</span></h2>
+  {{ tabulka_marzi(podle_vyrobce, 'Výrobce') }}
+</section>
+
+<section class="panel prehled-panel">
+  <h2>Nejpoužívanější díly</h2>
+  <table class="striped tabulka-slouceni">
+    <thead><tr><th>Kód</th><th>Název</th><th>Sklad</th><th class="cislo">Použito</th><th>Naposledy</th><th class="cislo">Prodej</th><th class="cislo">Marže</th></tr></thead>
+    <tbody>
+    {% for r in nejpouzivanejsi %}
+      <tr><td class="hlavni kod-dilu">{{ r.karta.kod|pomlcka }}</td><td>{{ r.karta.nazev }}</td><td class="tlumene">{{ r.katalog }}</td>
+        <td class="cislo">{{ r.pouzito }}×</td><td class="tlumene">{{ r.posledni.strftime('%d.%m.%Y') if r.posledni else '–' }}</td>
+        <td class="cislo">{{ r.karta.cena|penize }}</td><td class="cislo tlumene">{{ procenta(r.marze) }}</td></tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+<p><a href="/sprava-dat" class="zpet" role="button">Zpět</a></p>
+{% endblock %}
