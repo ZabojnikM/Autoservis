@@ -7,7 +7,8 @@ přesně to, co náhled ukazuje i po mezitímní změně ceníku.
 - Změna cen (#138): prodej ± % nebo podle nákupu a marže, nákup ± %, sazba DPH, zaokrouhlení.
 - Přesun / kopie mezi sklady (#139): kolize kódu v cílovém skladu = přeskočit / přepsat ceny / sloučit.
 - Vyřadit, obnovit, trvale smazat (jen nikdy nepoužité) a smazání celého skladu (#140).
-- Úprava kódů a názvů (#142): předpona výrobce, sjednocení zápisu, hledat a nahradit. Nový kód se propíše
+- Úprava kódů a názvů (#142): předpona výrobce, sjednocení zápisu, hledat a nahradit, přeformátování
+  podle vzoru (#145, `UFI ##.###.##` – # = znak čísla dílu bez předpony a oddělovačů). Nový kód se propíše
   do řádků zakázek napojených na kartu (ceny v zakázkách se nemění, doklady vůbec).
 """
 from __future__ import annotations
@@ -215,6 +216,19 @@ def _kody(session, karty, par) -> Plan:
             raise ChybaValidace("Zadejte předponu výrobce jedním slovem, např. UFI.")
         popis, pole = f"doplnit předponu {predpona}", "kod"
         uprav = lambda kod: kod if kod.strip().upper().startswith(predpona + " ") else f"{predpona} {kod.strip()}"  # noqa: E731
+    elif operace == "vzor":
+        vzor = (cisty_text(par.get("vzor")) or "").upper()
+        mist = vzor.count("#")
+        if not mist:
+            raise ChybaValidace("Zadejte vzor kódu, číslice označte #, např. UFI ##.###.##.")
+        popis, pole = f"přeformátovat podle vzoru {vzor}", "kod"
+
+        def uprav(kod: str) -> str:
+            cislo = slouceni.klic_kodu(kod)
+            if len(cislo) != mist:
+                return kod   # nesedí – přeskočí se jako „beze změny“ s vlastním důvodem níže
+            znaky = iter(cislo)
+            return "".join(next(znaky) if z == "#" else z for z in vzor)
     elif operace == "sjednotit":
         popis, pole = "sjednotit zápis kódu (mezery, velká písmena)", "kod"
         uprav = lambda kod: " ".join(kod.split()).upper()  # noqa: E731
@@ -238,7 +252,9 @@ def _kody(session, karty, par) -> Plan:
         novy = uprav(stary)
         novy = novy.strip() if pole == "nazev" else novy
         z.po = novy
-        if novy == stary:
+        if operace == "vzor" and len(slouceni.klic_kodu(stary)) != mist:
+            z.preskoceno = f"číslo {slouceni.klic_kodu(stary)} nesedí na vzor ({mist} znaků)"
+        elif novy == stary:
             z.preskoceno = "beze změny"
         elif not novy.strip():
             z.preskoceno = "vyšel by prázdný " + ("kód" if pole == "kod" else "název")

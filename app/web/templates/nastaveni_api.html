@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{# #145: Nastavení → API pro boty – zapnutí API / MCP a klíče s oprávněními (klíč se ukáže jen jednou) #}
+{% block title %}API pro boty{% endblock %}
+{% block content %}
+<div class="nadpis-radek">
+  <h1>API pro boty <span class="oznaceni">Nastavení</span></h1>
+</div>
+<p class="tlumene napoveda">Rozhraní pro boty v OpenBotu (Skladník, Přijímací technik). REST API je na <code>{{ adresa }}/api/v1</code>,
+  MCP server na <code>{{ adresa }}/mcp/</code>. Bot se přihlašuje klíčem v hlavičce <code>Authorization: Bearer …</code>
+  a smí jen to, na co má klíč oprávnění. Hromadné změny jdou vždy přes náhled, zálohu a deník úprav.</p>
+
+<form method="post" action="/nastaveni/api/zapnout" class="panel formular stredni">
+  <label><input type="checkbox" name="zapnuto" value="1" {% if zapnuto %}checked{% endif %} onchange="this.form.submit()">
+    <strong>API a MCP zapnuté</strong></label>
+  <p class="tlumene">Vypnuté API odmítne každý klíč.</p>
+</form>
+
+{% if novy_klic %}
+<section class="panel novy-klic" role="status">
+  <h2>Nový klíč „{{ novy_nazev }}“</h2>
+  <p><strong>Zkopírujte si ho teď – znovu už se neukáže.</strong></p>
+  <p><input readonly value="{{ novy_klic }}" onclick="this.select()" class="kod" aria-label="Nový klíč"></p>
+</section>
+{% endif %}
+
+<section class="panel">
+  <h2>Klíče</h2>
+  {% if klice %}
+  <table class="striped tabulka-slouceni">
+    <thead><tr><th>Název</th><th>Začátek klíče</th><th>Oprávnění</th><th>Vytvořen</th><th>Naposledy použit</th><th></th></tr></thead>
+    <tbody>
+    {% for k in klice %}
+      <tr class="{% if not k.aktivni %}vyrazeno{% endif %}">
+        <td class="hlavni">{{ k.nazev }}{% if not k.aktivni %} <span class="tlumene">(zrušený)</span>{% endif %}</td>
+        <td class="kod">{{ k.zacatek }}…</td>
+        <td>{% for o in k.seznam_opravneni %}{{ opravneni.get(o, o) }}{% if not loop.last %}, {% endif %}{% endfor %}</td>
+        <td class="tlumene">{{ k.vytvoreno.strftime('%d.%m.%Y %H:%M') }}</td>
+        <td class="tlumene">{{ k.naposledy.strftime('%d.%m.%Y %H:%M') if k.naposledy else '–' }}</td>
+        <td>{% if k.aktivni %}<form method="post" action="/nastaveni/api/klice/{{ k.id }}/zrusit"
+              onsubmit="return confirm('Zrušit klíč {{ k.nazev }}? Bot s ním přestane fungovat.')">
+          <button type="submit" class="secondary outline maly">Zrušit</button></form>{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  {% else %}<p class="tlumene">Zatím žádné klíče.</p>{% endif %}
+</section>
+
+<form method="post" action="/nastaveni/api/klice" class="panel formular stredni">
+  <h2>Nový klíč</h2>
+  <label>Název (pro koho je) <input name="nazev" placeholder="Skladník" required></label>
+  <fieldset>
+    <legend>Oprávnění</legend>
+    {% for k, n in opravneni.items() %}<label><input type="checkbox" name="opravneni" value="{{ k }}"> {{ n }}</label>{% endfor %}
+  </fieldset>
+  <button type="submit">Vytvořit klíč</button>
+</form>
+<p><a href="/nastaveni" class="zpet" role="button">Zpět</a></p>
+{% endblock %}

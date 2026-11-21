@@ -396,6 +396,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-21 | Záložka Správa dat (zapíná se v Nastavení, výchozí skrytá); Sloučit díly přesunuto z Materiálu do ní; oprava pádu hromadného sloučení při chybné skupině (#132) |
 | 2026-11-21 | Správa dat: Import do skladu – seznam dílů od dodavatele do nového / zvoleného katalogu, staré karty se stejným číslem se napárují a sloučí (#134) |
 | 2026-11-21 | Správa dat: Díly s filtrem a řazením, export CSV, hromadná změna cen, přesun / kopie mezi sklady, vyřazení / obnovení / smazání, úprava kódů a názvů, smazání skladu, rozšířený import, kontroly ceníku, přehledy a deník úprav (#136–#143) |
+| 2026-11-21 | API pro boty s klíči podle oprávnění (sklad, zakázky, vozidla a příjem), přeformátování kódu podle vzoru, MCP server na /mcp/ (#145–#148) |
 
 ## Zdroje průzkumu
 

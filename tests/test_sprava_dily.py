@@ -237,3 +237,19 @@ def test_web_provest_z_formulare_nahledu(session, sklad, web):
     assert klient.post("/sprava-dat/dily/provest", data=pole, follow_redirects=False).status_code == 303
     session.refresh(sklad["holy"])
     assert sklad["holy"].kod == "UFI 23.135.00" and zalohy_ == [1]
+
+
+def test_preformatovani_podle_vzoru(session, sklad):
+    holy = sklad["holy"]                                     # „23.135.00“
+    jiny = cenik.vytvor(session, {"kod": "ufi 2313600", "nazev": "Filtr", "cena": "1"})
+    kratky = cenik.vytvor(session, {"kod": "UFI 123", "nazev": "Krátký", "cena": "1"})
+    plan = hromadne.planuj(session, "kody", [holy.id, jiny.id, kratky.id, sklad["ufi1"].id],
+                           {"operace": "vzor", "vzor": "ufi ##.###.##"})
+    assert [(z.po, z.preskoceno) for z in plan.zmeny] == [
+        ("UFI 23.135.00", ""), ("UFI 23.136.00", ""), ("UFI 123", "číslo 123 nesedí na vzor (7 znaků)"),
+        ("UFI 25.011.00", "beze změny")]
+    hromadne.proved(session, plan)
+    session.refresh(holy)
+    assert holy.kod == "UFI 23.135.00"
+    with pytest.raises(ChybaValidace, match="vzor"):
+        hromadne.planuj(session, "kody", [holy.id], {"operace": "vzor", "vzor": "UFI"})

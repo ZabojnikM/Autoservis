@@ -81,7 +81,8 @@ commitů, issues ani release notes **nepiš**:
   Skripty: `nastroje/stary_system_export.py` a `app/importers/stary_system.py`. Stav je v `IMPORT_STARY_SYSTEM.md`
   a v issue #10.
 - **MCP ke starému systému** je samostatné soukromé repo `ZabojnikM/autoservis-mcp`. MCP server samotného
-  Autoservisu (`app/mcp_server/`) je zatím jen připravený.
+  Autoservisu (`app/mcp_server/server.py`, na `/mcp/`) a REST API (`app/api/`, `/api/v1`) jsou pro boty v OpenBotu;
+  logika je v `app/api/*.py` (sdílí ji REST i MCP), klíče a zapnutí v *Nastavení → API pro boty* (#145–#148).
 - **Registr silničních vozidel**: tlačítko Načti u VIN. API klíč je v Nastavení aplikace (v DB), ne v kódu.
 
 ## Bezpečnost

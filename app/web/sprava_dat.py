@@ -236,7 +236,7 @@ async def import_uloz(request: Request, db: DB):
 
 STRANKA_DILU = 200
 PARAMETRY_AKCI = ["cil", "zpusob", "hodnota", "zaokrouhleni", "katalog_cil", "kolize", "operace", "predpona_kodu",
-                  "pole", "hledat", "nahradit"]
+                  "pole", "hledat", "nahradit", "vzor"]
 
 
 def _adresa_dilu(filtr: sprava.Filtr, **dalsi) -> str:
@@ -314,7 +314,7 @@ async def dily_provest(request: Request, db: DB):
     akce = str(form.get("akce") or "")
     # parametry akce mají v náhledu předponu p_ (filtr má vlastní pole „katalog“)
     par = {k: str(form.get("p_" + k) or "") for k in ("cil", "zpusob", "hodnota", "zaokrouhleni", "katalog", "kolize",
-                                                      "operace", "predpona", "pole", "hledat", "nahradit")}
+                                                      "operace", "predpona", "pole", "hledat", "nahradit", "vzor")}
     try:
         plan = hromadne.planuj(db, akce, _ids(form.get("ids")), par)
         if not plan.provede_se:

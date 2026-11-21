@@ -203,6 +203,26 @@ Aplikace tiskne jen tyto doklady:
   **vyžaduje zákazníka** na zakázce
 - **Vyúčtování zakázky** – jde i **bez zákazníka** (odběratel nepovinný)
 
+## API a MCP pro boty (#145–#148)
+
+*Nastavení → API pro boty*: zapnutí (výchozí vypnuto) a klíče pro boty v OpenBotu. Každý klíč má oprávnění
+**sklad**, **zakázky** a / nebo **vozidla a příjem**. Klíč se ukáže jen při vytvoření (v databázi je jen otisk),
+zrušit jde kdykoli.
+
+- **REST API** `/api/v1` (hlavička `Authorization: Bearer <klíč>`, odpovědi JSON, ceny bez DPH jako text):
+  - sklad: `GET sklad/dily` (filtr jako ve Správě dat + `kod_regex`), `sklad/dily/{id}`, `sklad/sklady`,
+    `sklad/kontroly`, `sklad/prehledy`, `sklad/duplicity`; zápis `POST sklad/akce/nahled` → `sklad/akce/provest`
+    a `sklad/sloucit/nahled` → `sklad/sloucit/provest`,
+  - zakázky: `GET zakazky`, `zakazky/{id}`, `zakazky/radky` (kód i bez teček, bez vazby, podle karty); zápis
+    `POST zakazky/radky/nahled` → `zakazky/radky/provest` (kód, název, napojení na kartu; množství a cena jen
+    v otevřené zakázce), `POST zakazky/{id}/polozky` (díl z ceníku do otevřené zakázky),
+  - vozidla a příjem: `GET/POST vozidla`, `GET/PATCH vozidla/{id}`, totéž pro `zakaznici`, `POST prijem`.
+- Hromadný zápis je **dvoukrokový**: náhled vrátí plán a `otisk`, provedení projde jen se stejným otiskem (data se
+  mezitím nezměnila). Před zápisem záloha, každý zápis v **Deníku úprav** s názvem klíče.
+- **MCP server** na `/mcp/` (streamable HTTP, stejný klíč v hlavičce) nabízí stejné funkce jako nástroje pro boty
+  (`hledej_dily`, `nahled_hromadne_akce`, `proved_hromadnou_akci`, `hledej_radky_zakazek`, `prijem_zakazky`…).
+- Přeformátování kódu podle vzoru (`UFI ##.###.##`) je i ve Správě dat → Díly → Úprava kódů.
+
 ## Import ze starého systému
 
 Postup, stav a otevřená rozhodnutí: [IMPORT_STARY_SYSTEM.md](IMPORT_STARY_SYSTEM.md). Export běží přes ODBC ovladač 602SQL

@@ -1123,3 +1123,7 @@ tbody td.hlavni.doklad-vyuctovani, tbody td.hlavni.doklad-vyuctovani a { color: 
 .mrizka-prehledu { display: grid; grid-template-columns: minmax(18rem, 1fr) 2fr; gap: 1rem; }
 .prehled-panel { padding: .7rem .9rem; margin-bottom: 1rem; background: #fff; border: 1px solid var(--ram); border-radius: 12px; box-shadow: var(--stin); }
 .prehled-panel h2 { font-size: 1.05rem; margin: 0 0 .5rem; }
+
+/* #145 API pro boty */
+.novy-klic { border: 2px solid var(--akcent); padding: .8rem 1rem; background: #fff; border-radius: 12px; }
+.novy-klic input { font-family: monospace; width: 100%; }
