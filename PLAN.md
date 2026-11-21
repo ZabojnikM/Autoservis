@@ -394,6 +394,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-20 | **Verze 0.8.0**: hromadné doplnění údajů vozidel z registru (#126), volba katalogu v úpravě materiálu (#124) |
 | 2026-11-21 | Sloučit díly v ceníku materiálu: návrh skupin podle čísla dílu, ruční skupina, hromadně ze seznamu CSV; staré zakázky dostanou nový kód a vazbu na kartu, ceny a doklady beze změny, záloha před sloučením (#130) |
 | 2026-11-21 | Záložka Správa dat (zapíná se v Nastavení, výchozí skrytá); Sloučit díly přesunuto z Materiálu do ní; oprava pádu hromadného sloučení při chybné skupině (#132) |
+| 2026-11-21 | Správa dat: Import do skladu – seznam dílů od dodavatele do nového / zvoleného katalogu, staré karty se stejným číslem se napárují a sloučí (#134) |
 
 ## Zdroje průzkumu
 

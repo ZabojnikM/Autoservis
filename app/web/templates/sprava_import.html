@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{# #134: import seznamu dílů do (nového) skladu – 1) soubor + cílový sklad, 2) náhled s napárovanými starými
+   kartami (jdou odškrtnout, dopsat další kód), 3) import: karta v cílovém skladu + sloučení starých karet. #}
+{% set cena_text = 'bez DPH' if nast.platce_dph else '' %}
+{% block title %}Import do skladu{% endblock %}
+{% block content %}
+<div class="nadpis-radek">
+  <h1>Import do skladu <span class="oznaceni">Správa dat</span></h1>
+</div>
+<p class="tlumene napoveda">Díly ze seznamu se založí v cílovém skladu s kódem a cenami ze seznamu. K dílu se dohledají
+  staré karty se stejným číslem (bez předpony výrobce, teček a mezer, např. <code>UFI 25.011.00</code> ↔ <code>2501100</code>)
+  a sloučí se do něj: ve starých zakázkách se přepíše kód, <strong>ceny v zakázkách a vystavené doklady se nemění</strong>,
+  staré karty se vyřadí. Před importem se databáze zazálohuje.</p>
+
+{% if not navrh %}
+<form method="post" action="/sprava-dat/import-skladu/nahled" enctype="multipart/form-data" class="formular prijem stredni">
+  <fieldset class="panel">
+    <legend>Seznam dílů</legend>
+    <label>Soubor CSV
+      <input type="file" name="soubor" accept=".csv,text/csv" required></label>
+    <p class="tlumene napoveda">Dodací list z e-shopu LKQ, nebo tabulka CSV (středník nebo čárka) se záhlavím:
+      <strong>Kód</strong>, <strong>Název</strong>, <strong>Prodej</strong> (nebo MOC / Cena) bez DPH a nepovinně <strong>Nákup</strong>.</p>
+    <label>Cílový sklad
+      <select name="katalog" onchange="this.form.novy_nazev.closest('label').hidden = this.value !== 'novy'">
+        <option value="novy" {% if katalog == 'novy' %}selected{% endif %}>— založit nový sklad —</option>
+        {% for k in katalogy %}<option value="{{ k.id }}" {% if katalog == k.id|string %}selected{% endif %}>{{ k.nazev }}</option>{% endfor %}
+      </select></label>
+    <label {% if katalog != 'novy' %}hidden{% endif %}>Název nového skladu
+      <input name="novy_nazev" value="{{ novy_nazev }}"></label>
+    <button type="submit">Načíst a napárovat</button>
+    <a href="/sprava-dat" class="zpet" role="button">Zpět</a>
+  </fieldset>
+</form>
+{% else %}
+{% set se_starymi = navrh|selectattr('stare')|list %}
+{% set chybne = navrh|selectattr('chyba')|list %}
+<form method="post" action="/sprava-dat/import-skladu"
+      onsubmit="return confirm('Importovat vybrané díly a sloučit k nim zaškrtnuté staré karty? Před importem se databáze zazálohuje.')">
+  <input type="hidden" name="data_navrhu" value="{{ data_navrhu }}">
+  <input type="hidden" name="katalog" value="{{ katalog }}">
+  <input type="hidden" name="novy_nazev" value="{{ novy_nazev }}">
+  <div class="lista-filtru-seznamu lista-importu">
+    <button type="submit">Importovat vybrané</button>
+    <a href="/sprava-dat/import-skladu" role="button" class="secondary outline">Jiný soubor</a>
+    <button type="button" class="secondary outline" onclick="this.form.querySelectorAll('[name=vybrano]:not(:disabled)').forEach(c => c.checked = true)">Vybrat vše</button>
+    <button type="button" class="secondary outline" onclick="this.form.querySelectorAll('[name=vybrano]').forEach(c => c.checked = false)">Zrušit výběr</button>
+    <span class="tlumene">Do skladu <strong>{% if katalog == 'novy' %}{{ novy_nazev }} (nový){% else %}{% for k in katalogy if k.id|string == katalog %}{{ k.nazev }}{% endfor %}{% endif %}</strong>
+      · {{ navrh|length }} dílů: {{ se_starymi|length }} se starými kartami, {{ navrh|length - se_starymi|length - chybne|length }} bez shody{% if chybne %}, {{ chybne|length }} s chybou{% endif %}</span>
+  </div>
+  <div class="overflow-auto">
+  <table class="striped tabulka-slouceni tabulka-importu-skladu">
+    <thead><tr><th class="sl-vyber"></th><th>Nový kód</th><th>Název</th><th class="cislo">Prodej {{ cena_text }}</th>
+      <th class="cislo">Nákup</th><th>Staré karty ke sloučení</th></tr></thead>
+    <tbody>
+    {% for r in navrh %}
+      <tr>
+        <td class="sl-vyber"><input type="checkbox" name="vybrano" value="{{ r.index }}" id="radek-{{ r.index }}"
+            {% if r.chyba %}disabled{% else %}checked{% endif %} aria-label="Importovat {{ r.kod }}"></td>
+        <td class="hlavni kod-dilu"><label for="radek-{{ r.index }}">{{ r.kod }}</label>
+          {% if r.existujici_id %}<br><span class="tlumene maly-text">už ve skladu{% if r.existujici_cena != r.cena and r.cena %} · změna ceny{% endif %}</span>{% endif %}</td>
+        <td>{{ r.nazev }}</td>
+        <td class="cislo">{% if r.existujici_id and r.cena and r.existujici_cena != r.cena %}<span class="stara-cena">{{ r.existujici_cena|penize }}</span> → {% endif %}{{ r.cena|penize|pomlcka }}</td>
+        <td class="cislo tlumene">{{ r.nakup|penize|pomlcka }}</td>
+        <td>
+          {% if r.chyba %}<span class="chyba-text">{{ r.chyba }}</span>{% endif %}
+          {% for s in r.stare %}
+          <label class="stara-karta"><input type="checkbox" name="stare_{{ r.index }}" value="{{ s.id }}" checked>
+            <span class="kod-dilu">{{ s.kod }}</span> <span class="tlumene">{{ s.katalog }} · {{ s.cena|penize }} · {{ s.pouzito }}×</span></label>
+          {% endfor %}
+          {% if not r.chyba %}<input name="dalsi_{{ r.index }}" class="dalsi-kod" placeholder="další starý kód (nepovinné)"
+                 aria-label="Další starý kód pro {{ r.kod }}">{% endif %}
+        </td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</form>
+{% endif %}
+{% endblock %}

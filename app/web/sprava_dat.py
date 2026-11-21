@@ -2,13 +2,14 @@
 
 Funkce:
 - Sloučit díly (#130): návrh skupin, sloučení jedné skupiny a hromadně ze seznamu CSV.
+- Import do skladu (#134): seznam dílů od dodavatele do (nového) katalogu, staré karty se napárují a sloučí.
 """
 from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, Response
 
-from app.services import ChybaValidace, NenalezenoError, cisty_text, nastaveni, slouceni, zalohy
+from app.services import ChybaValidace, NenalezenoError, cisty_text, import_skladu, katalogy, nastaveni, slouceni, zalohy
 from app.web.routes import DB, _presmeruj, _stranka
 
 VYPNUTO = "Záložka Správa dat je vypnutá. Zapnete ji v Nastavení (Správa dat)."
@@ -21,11 +22,16 @@ def _zapnuto(db: DB) -> None:
 
 router = APIRouter(prefix="/sprava-dat", dependencies=[Depends(_zapnuto)])
 SLOUCENI = "/sprava-dat/slouceni-dilu"
+IMPORT = "/sprava-dat/import-skladu"
+NOVY_KATALOG = "Nový sklad"
 
 # rozcestník: (adresa, název, popis) – sem přibývají další importy a hromadné úpravy
 FUNKCE = [
     (SLOUCENI, "Sloučit díly",
      "Stejný díl vedený v ceníku pod více kódy sloučí do jednoho kódu – i ve starých zakázkách, ceny zůstanou."),
+    (IMPORT, "Import do skladu",
+     "Seznam dílů od dodavatele (např. UFI) nahraje do nového nebo zvoleného skladu a napojí k němu staré díly "
+     "se stejným číslem."),
 ]
 
 
@@ -46,7 +52,7 @@ def _zaloha() -> str:
     try:
         return zalohy.pred_sloucenim().name
     except zalohy.ChybaZalohy as e:
-        raise ChybaValidace(f"Sloučení neproběhlo, protože se nepodařilo zálohovat databázi. {e}") from e
+        raise ChybaValidace(f"Úprava neproběhla, protože se nepodařilo zálohovat databázi. {e}") from e
 
 
 def _str(request, db, q="", plany=None, chyba=None):
@@ -117,3 +123,74 @@ async def sluc_seznam(request: Request, db: DB):
     if souhrn.chyby:
         zprava += " " + " ".join(souhrn.chyby[:3])
     return _presmeruj(SLOUCENI, zprava, chyba=bool(souhrn.chyby) and not souhrn.slouceno)
+
+
+# ---------------------------------------------------------------- Import do skladu (#134)
+
+def _str_importu(request, db, navrh=None, katalog="", novy_nazev=NOVY_KATALOG, chyba=None):
+    return _stranka(request, "sprava_import.html", 400 if chyba else 200, aktivni="sprava",
+                    katalogy=katalogy.seznam(db), katalog=katalog, novy_nazev=novy_nazev, navrh=navrh,
+                    data_navrhu=import_skladu.do_json(navrh) if navrh else "", nast=nastaveni.nacti(db), chyba=chyba)
+
+
+def _cilovy_katalog(db, katalog: str, novy_nazev: str, zalozit: bool = False) -> int | None:
+    """`katalog` = id existujícího, nebo „novy“ (založí se až při importu – v náhledu je None)."""
+    if katalog == "novy":
+        if not zalozit:
+            katalogy._over_nazev(db, novy_nazev)
+            return None
+        return katalogy.vytvor(db, novy_nazev).id
+    if not katalog.isdigit():
+        raise ChybaValidace("Vyberte sklad (katalog), do kterého se má importovat.")
+    return katalogy.ziskej(db, int(katalog)).id
+
+
+@router.get("/import-skladu", response_class=HTMLResponse)
+def import_stranka(request: Request, db: DB):
+    return _str_importu(request, db, katalog="novy")
+
+
+@router.post("/import-skladu/nahled", response_class=HTMLResponse)
+async def import_nahled(request: Request, db: DB):
+    form = await request.form()
+    soubor, katalog = form.get("soubor"), str(form.get("katalog") or "")
+    novy_nazev = cisty_text(form.get("novy_nazev")) or NOVY_KATALOG
+    try:
+        katalog_id = _cilovy_katalog(db, katalog, novy_nazev)
+        radky = import_skladu.nacti(await soubor.read() if hasattr(soubor, "read") else b"")
+        navrh = import_skladu.navrh(db, radky, katalog_id)
+    except ChybaValidace as e:
+        return _str_importu(request, db, katalog=katalog, novy_nazev=novy_nazev, chyba=e)
+    return _str_importu(request, db, navrh=navrh, katalog=katalog, novy_nazev=novy_nazev)
+
+
+@router.post("/import-skladu")
+async def import_uloz(request: Request, db: DB):
+    form = await request.form()
+    katalog = str(form.get("katalog") or "")
+    novy_nazev = cisty_text(form.get("novy_nazev")) or NOVY_KATALOG
+    try:
+        navrh = import_skladu.z_json(str(form.get("data_navrhu") or ""))
+        vybrane = {int(v) for v in form.getlist("vybrano") if str(v).isdigit()}
+        radky = [r for r in navrh if r.index in vybrane and not r.chyba]
+        if not radky:
+            raise ChybaValidace("Není vybraný žádný díl k importu.")
+        stare, nenalezene = {}, []
+        for r in radky:
+            ids = [int(v) for v in form.getlist(f"stare_{r.index}") if str(v).isdigit()]
+            dalsi, chybi = import_skladu.najdi_stare_kody(db, form.get(f"dalsi_{r.index}"))
+            nenalezene += chybi
+            stare[r.index] = list(dict.fromkeys(ids + dalsi))
+        if nenalezene:
+            raise ChybaValidace(f"Ručně dopsané staré kódy nejsou v ceníku: {', '.join(nenalezene[:10])}. "
+                                "Opravte je a nahrajte soubor znovu.")
+        zaloha = _zaloha()
+        katalog_id = _cilovy_katalog(db, katalog, novy_nazev, zalozit=True)
+    except ChybaValidace as e:
+        db.rollback()
+        return _presmeruj(IMPORT, str(e), chyba=True)
+    souhrn = import_skladu.importuj(db, radky, katalog_id, stare)
+    zprava = f"{souhrn.text} Záloha: {zaloha}"
+    if souhrn.chyby:
+        zprava += " " + " ".join(souhrn.chyby[:3])
+    return _presmeruj(IMPORT, zprava, chyba=bool(souhrn.chyby) and not (souhrn.zalozeno or souhrn.aktualizovano))
