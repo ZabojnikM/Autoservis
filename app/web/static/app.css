@@ -1088,3 +1088,10 @@ tbody td.hlavni.doklad-vyuctovani, tbody td.hlavni.doklad-vyuctovani a { color: 
   border: 1px solid var(--ram); border-radius: 12px; box-shadow: var(--stin); text-decoration: none; color: inherit; }
 .funkce-spravy:hover { border-color: var(--akcent); }
 .funkce-spravy strong { font-size: 1.1rem; }
+
+/* #134 Import do skladu */
+.lista-importu > button { width: auto; margin: 0; }
+.tabulka-importu-skladu td { vertical-align: top; }
+.tabulka-importu-skladu .stara-karta { display: block; margin: 0 0 .15rem; font-size: .9rem; }
+.tabulka-importu-skladu .stara-karta input { margin: 0 .35rem 0 0; }
+.tabulka-importu-skladu .dalsi-kod { margin: .2rem 0 0; padding: .2rem .4rem; height: auto; font-size: .85rem; max-width: 16rem; }

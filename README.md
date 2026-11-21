@@ -147,6 +147,14 @@ tests/
     Nová cena → *Nahrát seznam (CSV)* → náhled → *Sloučit vybrané skupiny*. Do skupiny jde přidat i jinou kartu
     řádkem se stejným číslem skupiny a jejím ID.
   - Před každým sloučením se databáze zazálohuje do `data/backups` (`pred-sloucenim-…db`, posledních 10).
+- **Import do skladu** (*Správa dat → Import do skladu*, #134): seznam dílů od dodavatele (dodací list LKQ, nebo
+  tabulka CSV se sloupci Kód, Název, Prodej / MOC / Cena a nepovinně Nákup) se nahraje do zvoleného nebo nového
+  skladu (katalogu, výchozí název „Nový sklad“).
+  - Ke každému dílu se dohledají staré karty se stejným číslem bez předpony výrobce, teček a mezer
+    (`UFI 25.011.00` ↔ `25.011.00`, `2501100`). V náhledu je jde odškrtnout nebo dopsat další starý kód.
+  - Import založí kartu v cílovém skladu (existující se stejným kódem dostane nové ceny) a staré karty do ní
+    sloučí stejně jako Sloučit díly. Ceny v zakázkách a vystavené doklady se nemění. Před importem záloha.
+  - Díl bez prodejní ceny se nezaloží (v náhledu je označený).
 
 ## Faktury a vyúčtování (fáze 3)
 
