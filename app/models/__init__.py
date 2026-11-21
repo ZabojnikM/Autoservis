@@ -426,3 +426,20 @@ class UpravaDat(SQLModel, table=True):
     popis: str = ""
     pocet: int = 0
     zaloha: str = ""
+
+
+class ApiKlic(SQLModel, table=True):
+    """Klíč pro API a MCP (#145) – pro boty v OpenBotu. Ukládá se jen otisk (SHA-256), klíč se ukáže jednou."""
+
+    id: Optional[int] = Field(default=None, primary_key=True)
+    nazev: str
+    otisk: str = Field(index=True, unique=True)
+    zacatek: str = ""            # prvních pár znaků klíče, ať jde v Nastavení poznat
+    opravneni: str = ""          # čárkami: sklad,zakazky,vozidla
+    aktivni: bool = Field(default=True)
+    vytvoreno: NaiveDatetime = Field(default_factory=datetime.now)
+    naposledy: Optional[NaiveDatetime] = None
+
+    @property
+    def seznam_opravneni(self) -> list[str]:
+        return [o for o in self.opravneni.split(",") if o]

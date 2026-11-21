@@ -68,8 +68,10 @@
     </div>
     <div class="parametry-akce" data-akce="kody" hidden>
       <label>Úprava <select name="operace"><option value="predpona">doplnit předponu výrobce</option>
+        <option value="vzor">přeformátovat podle vzoru</option>
         <option value="sjednotit">sjednotit zápis kódu (mezery, velká písmena)</option><option value="nahradit">hledat a nahradit</option></select></label>
       <label>Předpona <input name="predpona_kodu" class="kratke" placeholder="UFI"></label>
+      <label title="# = jeden znak čísla dílu (bez předpony a teček)">Vzor <input name="vzor" class="kratke" placeholder="UFI ##.###.##"></label>
       <label>V poli <select name="pole"><option value="kod">kód</option><option value="nazev">název</option></select></label>
       <label>Hledat <input name="hledat" class="kratke"></label>
       <label>Nahradit za <input name="nahradit" class="kratke"></label>
