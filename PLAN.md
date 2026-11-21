@@ -398,6 +398,8 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-21 | Správa dat: Díly s filtrem a řazením, export CSV, hromadná změna cen, přesun / kopie mezi sklady, vyřazení / obnovení / smazání, úprava kódů a názvů, smazání skladu, rozšířený import, kontroly ceníku, přehledy a deník úprav (#136–#143) |
 | 2026-11-21 | API pro boty s klíči podle oprávnění (sklad, zakázky, vozidla a příjem), přeformátování kódu podle vzoru, MCP server na /mcp/ (#145–#148) |
 | 2026-11-21 | Filtr dílů: vzor kódu se zástupnými znaky (* ? # [ ]) i v API/MCP, předpona pro psaní, okno Nápověda k hledání (#151) |
+| 2026-11-21 | Tisk dokladů: sloupce Kód a S DPH, bez poznámky importu (#127); ikona kopírování před VIN a kódem materiálu (#154, #156); kód materiálu tučně (#158) |
+| 2026-11-21 | Záložka Statistiky (zapíná se v Nastavení): výkon servisu po měsících a za rok z uzavřených zakázek, výdělek na materiálu jako odhad, srovnání s předchozím rokem (#160) |
 
 ## Zdroje průzkumu
 

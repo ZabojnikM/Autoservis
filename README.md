@@ -135,6 +135,10 @@ tests/
 - Peníze se ukládají přesně (desetinná čísla jako text, žádné zaokrouhlovací chyby float).
 - **Správa dat** (#132): samostatná záložka v horním menu pro hromadné úpravy skladu a databáze. Běžně je
   skrytá, zapíná se v *Nastavení → Správa dat*. Vypnutá záložka se nezobrazuje a její stránky nejdou otevřít.
+- **Statistiky** (#160): záložka s výkonem servisu po měsících a za rok – počet zakázek, materiál (prodej, nákup
+  a výdělek), práce a hodiny, celkem a srovnání s předchozím rokem (u běžného roku za stejné období). Počítá se
+  z uzavřených zakázek podle data uzavření. Výdělek na materiálu je odhad podle dnešní nákupní ceny v ceníku.
+  Běžně je skrytá, zapíná se v *Nastavení → Statistiky*.
 - **Sloučit díly** (*Správa dat → Sloučit díly*, #130): stejný díl vedený pod více kódy („2501100“, „25.011.00“)
   se sloučí do jedné karty s novým kódem (např. `UFI 25.011.00`), názvem a cenou.
   - Návrh skupin vznikne sám podle čísla dílu bez mezer, teček, pomlček a předpony výrobce. Díly s úplně jiným
