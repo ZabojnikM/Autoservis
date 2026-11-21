@@ -1411,7 +1411,7 @@ def test_seznam_zakazek_vin_motor_stk_a_jednotne_kopirovat():
     assert client.get("/zakazky", params={"razeni": "stk"}).status_code == 200
     assert client.get("/zakazky", params={"razeni": "-vin"}).status_code == 200
     tlacitko = ('<button type="button" class="kopirovat maly neni-tisk" data-kopirovat="TMBTEST0000000099" '
-                'title="Zkopírovat VIN do schránky">Kopírovat</button>')
+                'title="Zkopírovat VIN do schránky" aria-label="Zkopírovat VIN do schránky">\n<svg class="ik-kopie"')
     assert tlacitko in seznam
     assert tlacitko in client.get(zakazka).text
     assert tlacitko in client.get("/hledat", params={"q": "Výměna rozvodů"}).text
@@ -1560,3 +1560,12 @@ def test_tisk_dokladu_neplatce_bez_sloupce_s_dph():
     r = client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "uhrazeno_ihned": "1"}, follow_redirects=False)
     tisk = client.get(f"{r.headers['location'].split('?')[0]}/tisk").text
     assert "<th>Kód</th>" in tisk and "S DPH</th>" not in tisk
+
+
+def test_kopirovat_vin_ikona_misto_napisu():
+    """#154: tlačítko kopírování VIN je ikona (kopie + fajfka po zkopírování), bez nápisu Kopírovat."""
+    from app.web.sablony import templates
+    html = templates.env.from_string('{% from "_makra.html" import kopirovat %}{{ kopirovat("VIN123") }}').render()
+    assert 'class="ik-kopie"' in html and 'class="ik-hotovo"' in html
+    assert 'aria-label="Zkopírovat VIN do schránky"' in html
+    assert re.sub(r"<[^>]+>", "", html).strip() == ""  # žádný viditelný text, jen ikony
