@@ -13,7 +13,7 @@ TEXTOVA_POLE = [
     "api_klic_registr", "nazev_v_liste",
 ]
 RADY = ["rada_faktura", "rada_vyuctovani"]
-ANO_NE_POLE = ["platce_dph", "zaokrouhlit_hotovost"]
+ANO_NE_POLE = ["platce_dph", "zaokrouhlit_hotovost", "sprava_dat"]
 
 
 @dataclass
@@ -49,6 +49,8 @@ class NastaveniServisu:
     # horní lišta aplikace: název firmy uprostřed (prázdné = název servisu) a logo (data URI, uložené v DB)
     nazev_v_liste: str = ""
     logo: str = ""
+    # záložka Správa dat (#132) – hromadné úpravy skladu a databáze, běžně skrytá
+    sprava_dat: bool = False
 
     @property
     def nazev_do_listy(self) -> str:

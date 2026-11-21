@@ -10,7 +10,7 @@ from app.services import ChybaValidace, NenalezenoError, zalohy
 from app.web.aktualizace import router as aktualizace_router
 from app.web.routes import router as web_router
 from app.web.zalohy import router as zalohy_router
-from app.web.slouceni import router as slouceni_router
+from app.web.sprava_dat import router as sprava_dat_router
 from app.web.sablony import templates
 
 
@@ -33,7 +33,7 @@ app.mount("/static", StaticFiles(directory=config.STATIC_DIR), name="static")
 app.include_router(web_router)
 app.include_router(aktualizace_router)
 app.include_router(zalohy_router)
-app.include_router(slouceni_router)
+app.include_router(sprava_dat_router)
 
 
 @app.exception_handler(NenalezenoError)

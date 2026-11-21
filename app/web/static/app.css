@@ -1081,3 +1081,10 @@ tbody td.hlavni.doklad-vyuctovani, tbody td.hlavni.doklad-vyuctovani a { color: 
 .radek-slouceni button { margin: 0; width: auto; }
 .nahrat-seznam { margin: 0; }
 .nahrat-seznam label { margin: 0; cursor: pointer; }
+
+/* #132 Správa dat – rozcestník */
+.rozcestnik-spravy { display: grid; grid-template-columns: repeat(auto-fill, minmax(20rem, 1fr)); gap: 1rem; }
+.funkce-spravy { display: flex; flex-direction: column; gap: .3rem; padding: 1rem 1.1rem; background: #fff;
+  border: 1px solid var(--ram); border-radius: 12px; box-shadow: var(--stin); text-decoration: none; color: inherit; }
+.funkce-spravy:hover { border-color: var(--akcent); }
+.funkce-spravy strong { font-size: 1.1rem; }
