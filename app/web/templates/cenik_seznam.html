@@ -17,6 +17,8 @@
   {% endif %}
   <a href="/cenik/import" role="button" class="secondary outline" data-okno
      title="Načíst dodací list LKQ (CSV) – aktualizuje ceny v ceníku a založí chybějící díly">Import LKQ</a>
+  <a href="/cenik/slouceni" role="button" class="secondary outline"
+     title="Sloučit stejný díl vedený pod více kódy do jednoho kódu (i ve starých zakázkách)">Sloučit díly</a>
   <form method="get" class="filtr">
     {{ hledani_seznamu('Kód, číslo dílu, název…', napoveda='kód, číslo dílu, název, zaměnitelný díl') }}
     <label class="tlumene"><input type="checkbox" name="neaktivni" value="1" {% if neaktivni %}checked{% endif %}

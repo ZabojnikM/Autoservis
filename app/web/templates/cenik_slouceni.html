@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% from "_makra.html" import hledani_seznamu with context %}
+{# #130: sloučení duplicitních karet materiálu – návrh skupin podle čísla dílu, ruční skupina z hledání,
+   hromadně ze seznamu CSV (stáhnout návrh → upravit v Excelu → nahrát → náhled → sloučit). #}
+{% set cena_text = 'bez DPH' if nast.platce_dph else '' %}
+{% block title %}Sloučit díly{% endblock %}
+
+{% macro skupina(nadpis, karty, cil_id, oznacit) -%}
+{% set cil = (karty|selectattr('id', 'equalto', cil_id)|first) if cil_id else none %}
+<form method="post" action="/cenik/slouceni" class="panel skupina-slouceni"
+      onsubmit="return confirm('Sloučit vybrané karty do kódu ' + this.kod.value + '? Ve starých zakázkách se přepíše kód, ceny zůstanou.')">
+  <input type="hidden" name="q" value="{{ q }}">
+  <p class="nadpis-skupiny"><strong>{{ nadpis }}</strong>
+    <span class="tlumene">· {{ karty|length }} karet · použito {{ karty|sum(attribute='pouzito') }}×</span></p>
+  <table class="striped tabulka-slouceni">
+    <thead><tr><th class="sl-vyber">Ponechat</th><th class="sl-vyber">Sloučit</th><th>Kód</th><th>Název</th>
+      <th>Katalog</th><th class="cislo">Prodej {{ cena_text }}</th><th class="cislo">Použito</th></tr></thead>
+    <tbody>
+    {% for k in karty %}
+      <tr>
+        <td class="sl-vyber"><input type="radio" name="cil" value="{{ k.id }}" {% if k.id == cil_id %}checked{% endif %}
+            aria-label="Ponechat {{ k.kod }}" data-kod="{{ k.kod }}" data-nazev="{{ k.nazev }}" data-cena="{{ k.cena|penize|replace(' ', '') }}"
+            onchange="const f = this.form; f.kod.value = this.dataset.kod; f.nazev.value = this.dataset.nazev; f.cena.value = this.dataset.cena; f.querySelector('[name=karty][value=\'' + this.value + '\']').checked = true"></td>
+        <td class="sl-vyber"><input type="checkbox" name="karty" value="{{ k.id }}" {% if oznacit %}checked{% endif %} aria-label="Sloučit {{ k.kod }}"></td>
+        <td class="hlavni kod-dilu">{{ k.kod|pomlcka }}</td>
+        <td>{{ k.nazev }}</td>
+        <td class="tlumene">{{ k.katalog }}</td>
+        <td class="cislo">{{ k.cena|penize }}</td>
+        <td class="cislo tlumene">{{ (k.pouzito ~ '×') if k.pouzito else '–' }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="radek-slouceni">
+    <label>Nový kód <input name="kod" value="{{ cil.kod if cil else '' }}" required placeholder="např. UFI 25.011.00"></label>
+    <label>Název <input name="nazev" value="{{ cil.nazev if cil else '' }}"></label>
+    <label>Nová cena {{ cena_text }} <input name="cena" value="{{ (cil.cena|penize|replace(' ', '')) if cil else '' }}" inputmode="decimal" class="cislo"></label>
+    <button type="submit">Sloučit</button>
+  </div>
+</form>
+{%- endmacro %}
+
+{% block content %}
+<div class="nadpis-radek">
+  <h1>Sloučit díly <span class="oznaceni">ceník materiálu</span></h1>
+</div>
+<p class="tlumene napoveda">Vybrané karty se sloučí do karty označené <strong>Ponechat</strong>: dostane nový kód, název a cenu.
+  Ostatní karty se nesmažou, jen vyřadí. Ve starých zakázkách se přepíše kód a napojí se na ponechanou kartu,
+  <strong>ceny v zakázkách a vystavené doklady se nemění</strong>. Před každým sloučením se databáze zazálohuje.</p>
+
+{% if plany %}
+{# náhled seznamu CSV #}
+{% set bez_chyby = plany|rejectattr('chyba')|list %}
+<form id="slouceni-seznam" method="post" action="/cenik/slouceni/seznam"
+      onsubmit="return confirm('Sloučit vybrané skupiny? Před sloučením se databáze zazálohuje.')">
+  <input type="hidden" name="data_planu" value="{{ data_planu }}">
+  <div class="lista-filtru-seznamu">
+    <button type="submit">Sloučit vybrané skupiny</button>
+    <a href="/cenik/slouceni" role="button" class="secondary outline">Zrušit</a>
+    <span class="tlumene">{{ plany|length }} skupin: {{ bez_chyby|length }} připraveno, {{ plany|length - bez_chyby|length }} s chybou (přeskočí se)</span>
+  </div>
+  <div class="overflow-auto">
+  <table class="striped tabulka-slouceni">
+    <thead><tr><th class="sl-vyber"></th><th>Skupina</th><th>Nový kód</th><th>Název</th><th class="cislo">Nová cena {{ cena_text }}</th>
+      <th>Slučované karty</th></tr></thead>
+    <tbody>
+    {% for p in plany %}
+      <tr>
+        <td class="sl-vyber"><input type="checkbox" name="vybrano" value="{{ p.skupina }}" {% if not p.chyba %}checked{% else %}disabled{% endif %}
+            aria-label="Sloučit skupinu {{ p.skupina }}"></td>
+        <td>{{ p.skupina }}</td>
+        {% if p.chyba %}
+        <td colspan="3" class="chyba-text">{{ p.chyba }}</td>
+        {% else %}
+        {% set cil = p.karty|selectattr('id', 'equalto', p.cil_id)|first %}
+        <td class="hlavni kod-dilu">{{ p.kod or cil.kod }}</td>
+        <td>{{ p.nazev or cil.nazev }}</td>
+        <td class="cislo">{{ p.cena or 'beze změny' }}</td>
+        {% endif %}
+        <td class="tlumene">{% for k in p.karty %}<span class="kod-dilu">{{ k.kod or '–' }}</span>{% if k.id == p.cil_id %} (ponechat){% endif %}
+          · {{ k.pouzito }}×{% if not loop.last %}<br>{% endif %}{% endfor %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  </div>
+</form>
+{% else %}
+<div class="lista-filtru-seznamu">
+  <form method="get" class="filtr">
+    {{ hledani_seznamu('Kód nebo název dílu…', napoveda='kód nebo název dílu; najde návrhy i karty pro ruční sloučení') }}
+  </form>
+  <a href="/cenik/slouceni/navrh.csv{% if q %}?q={{ q|urlencode }}{% endif %}" role="button" class="secondary outline"
+     title="Návrh skupin jako CSV pro Excel – upravte nové kódy a ceny a nahrajte zpět">Stáhnout návrh (CSV)</a>
+  <form method="post" action="/cenik/slouceni/nahled" enctype="multipart/form-data" class="nahrat-seznam">
+    <label class="secondary outline" role="button" title="Nahrát upravený seznam – nejdřív se ukáže náhled">Nahrát seznam (CSV)
+      <input type="file" name="soubor" accept=".csv,text/csv" hidden onchange="if (this.files.length) this.form.requestSubmit()"></label>
+  </form>
+  <a href="/cenik" class="zpet" role="button">Zpět</a>
+</div>
+
+<div id="seznam">
+{% if nalezene %}
+<h2>Ruční sloučení – nalezené karty</h2>
+<p class="tlumene">Pro díly s jiným číslem: zaškrtněte karty, které jsou stejný díl, a vyberte kartu k ponechání.</p>
+{{ skupina('Nalezeno: „' ~ q ~ '“', nalezene, none, false) }}
+{% endif %}
+
+<h2>Návrh podle čísla dílu <span class="tlumene">({{ skupiny|length }} skupin)</span></h2>
+{% for s in skupiny %}
+{{ skupina(s.klic, s.karty, s.cil_id, true) }}
+{% else %}
+<p class="tlumene prazdna-mrizka">{% if q %}Žádná skupina neodpovídá hledání.{% else %}V ceníku nejsou díly se stejným číslem pod různým kódem.{% endif %}</p>
+{% endfor %}
+</div>
+{% endif %}
+{% endblock %}
