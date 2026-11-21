@@ -1,19 +1,23 @@
-{# Položky a rekapitulace vystaveného dokladu. Potřebuje: f, rek #}
+{# Položky a rekapitulace vystaveného dokladu. Potřebuje: f, rek
+   #127: kód ve vlastním sloupci, u plátce DPH i cena řádku s DPH (jen pro informaci, součty z rekapitulace) #}
 <div class="overflow-auto">
 <table class="polozky">
   <thead><tr>
-    <th>Položka</th><th class="cislo">Množství</th><th class="cislo">Cena/j.{% if f.platce_dph %} bez DPH{% endif %}</th>
+    <th>Položka</th><th>Kód</th><th class="cislo">Množství</th><th class="cislo">Cena/j.{% if f.platce_dph %} bez DPH{% endif %}</th>
     {% if f.platce_dph %}<th class="cislo">DPH</th>{% endif %}
     <th class="cislo">Celkem{% if f.platce_dph %} bez DPH{% endif %}</th>
+    {% if f.platce_dph %}<th class="cislo">S DPH</th>{% endif %}
   </tr></thead>
   <tbody>
   {% for r in f.polozky|material_prvni %}
     <tr>
-      <td>{{ r.nazev }}{% if r.kod %} <span class="kod-polozky">(kód {{ r.kod }})</span>{% endif %}</td>
+      <td>{{ r.nazev }}</td>
+      <td class="kod-polozky">{{ r.kod or '' }}</td>
       <td class="cislo">{{ r.mnozstvi|mnozstvi }} {{ r.jednotka }}</td>
       <td class="cislo">{{ r.cena|penize }}</td>
       {% if f.platce_dph %}<td class="cislo">{{ r.sazba_dph|mnozstvi }} %</td>{% endif %}
       <td class="cislo">{{ r.zaklad|penize }}</td>
+      {% if f.platce_dph %}<td class="cislo">{{ r.celkem|penize }}</td>{% endif %}
     </tr>
   {% endfor %}
   </tbody>

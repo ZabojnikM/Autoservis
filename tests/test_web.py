@@ -1530,3 +1530,33 @@ def test_cislo_dokladu_predpona_v_jednom_poli():
     """#106: předpona řady je uvnitř rámečku pole s pořadovým číslem."""
     css = client.get("/static/app.css").text
     assert ".cislo-dokladu-pole { display: inline-flex;" in css and "border: 0 !important" in css
+
+
+def test_tisk_dokladu_sloupce_kod_a_s_dph_bez_poznamky_importu():
+    """#127: kód ve vlastním sloupci, u položky cena s DPH; poznámka importu se netiskne, vlastní ano."""
+    client.post("/nastaveni", data={"nazev_servisu": "Autoservis Test", "ico": "12345678", "dic": "CZ12345678", "mesto": "Brno",
+                                    "cislo_uctu": "19-2000145399/0800", "platce_dph": "1", "vychozi_dph": "21",
+                                    "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    loc = _prijem().headers["location"].split("?")[0]
+    client.post(f"{loc}/polozky", data={"typ": "material", "kod": "OPT FAF10128", "nazev": "Vzduchový filtr",
+                                        "mnozstvi": "4.5", "cena": "350"})
+    r = client.post(f"{loc}/vystavit", data={"typ": "faktura", "odb_nazev": "Jana", "forma_uhrady": "prevod",
+                                             "poznamka": "Importováno ze starého systému\nDěkujeme za návštěvu."},
+                    follow_redirects=False)
+    doklad = r.headers["location"].split("?")[0]
+    tisk = client.get(f"{doklad}/tisk").text
+    assert "<th>Kód</th>" in tisk and '<td class="kod-polozky">OPT FAF10128</td>' in tisk and "(kód" not in tisk
+    assert '<th class="cislo">S DPH</th>' in tisk
+    cisla = re.sub(r"[\s\u00a0\u202f]|&nbsp;", "", tisk)
+    assert "1575,00" in cisla and "1905,75" in cisla  # 4,5 × 350 = 1 575,00 bez DPH, s 21 % DPH 1 905,75
+    assert "Importováno ze starého systému" not in tisk and "Děkujeme za návštěvu." in tisk
+    assert "Importováno ze starého systému" in client.get(doklad).text  # detail poznámku ukazuje dál
+
+
+def test_tisk_dokladu_neplatce_bez_sloupce_s_dph():
+    client.post("/nastaveni", data={"nazev_servisu": "Autoservis Test", "mesto": "Brno", "platce_dph": "0",
+                                    "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    loc = _zakazka_s_polozkou()
+    r = client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "uhrazeno_ihned": "1"}, follow_redirects=False)
+    tisk = client.get(f"{r.headers['location'].split('?')[0]}/tisk").text
+    assert "<th>Kód</th>" in tisk and "S DPH</th>" not in tisk
