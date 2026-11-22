@@ -238,7 +238,7 @@ def test_faktura_cely_tok():
     assert '<svg viewBox="0 0 ' in tisk and '<svg width=' not in tisk
 
     prehled = client.get("/faktury").text  # výchozí záložka Vyúčtování – faktura v ní není
-    assert 'value="vyuctovani" selected' in prehled and f"/faktury/{fid}" not in prehled
+    assert 'aria-current="true">Vyúčtování' in prehled and f"/faktury/{fid}" not in prehled
     vse = client.get("/faktury", params={"filtr": "vse"}).text
     assert f'<td class="hlavni doklad-faktura"><a href="/faktury/{fid}">FV' in vse  # faktura fialově (#57)
     zakazka = client.get(loc).text
@@ -294,10 +294,14 @@ def test_filtry_a_odebrane_doklady():
                                          "uhrazeno_ihned": "1"})
     for filtr in ["vyuctovani", "faktury", "stornovane", "vse", "neuhrazene"]:  # starší odkazy dál fungují
         assert client.get("/faktury", params={"filtr": filtr, "rok": "2026"}).status_code == 200
-    # záložky Vyúčtování / Faktury / Všechny (Stornované zrušené, #15), bez výběru typu dokladu
+    # #175: jen tlačítka Vyúčtování / Faktury (bez Všechny), výchozí Vyúčtování; rok se při přepnutí drží
     prehled = client.get("/faktury").text
-    vyber = prehled.split('name="filtr"', 1)[1].split("</select>", 1)[0]
-    assert re.findall(r'<option value="(\w+)"', vyber) == ["vyuctovani", "faktury", "vse"]
+    prepinac = prehled.split('aria-label="Typ dokladu"', 1)[1].split("</nav>", 1)[0]
+    assert re.findall(r'filtr=(\w+)', prepinac) == ["vyuctovani", "faktury"] and "Všechny" not in prepinac
+    assert re.search(r'class="katalog-tlacitko aktivni"\s+aria-current="true">Vyúčtování', prepinac)
+    assert "<select name=\"filtr\"" not in prehled
+    roky = client.get("/faktury", params={"filtr": "faktury", "rok": "2026", "q": "Jana"}).text
+    assert "filtr=vyuctovani&amp;q=Jana&amp;rok=2026" in roky
     assert 'name="typ"' not in prehled and "faktury i vyúčtování" not in prehled
     assert "Neuhrazené" not in prehled and "Po splatnosti</a>" not in prehled
     assert "Export CSV" not in client.get("/faktury").text

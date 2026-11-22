@@ -4,14 +4,18 @@
 {% block content %}
 {% set zobrazit_splatnost = filtr != "vyuctovani" %}
 <div class="lista-filtru-seznamu">
+  {# #175: Vyúčtování / Faktury jako tlačítka (stejně jako přepínač skladů v Materiálu); hledání a rok zůstanou #}
+  <nav class="prepinac-katalogu" aria-label="Typ dokladu">
+    {% for klic, nazev in filtry.items() %}
+    {% set parametry = {'filtr': klic, 'q': q or '', 'rok': rok or 'vse'} %}
+    <a href="/faktury?{{ parametry|urlencode }}" role="button"
+       class="katalog-tlacitko{% if filtr == klic %} aktivni{% endif %}"
+       {% if filtr == klic %}aria-current="true"{% endif %}>{{ nazev }}</a>
+    {% endfor %}
+  </nav>
   <form method="get" class="filtr">
+    <input type="hidden" name="filtr" value="{{ filtr }}">
     {{ hledani_seznamu('Číslo, odběratel, IČO, SPZ…', autofocus=False, napoveda='číslo dokladu, odběratel, IČO, SPZ') }}
-    <select name="filtr" onchange="this.form.submit()" aria-label="Typ dokladu">
-      {% if filtr not in filtry %}<option value="{{ filtr }}" selected hidden>Původní filtr</option>{% endif %}
-      {% for klic, nazev in filtry.items() %}
-      <option value="{{ klic }}" {% if filtr == klic %}selected{% endif %}>{{ nazev }}</option>
-      {% endfor %}
-    </select>
     {% if typ %}<input type="hidden" name="typ" value="{{ typ }}">{% endif %}
     {{ vyber_roku(roky, rok) }}
   </form>

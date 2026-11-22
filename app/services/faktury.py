@@ -340,10 +340,10 @@ def nastav_uhrazeno(session: Session, faktura_id: int, uhrazeno: bool) -> Faktur
 # ---------------------------------------------------------------- přehled
 
 # záložky přehledu dokladů
+# #175: přehled přepíná jen Vyúčtování / Faktury (tlačítka); „vse“ ze starších odkazů dál funguje
 FILTRY = {
     "vyuctovani": "Vyúčtování",
     "faktury": "Faktury",
-    "vse": "Všechny",
 }
 
 
