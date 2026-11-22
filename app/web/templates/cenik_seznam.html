@@ -4,7 +4,7 @@
 {% block title %}Materiál{% endblock %}
 {% block content %}
 <div class="lista-filtru-seznamu">
-  <a href="/cenik/nova" role="button" data-okno>Nový materiál</a>
+  <a href="/cenik/nova" role="button" data-okno data-insert title="Klávesa Insert">Nový materiál</a>
   {% if katalogy %}
   {# #62: přepínač katalogů – výběr si pamatuje prohlížeč (cookie), platí i pro okno Přidat materiál v zakázce #}
   <nav class="prepinac-katalogu" aria-label="Katalog materiálu">

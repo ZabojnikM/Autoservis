@@ -3,7 +3,7 @@
 {% block title %}Zakázky{% endblock %}
 {% block content %}
 <div class="lista-filtru-seznamu">
-  <a href="/zakazky/nova" role="button" data-okno>Nová zakázka</a>
+  <a href="/zakazky/nova" role="button" data-okno data-insert title="Klávesa Insert">Nová zakázka</a>
   <form method="get" class="filtr">
     {{ hledani_seznamu('Číslo, SPZ, zákazník, požadavek…', autofocus=False, napoveda='číslo zakázky, SPZ, zákazník, požadavek') }}
     <select name="stav" onchange="this.form.submit()" aria-label="Stav zakázky">

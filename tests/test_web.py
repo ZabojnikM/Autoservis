@@ -1754,3 +1754,14 @@ def test_prehled_faktur_pamatuje_typ_dokladu():
     assert 'aria-current="true">Vyúčtování' in c.get("/faktury").text
     c.cookies.set("doklady", "nesmysl")
     assert 'aria-current="true">Vyúčtování' in c.get("/faktury").text
+
+
+def test_ovladani_sipkami_znacky_v_sablonach():
+    """#185: Insert má v seznamech a v detailu zakázky svůj cíl (data-insert), stavový řádek ukazuje nápovědu kláves."""
+    for url in ("/zakazky", "/vozidla", "/zakaznici", "/cenik", "/prace"):
+        assert "data-insert" in client.get(url).text, url
+    loc = _zakazka_s_polozkou(spz="1KL1850")
+    detail = client.get(loc).text
+    assert re.search(r'cenik\?typ=material" role="button" data-okno data-insert', detail)
+    assert "↑↓ výběr · Enter otevřít" in client.get("/vozidla").text
+    assert "radkyKlavesnici" in detail  # obsluha kláves je v base.html
