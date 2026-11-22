@@ -410,6 +410,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-22 | Tisk faktury bez nápisu „Uhrazeno – neplaťte.“ (#181) |
 | 2026-11-22 | Přehled Faktury si pamatuje poslední volbu Vyúčtování / Faktury (#183) |
 | 2026-11-22 | Ovládání šipkami v seznamech a v detailu zakázky (↑/↓, Enter, ←/→ záložky, Insert, psaní do hledání) (#185) |
+| 2026-11-22 | Šipky: ←/→ přepínají hlavní záložky menu (dokola); okno ceníku Tab = další ceník, ←/→ = kusy (#185) |
 
 ## Zdroje průzkumu
 

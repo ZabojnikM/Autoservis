@@ -438,8 +438,8 @@
       }
     }
 
-    // ---- #185: ovládání šipkami. Seznamy: ↑/↓ výběr řádku, Enter otevře, ←/→ záložky (stav zakázek,
-    // Vyúčtování / Faktury, sklady), Insert = nový záznam, písmeno/číslice skočí do hledání, ↓ z hledání zpět
+    // ---- #185: ovládání šipkami. Seznamy: ↑/↓ výběr řádku, Enter otevře, ←/→ další / předchozí záložka
+    // hlavního menu (dokola), Insert = nový záznam, písmeno/číslice skočí do hledání, ↓ z hledání zpět
     // do seznamu, Esc z hledání ven. Detail zakázky: ↑/↓ položky materiálu i práce, Enter upraví, Insert = ceník.
     // Nic z toho neplatí při psaní do pole, v rozbalovací nabídce, v otevřeném okně ani s Ctrl/Alt.
     const mrizkaPolozek = () => document.querySelector(".obsah table.mrizka-polozek");
@@ -466,21 +466,13 @@
       if (!cil) return;
       if (tr.hasAttribute("data-okno") && !formularNaStrance()) otevriOkno(cil); else location.href = cil;
     }
+    // ←/→ na seznamu: sousední záložka hlavního menu, za poslední zase první (jen na těchto seznamech)
+    const ZALOZKY_MENU = ["/zakazky", "/vozidla", "/zakaznici", "/cenik", "/prace", "/faktury", "/prijem"];
     function prepniZalozku(smer) {
-      const tlacitka = [...document.querySelectorAll(".obsah .prepinac-katalogu a[href]")];
-      if (tlacitka.length) {
-        const i = tlacitka.findIndex((a) => a.classList.contains("aktivni"));
-        const dalsi = tlacitka[i + smer];
-        if (dalsi) location.href = dalsi.href;
-        return true;
-      }
-      const stav = document.querySelector(".obsah select[name=stav]");
-      if (stav) {
-        const i = stav.selectedIndex + smer;
-        if (i >= 0 && i < stav.options.length) { stav.selectedIndex = i; stav.form.requestSubmit(); }
-        return true;
-      }
-      return false;
+      const i = ZALOZKY_MENU.indexOf(location.pathname);
+      if (i < 0) return false;
+      location.href = ZALOZKY_MENU[(i + smer + ZALOZKY_MENU.length) % ZALOZKY_MENU.length];
+      return true;
     }
     document.addEventListener("DOMContentLoaded", () => {
       // po otevření seznamu je vybraný první řádek (kurzor zůstává, kde byl – např. v hledání)
@@ -569,10 +561,25 @@
     }
     document.addEventListener("keydown", (e) => {
       const okno = e.target.closest?.(".okno-cenik");
-      if (!okno || !["ArrowDown", "ArrowUp", "Enter"].includes(e.key)) return;
+      if (!okno || !["ArrowDown", "ArrowUp", "Enter", "Tab", "ArrowLeft", "ArrowRight"].includes(e.key)) return;
+      if (e.ctrlKey || e.altKey || e.metaKey) return;
       if (e.target.closest("form.radek-pridat") || e.target.closest("button, a")) return;  // pole množství: Enter = Přidat
       const radky = [...okno.querySelectorAll(".vyber-cenik tbody tr[data-pridat]")];
       const vybrany = radky.find((r) => r.classList.contains("vybrany"));
+      if (e.key === "Tab") {  // #185: Tab / Shift+Tab přepne ceník (sklady, Z historie) – text hledání zůstane
+        const zdroje = [...okno.querySelectorAll(".prepinac-katalogu a[href]")];
+        if (zdroje.length < 2) return;
+        e.preventDefault();
+        const i = zdroje.findIndex((a) => a.classList.contains("aktivni"));
+        zdroje[(i + (e.shiftKey ? -1 : 1) + zdroje.length) % zdroje.length].click();
+        return;
+      }
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight") {  // #185: ←/→ ubere / přidá kus vybranému řádku
+        if (!vybrany) return;  // bez vybraného řádku posouvají kurzor v hledání
+        e.preventDefault();
+        vybrany.querySelector(`[data-krok="${e.key === "ArrowRight" ? 1 : -1}"]`)?.click();
+        return;
+      }
       if (e.key === "Enter") {
         e.preventDefault();
         if (vybrany) pridejRadek(vybrany);

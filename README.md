@@ -62,10 +62,13 @@ powershell -ExecutionPolicy Bypass -File nastroje\zastupce-autoservis.ps1 -Adres
 - V mřížce položek **Delete** odebere vybraný řádek (s potvrzením).
 - **Ovládání šipkami** (#185), když se nepíše do pole a není otevřené okno:
   - **Seznamy** (Zakázky, Vozidla, Zákazníci, Materiál, Práce, Faktury, Příjem): **↑/↓** vybere řádek (po otevření
-    je vybraný první), **Enter** ho otevře, **←/→** přepne záložky (Otevřené / Uzavřené, Vyúčtování / Faktury,
-    sklady), **Insert** = nový záznam. Psaní písmen a číslic skočí do hledání; z hledání **↓** zpět do seznamu, **Esc** ven.
+    je vybraný první), **Enter** ho otevře, **←/→** přejde na sousední záložku hlavního menu
+    (Zakázky → Vozidla → Zákazníci → Materiál → Práce → Faktury → Příjem vozidel a zase Zakázky),
+    **Insert** = nový záznam (u Faktur a Příjmu nic). Psaní písmen a číslic skočí do hledání; z hledání **↓** zpět do seznamu, **Esc** ven.
   - **Detail zakázky**: **↑/↓** projde materiál i práci, **Enter** otevře úpravu položky, **Insert** přidá materiál
     z ceníku, **Delete** položku odebere.
+  - **Okno Přidat z ceníku**: **Tab / Shift+Tab** přepne ceník (sklady, Z historie), **↑/↓** vybere řádek,
+    **←/→** ubere / přidá kus (u vybraného řádku), **Enter** vloží.
 - Chyba ve formuláři přesune kurzor na pole, kterého se týká, a zvýrazní ho.
 - Mazání, storno a zavření okna s neuloženými změnami se ptá v **okně aplikace** (výchozí volba je bezpečná „Ne“);
   po uložení se vpravo dole krátce ukáže hláška („Vozidlo uloženo.“ apod.), chyba červeně.
