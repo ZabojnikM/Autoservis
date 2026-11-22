@@ -43,9 +43,9 @@ class StavZakazky:
 
     VSECHNY = [PRIJATO, V_OPRAVE, HOTOVO, PREDANO]
     OTEVRENE = [PRIJATO, V_OPRAVE, HOTOVO]
-    # záložky seznamu zakázek: Otevřené (v práci) · Předané · Uzavřené (s dokladem)
-    ZALOZKA_OTEVRENE = [PRIJATO, V_OPRAVE]
-    ZALOZKY = [("hotovo", "Předané"), ("predano", "Uzavřené")]
+    # #166: seznam zakázek má jen Otevřené (bez dokladu, i předané) a Uzavřené (s dokladem / bez dokladu)
+    ZALOZKA_OTEVRENE = [PRIJATO, V_OPRAVE, HOTOVO]
+    ZALOZKY = [("predano", "Uzavřené")]
     NAZVY = {
         PRIJATO: "Přijato",
         V_OPRAVE: "V opravě",
