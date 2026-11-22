@@ -23,13 +23,10 @@
     {% endif %}
     <a href="/zakazky/{{ zakazka.id }}/vystavit?typ=vyuctovani" role="button" class="outline" data-okno>Vyúčtování</a>
   {% endif %}
-  {% if zakazka.je_otevrena or zakazka.faktury %}
+  {# #165: smazání je v okně Upravit zakázku; tady zůstává jen zašedlé tlačítko s důvodem u zakázky s dokladem #}
+  {% if zakazka.faktury %}
     <hr>
-    {% set pocet = zakazka.polozky|length %}
-    {{ tlacitko_smazat('/zakazky/%d/smazat' % zakazka.id, 'Smazat zakázku',
-                       ('Opravdu smazat zakázku %s?' % zakazka.cislo)
-                       ~ ((' Smaže se i materiál a práce na zakázce (%d %s).' % (pocet, 'položka' if pocet == 1 else 'položky' if pocet < 5 else 'položek')) if pocet else '')
-                       ~ ' Smazání nejde vrátit.', nelze_smazat) }}
+    {{ tlacitko_smazat('/zakazky/%d/smazat' % zakazka.id, 'Smazat zakázku', '', nelze_smazat) }}
   {% endif %}
   <hr>
   <a href="/zakazky" role="button" class="zpet">Zpět</a>
@@ -212,7 +209,8 @@
     {% if sazba %}<span>DPH {{ sazba|mnozstvi }} % <strong>{{ dan|penize }}</strong></span>{% endif %}
   {% endfor %}
   {% endif %}
-  <span class="celkem">Celkem k úhradě <strong>{{ rek.celkem|penize }} {{ nast.mena }}</strong></span>
+  {# #162: hlavní částka = celkem s DPH, větší a tučně #}
+  <span class="celkem">{{ 'Celkem s DPH' if (nast.platce_dph or rek.dph) else 'Celkem k úhradě' }} <strong>{{ rek.celkem|penize }} {{ nast.mena }}</strong></span>
 </div>
 {% endif %}
 </div>

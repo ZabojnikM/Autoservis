@@ -173,7 +173,7 @@ def test_cenik_stranky_a_pridani_do_zakazky():
     vyber = client.get("/cenik/vyber", params={"q": "olej", "zakazka_id": zid}).text
     cid = re.search(r'name="polozka_ceniku_id" value="(\d+)"', vyber).group(1)
     r = client.post(f"{loc}/polozky", data={"polozka_ceniku_id": cid, "mnozstvi": "2"}, follow_redirects=True)
-    assert "Celkem k úhradě" in r.text
+    assert "Celkem s DPH" in r.text or "Celkem k úhradě" in r.text
     r = client.post(f"{loc}/polozky", data={"typ": "prace", "nazev": "Diagnostika", "mnozstvi": "1", "cena": "600"},
                     follow_redirects=True)
     assert "Diagnostika" in r.text
@@ -1050,9 +1050,9 @@ def test_rucni_polozka_jako_karta_ceniku():
 def test_smazani_zakazky_s_polozkami_s_potvrzenim():
     loc = _zakazka_s_polozkou()  # 1 položka práce
     client.post(f"{loc}/polozky", data={"typ": "material", "nazev": "Těsnění", "cena": "50"})
-    detail = client.get(loc).text
-    assert f'action="{loc}/smazat" data-potvrdit=' in detail and "nejdřív odeberte" not in detail
-    assert "Smaže se i materiál a práce na zakázce (2 položky)." in detail
+    uprava = client.get(f"{loc}/upravit").text  # #165: smazání je v okně Upravit zakázku
+    assert f'action="{loc}/smazat" data-potvrdit=' in uprava and "nejdřív odeberte" not in uprava
+    assert "Smaže se i materiál a práce na zakázce (2 položky)." in uprava
     r = client.post(f"{loc}/smazat", follow_redirects=False)
     assert r.status_code == 303 and r.headers["location"].startswith("/zakazky")
     assert client.get(loc).status_code == 404
@@ -1601,3 +1601,26 @@ def test_kod_materialu_tucne_v_zakazce_a_na_karte_vozidla():
     vozidlo = re.search(r'href="(/vozidla/\d+)"', detail).group(1)
     karta = client.get(vozidlo, params={"zalozka": "material"}).text
     assert '<td class="kod-materialu kod-s-kopii">' in karta
+
+
+def test_detail_zakazky_celkem_s_dph_a_smazani_v_uprave():
+    """#162: hlavní částka je Celkem s DPH; #165: Smazat zakázku není v levém sloupci detailu, ale v okně úpravy;
+    #164: po uložení nové zakázky se otevře její detail."""
+    client.post("/nastaveni", data={"nazev_servisu": "Autoservis Test", "platce_dph": "1", "vychozi_dph": "21",
+                                    "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    r = _prijem(spz="1SM1650")
+    loc = r.headers["location"].split("?")[0]
+    assert re.fullmatch(r"/zakazky/\d+", loc)  # #164 – celá stránka
+    r = client.post("/zakazky/nova", data={"spz": "1SM1651", "k_nazev": "TEST", "okno": "1"})
+    assert re.fullmatch(r"/zakazky/\d+", r.headers["HX-Redirect"])  # #164 – z okna
+    client.post(f"{loc}/polozky", data={"typ": "prace", "nazev": "Diagnostika", "mnozstvi": "1", "cena": "1000"})
+    detail = client.get(loc).text
+    assert '<span class="celkem">Celkem s DPH <strong>1 210,00' in detail.replace("\u00a0", " ")
+    assert "Smazat zakázku" not in detail
+    uprava = client.get(f"{loc}/upravit").text
+    assert f'action="{loc}/smazat"' in uprava and "Smazání nejde vrátit." in uprava
+    # s dokladem: v detailu zašedlé tlačítko s důvodem, úprava přejde na doklad
+    client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "uhrazeno_ihned": "1"})
+    detail = client.get(loc).text
+    assert re.search(r'<button type="button" class="secondary outline" disabled[^>]*>Smazat zakázku</button>', detail)
+    assert f'action="{loc}/smazat"' not in detail

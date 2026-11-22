@@ -1,5 +1,5 @@
 {% extends "_okno.html" if okno else "base.html" %}
-{% from "_makra.html" import pole, textove_pole, vstup_spz, tlacitka_formulare %}
+{% from "_makra.html" import pole, textove_pole, vstup_spz, tlacitka_formulare, tlacitko_smazat %}
 {# Okno Zakázka jako ve starém systému: vlevo zákazník, uprostřed zakázka, vpravo vozidlo.
    Stejné okno slouží pro novou zakázku (příjem) i pro úpravu (`zakazka`). #}
 {% set url = '/zakazky/%d/upravit' % zakazka.id if zakazka else '/zakazky/nova' %}
@@ -7,6 +7,15 @@
 {% block akce %}
   {{ tlacitka_formulare('formular-prijmu', okno, '/zakazky/%d' % zakazka.id if zakazka else '/zakazky',
                         ok='Uložit' if zakazka else 'Uložit zakázku') }}
+  {# #165: smazání zakázky jen tady (úprava), ne v levém sloupci detailu – s potvrzením #}
+  {% if zakazka and zakazka.je_otevrena and not zakazka.faktury %}
+    <hr>
+    {% set pocet = zakazka.polozky|length %}
+    {{ tlacitko_smazat('/zakazky/%d/smazat' % zakazka.id, 'Smazat zakázku',
+                       ('Opravdu smazat zakázku %s?' % zakazka.cislo)
+                       ~ ((' Smaže se i materiál a práce na zakázce (%d %s).' % (pocet, 'položka' if pocet == 1 else 'položky' if pocet < 5 else 'položek')) if pocet else '')
+                       ~ ' Smazání nejde vrátit.') }}
+  {% endif %}
 {% endblock %}
 {% block content %}
 <div class="nadpis-radek"><h1>{% if zakazka %}Upravit zakázku {{ zakazka.cislo }}{% else %}Nová zakázka
