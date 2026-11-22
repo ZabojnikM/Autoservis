@@ -5,7 +5,7 @@
 <div class="lista-filtru-seznamu">
   <a href="/vozidla/nove" role="button" data-okno data-insert title="Klávesa Insert">Nové vozidlo</a>
   <form method="get" class="filtr">
-    {{ hledani_seznamu('SPZ, VIN, model, majitel…', napoveda='SPZ, VIN, značka, model, typ vozidla, kód motoru, majitel') }}
+    {{ hledani_seznamu('SPZ, VIN, model, majitel…', autofocus=False, napoveda='SPZ, VIN, značka, model, typ vozidla, kód motoru, majitel') }}
   </form>
 </div>
 
