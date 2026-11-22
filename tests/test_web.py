@@ -295,6 +295,7 @@ def test_filtry_a_odebrane_doklady():
     for filtr in ["vyuctovani", "faktury", "stornovane", "vse", "neuhrazene"]:  # starší odkazy dál fungují
         assert client.get("/faktury", params={"filtr": filtr, "rok": "2026"}).status_code == 200
     # #175: jen tlačítka Vyúčtování / Faktury (bez Všechny), výchozí Vyúčtování; rok se při přepnutí drží
+    client.cookies.delete("doklady")  # #183: bez zapamatované volby
     prehled = client.get("/faktury").text
     prepinac = prehled.split('aria-label="Typ dokladu"', 1)[1].split("</nav>", 1)[0]
     assert re.findall(r'filtr=(\w+)', prepinac) == ["vyuctovani", "faktury"] and "Všechny" not in prepinac
@@ -1741,3 +1742,15 @@ def test_tisk_faktury_bez_napisu_uhrazeno():
     doklad = r.headers["location"].split("?")[0]
     assert "Uhrazeno" in client.get(doklad).text
     assert "neplaťte" not in client.get(f"{doklad}/tisk").text
+
+
+def test_prehled_faktur_pamatuje_typ_dokladu():
+    """#183: přehled Faktury z menu ukáže naposledy zvolené Vyúčtování / Faktury."""
+    c = TestClient(app)
+    assert 'aria-current="true">Vyúčtování' in c.get("/faktury").text  # výchozí
+    c.get("/faktury", params={"filtr": "faktury"})
+    assert 'aria-current="true">Faktury' in c.get("/faktury").text
+    c.get("/faktury", params={"filtr": "vyuctovani"})
+    assert 'aria-current="true">Vyúčtování' in c.get("/faktury").text
+    c.cookies.set("doklady", "nesmysl")
+    assert 'aria-current="true">Vyúčtování' in c.get("/faktury").text

@@ -1303,16 +1303,25 @@ def _seznam_faktur(db, filtr, q, rok, typ):
     return faktury.seznam(db, filtr or faktury.VYCHOZI_FILTR, hledat=q, rok=rok, typ=typ or None)
 
 
+KLIC_FILTRU_FAKTUR = "doklady"  # #183: poslední volba Vyúčtování / Faktury (cookie prohlížeče)
+
+
 @router.get("/faktury", response_class=HTMLResponse)
-def faktury_seznam(request: Request, db: DB, filtr: str = faktury.VYCHOZI_FILTR, q: str = "", rok: str = "", typ: str = "",
+def faktury_seznam(request: Request, db: DB, filtr: str = "", q: str = "", rok: str = "", typ: str = "",
                    razeni: str = "", od: str = "", vse_radky: str = ""):
+    if not filtr:  # otevřeno z menu: naposledy zvolený typ dokladu, jinak výchozí
+        ulozeny = request.cookies.get(KLIC_FILTRU_FAKTUR, "")
+        filtr = ulozeny if ulozeny in faktury.FILTRY else faktury.VYCHOZI_FILTR
     rok_cislo, rok = _vybrany_rok(rok)
     seznam = _seznam_faktur(db, filtr, q, rok_cislo, typ)
     st = faktury.stranka(seznam, razeni=razeni, od=od, limit=_davka(vse_radky))
-    return _stranka(request, "faktury_seznam.html", aktivni="faktury", faktury=st.polozky, stranka=st,
-                    souhrn=faktury.souhrn(seznam), filtr=filtr, q=q, rok=rok, typ=typ,
-                    filtry=faktury.FILTRY, TypDokladu=TypDokladu, nast=nastaveni.nacti(db),
-                    roky=range(date.today().year, date.today().year - 6, -1))
+    odpoved = _stranka(request, "faktury_seznam.html", aktivni="faktury", faktury=st.polozky, stranka=st,
+                       souhrn=faktury.souhrn(seznam), filtr=filtr, q=q, rok=rok, typ=typ,
+                       filtry=faktury.FILTRY, TypDokladu=TypDokladu, nast=nastaveni.nacti(db),
+                       roky=range(date.today().year, date.today().year - 6, -1))
+    if filtr in faktury.FILTRY:
+        odpoved.set_cookie(KLIC_FILTRU_FAKTUR, filtr, max_age=10 * ROK_SEKUND, path="/", samesite="lax")
+    return odpoved
 
 
 def _detail_faktury(request, db, faktura_id, chyba=None, status_code=200, **kontext):
