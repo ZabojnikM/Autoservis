@@ -1728,3 +1728,16 @@ def test_tisk_dokladu_mensi_pismo_polozek():
     # #179: číselné sloupce na šířku obsahu, Kód pevně 38 mm – zbytek pro Položku
     assert "table.polozky th.cislo, table.polozky td.cislo { width: 1%; }" in tisk and "width: 38mm" in tisk
     assert "table.polozky td { font-size: 8pt;" not in client.get(f"{loc}/tisk").text
+
+
+def test_tisk_faktury_bez_napisu_uhrazeno():
+    """#181: uhrazená faktura se tiskne bez nápisu „Uhrazeno – neplaťte.“"""
+    client.post("/nastaveni", data={"nazev_servisu": "Autoservis Test", "ico": "12345678", "dic": "CZ12345678", "mesto": "Brno",
+                                    "cislo_uctu": "19-2000145399/0800", "platce_dph": "1", "vychozi_dph": "21",
+                                    "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    loc = _zakazka_s_polozkou(spz="1NP1810")
+    r = client.post(f"{loc}/vystavit", data={"typ": "faktura", "odb_nazev": "Jana", "forma_uhrady": "hotove",
+                                             "uhrazeno_ihned": "1"}, follow_redirects=False)
+    doklad = r.headers["location"].split("?")[0]
+    assert "Uhrazeno" in client.get(doklad).text
+    assert "neplaťte" not in client.get(f"{doklad}/tisk").text
