@@ -1717,3 +1717,12 @@ def test_stare_doklady_oznaci_jako_vytistene(engine, session):
     session.expire_all()
     stav = {f.cislo: f.vytisteno for f in session.exec(__import__("sqlmodel").select(Faktura)).all()}
     assert stav == {"SS1": True, "FV1": False}
+
+
+def test_tisk_dokladu_mensi_pismo_polozek():
+    """#177: položky na tištěném dokladu 8 pt, zakázkový list beze změny."""
+    loc = _zakazka_s_polozkou(spz="1PI1770")
+    r = client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "uhrazeno_ihned": "1"}, follow_redirects=False)
+    tisk = client.get(f"{r.headers['location'].split('?')[0]}/tisk").text
+    assert "table.polozky td { font-size: 8pt;" in tisk
+    assert "table.polozky td { font-size: 8pt;" not in client.get(f"{loc}/tisk").text
