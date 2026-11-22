@@ -163,6 +163,8 @@ class Katalog(SQLModel, table=True):
     nazev: str = Field(unique=True)
     vychozi: bool = Field(default=False)
     poradi: int = Field(default=0)
+    # #150: skrytý sklad se nenabízí v zakázkách ani na kartě Materiál; historie i Správa dat ho vidí dál
+    skryty: bool = Field(default=False)
 
     @property
     def nadpis(self) -> str:

@@ -4,7 +4,7 @@ from decimal import Decimal
 
 from sqlmodel import Session, select
 
-from app.models import PolozkaZakazky, TypPolozky, Zakazka, zaokrouhli
+from app.models import Katalog, PolozkaZakazky, TypPolozky, Zakazka, zaokrouhli
 from app.services import ChybaValidace, NenalezenoError, cisty_text, desetinne_nebo_none
 from app.services import cenik as cenik_sluzba
 from app.services import katalogy
@@ -38,6 +38,8 @@ def pridej_z_ceniku(
     """Přidá položku z ceníku (cena z ceníku, nebo `cena`, je-li zadaná)."""
     zakazka = _otevrena_zakazka(session, zakazka_id)
     vzor = cenik_sluzba.ziskej(session, polozka_ceniku_id)
+    if _ve_skrytem_katalogu(session, vzor):
+        raise ChybaValidace(f"Díl {vzor.kod or vzor.nazev} je ve skrytém skladu – do zakázky ho nejde přidat.")
     nast = nastaveni_sluzba.nacti(session)
     mnozstvi = _kladne_mnozstvi(mnozstvi)
 
@@ -55,6 +57,14 @@ def pridej_z_ceniku(
         session.commit()
         session.refresh(radek)
     return radek
+
+
+def _ve_skrytem_katalogu(session: Session, vzor) -> bool:
+    """#150: materiál ze skrytého katalogu se do zakázek nenabízí ani nepřidává."""
+    if vzor is None or vzor.typ != TypPolozky.MATERIAL or not vzor.katalog_id:
+        return False
+    katalog = session.get(Katalog, vzor.katalog_id)
+    return bool(katalog and katalog.skryty)
 
 
 def _katalog_radku(vzor) -> int | None:
@@ -95,7 +105,7 @@ def _do_ceniku(session: Session, data: dict, typ: str):
     """Založí položku ceníku z polí ruční položky (stejná pole jako karta Materiál / Práce).
     Materiál jde do katalogu `katalog_id` (vybraný v prohlížeči), práce do společného (#62)."""
     katalog = (katalogy.vychozi(session) if typ == TypPolozky.PRACE
-               else katalogy.podle_id(session, data.get("katalog_id")))
+               else katalogy.viditelny(session, data.get("katalog_id")))  # #150: ne do skrytého
     existujici = cenik_sluzba.najdi_podle_kodu(session, data.get("kod"), katalog.id)
     if existujici:
         raise KodUzVCeniku(existujici)
@@ -304,9 +314,13 @@ def historie_vozidla(session: Session, zakazka: Zakazka, hledat: str | None = No
             continue
         klic = _klic_historie(radek)
         if klic in vysledek:
-            vysledek[klic].pocet += 1
+            if vysledek[klic] is not None:
+                vysledek[klic].pocet += 1
         else:
             vzor = cenik_sluzba.najdi(session, radek.polozka_ceniku_id) if radek.polozka_ceniku_id else None
+            if _ve_skrytem_katalogu(session, vzor):  # #150: karta ve skrytém skladu se nenabízí
+                vysledek[klic] = None
+                continue
             vysledek[klic] = RadekHistorie(radek, z, vzor)
     hledany_kod = "".join(z for z in (hledat or "").casefold() if z not in " .-/")
 
@@ -314,7 +328,7 @@ def historie_vozidla(session: Session, zakazka: Zakazka, hledat: str | None = No
         return bool(hledany_kod) and "".join(z for z in (h.radek.kod or "").casefold() if z not in " .-/") == hledany_kod
 
     # řádky jsou od nejnovějšího – stabilní řazení zachová novější výš při stejném počtu
-    return sorted(vysledek.values(), key=lambda h: (not presne(h), -h.pocet))
+    return sorted((h for h in vysledek.values() if h is not None), key=lambda h: (not presne(h), -h.pocet))
 
 
 def pridej_z_historie(session: Session, zakazka_id: int, radek_id: int, mnozstvi="1") -> PolozkaZakazky:

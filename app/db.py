@@ -224,7 +224,7 @@ def zavest_katalogy(eng: Engine) -> bool:
                 vychozi, prvni = jiny, False
             else:
                 vychozi = conn.execute(text(
-                    "INSERT INTO katalog (nazev, vychozi, poradi) VALUES (:n, 1, 0) RETURNING id"),
+                    "INSERT INTO katalog (nazev, vychozi, poradi, skryty) VALUES (:n, 1, 0, 0) RETURNING id"),
                     {"n": VYCHOZI_KATALOG}).scalar()
         conn.execute(text("UPDATE polozkaceniku SET katalog_id = :k WHERE katalog_id IS NULL"), {"k": vychozi})
         if prvni:
