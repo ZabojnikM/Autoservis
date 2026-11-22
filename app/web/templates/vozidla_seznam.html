@@ -3,7 +3,7 @@
 {% block title %}Vozidla{% endblock %}
 {% block content %}
 <div class="lista-filtru-seznamu">
-  <a href="/vozidla/nove" role="button" data-okno>Nové vozidlo</a>
+  <a href="/vozidla/nove" role="button" data-okno data-insert title="Klávesa Insert">Nové vozidlo</a>
   <form method="get" class="filtr">
     {{ hledani_seznamu('SPZ, VIN, model, majitel…', napoveda='SPZ, VIN, značka, model, typ vozidla, kód motoru, majitel') }}
   </form>

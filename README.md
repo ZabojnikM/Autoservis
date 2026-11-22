@@ -60,6 +60,12 @@ powershell -ExecutionPolicy Bypass -File nastroje\zastupce-autoservis.ps1 -Adres
 - Okno **Přidat materiál z ceníku** po otevření ukáže **30 nejpoužívanějších dílů** (sloupec Použito). Při hledání je přesná shoda kódu nahoře, pak díly podle počtu použití. Díly použité aspoň 3× jsou světle podbarvené, pod čarou „Méně používané díly“ jsou díly použité 1–2× a nepoužité.
 - V okně **Přidat materiál z ceníku** Enter v hledání **vloží díl**, když se text přesně shoduje s jeho kódem (velikost písmen a mezery nevadí). Jinak otevře **Nový materiál** s kódem z hledání. Řádek vybraný šipkami vloží Enter jako dřív.
 - V mřížce položek **Delete** odebere vybraný řádek (s potvrzením).
+- **Ovládání šipkami** (#185), když se nepíše do pole a není otevřené okno:
+  - **Seznamy** (Zakázky, Vozidla, Zákazníci, Materiál, Práce, Faktury, Příjem): **↑/↓** vybere řádek (po otevření
+    je vybraný první), **Enter** ho otevře, **←/→** přepne záložky (Otevřené / Uzavřené, Vyúčtování / Faktury,
+    sklady), **Insert** = nový záznam. Psaní písmen a číslic skočí do hledání; z hledání **↓** zpět do seznamu, **Esc** ven.
+  - **Detail zakázky**: **↑/↓** projde materiál i práci, **Enter** otevře úpravu položky, **Insert** přidá materiál
+    z ceníku, **Delete** položku odebere.
 - Chyba ve formuláři přesune kurzor na pole, kterého se týká, a zvýrazní ho.
 - Mazání, storno a zavření okna s neuloženými změnami se ptá v **okně aplikace** (výchozí volba je bezpečná „Ne“);
   po uložení se vpravo dole krátce ukáže hláška („Vozidlo uloženo.“ apod.), chyba červeně.

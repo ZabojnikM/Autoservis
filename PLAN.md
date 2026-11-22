@@ -409,6 +409,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-22 | Tisk faktury a vyúčtování: víc místa pro název položky, číselné sloupce úzké (#179) |
 | 2026-11-22 | Tisk faktury bez nápisu „Uhrazeno – neplaťte.“ (#181) |
 | 2026-11-22 | Přehled Faktury si pamatuje poslední volbu Vyúčtování / Faktury (#183) |
+| 2026-11-22 | Ovládání šipkami v seznamech a v detailu zakázky (↑/↓, Enter, ←/→ záložky, Insert, psaní do hledání) (#185) |
 
 ## Zdroje průzkumu
 

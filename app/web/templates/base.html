@@ -438,6 +438,94 @@
       }
     }
 
+    // ---- #185: ovládání šipkami. Seznamy: ↑/↓ výběr řádku, Enter otevře, ←/→ záložky (stav zakázek,
+    // Vyúčtování / Faktury, sklady), Insert = nový záznam, písmeno/číslice skočí do hledání, ↓ z hledání zpět
+    // do seznamu, Esc z hledání ven. Detail zakázky: ↑/↓ položky materiálu i práce, Enter upraví, Insert = ceník.
+    // Nic z toho neplatí při psaní do pole, v rozbalovací nabídce, v otevřeném okně ani s Ctrl/Alt.
+    const mrizkaPolozek = () => document.querySelector(".obsah table.mrizka-polozek");
+    function radkyKlavesnici() {
+      if (mrizkaPolozek()) return [...document.querySelectorAll(".obsah table.mrizka-polozek tbody tr")];
+      const t = document.querySelector("#seznam table.klik-otevre, .obsah table.klik-otevre");
+      return t ? [...t.querySelectorAll("tbody tr")].filter((tr) => cilRadku(tr, "otevrit")) : [];
+    }
+    function vyberRadekKlavesnici(tr) {
+      if (!tr) return;
+      document.querySelectorAll(".obsah tbody tr.vybrany").forEach((r) => r.classList.remove("vybrany"));
+      tr.classList.add("vybrany");
+      vybranyRadek = tr;
+      obnovTlacitkaRadku();
+      tr.scrollIntoView({block: "nearest"});
+    }
+    const poleHledani = () => document.querySelector(".obsah .filtr input[type=search]");
+    function otevriRadekKlavesnici(tr) {
+      if (mrizkaPolozek()) {
+        if (tr.dataset.upravit) { tr.hasAttribute("data-okno") ? otevriOkno(tr.dataset.upravit) : (location.href = tr.dataset.upravit); }
+        return;
+      }
+      const cil = cilRadku(tr, "otevrit");
+      if (!cil) return;
+      if (tr.hasAttribute("data-okno") && !formularNaStrance()) otevriOkno(cil); else location.href = cil;
+    }
+    function prepniZalozku(smer) {
+      const tlacitka = [...document.querySelectorAll(".obsah .prepinac-katalogu a[href]")];
+      if (tlacitka.length) {
+        const i = tlacitka.findIndex((a) => a.classList.contains("aktivni"));
+        const dalsi = tlacitka[i + smer];
+        if (dalsi) location.href = dalsi.href;
+        return true;
+      }
+      const stav = document.querySelector(".obsah select[name=stav]");
+      if (stav) {
+        const i = stav.selectedIndex + smer;
+        if (i >= 0 && i < stav.options.length) { stav.selectedIndex = i; stav.form.requestSubmit(); }
+        return true;
+      }
+      return false;
+    }
+    document.addEventListener("DOMContentLoaded", () => {
+      // po otevření seznamu je vybraný první řádek (kurzor zůstává, kde byl – např. v hledání)
+      if (!vybranyRadek) { const r = radkyKlavesnici(); if (r.length && !mrizkaPolozek()) vyberRadekKlavesnici(r[0]); }
+    });
+    document.addEventListener("htmx:afterSettle", (e) => {
+      if (e.detail.target.id === "seznam" && !vybranyRadek) {
+        const r = radkyKlavesnici();
+        if (r.length) { r[0].classList.add("vybrany"); vybranyRadek = r[0]; obnovTlacitkaRadku(); }
+      }
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.ctrlKey || e.altKey || e.metaKey || document.querySelector("dialog[open]")) return;
+      const hledani = poleHledani();
+      if (hledani && e.target === hledani) {  // v hledání: ↓ do seznamu, Esc ven z pole
+        if (e.key === "ArrowDown" || e.key === "Escape") {
+          e.preventDefault();
+          hledani.blur();
+          if (e.key === "ArrowDown") vyberRadekKlavesnici(vybranyRadek && document.contains(vybranyRadek) ? vybranyRadek : radkyKlavesnici()[0]);
+        }
+        return;
+      }
+      if (e.target.closest("input, textarea, select, [contenteditable], button, a[href]")) return;
+      const radky = radkyKlavesnici();
+      const i = radky.indexOf(vybranyRadek);
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        if (!radky.length) return;
+        e.preventDefault();
+        vyberRadekKlavesnici(i < 0 ? radky[0] : radky[Math.min(Math.max(i + (e.key === "ArrowDown" ? 1 : -1), 0), radky.length - 1)]);
+      } else if (e.key === "Enter") {
+        if (i < 0) return;
+        e.preventDefault();
+        otevriRadekKlavesnici(vybranyRadek);
+      } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
+        if (prepniZalozku(e.key === "ArrowRight" ? 1 : -1)) e.preventDefault();
+      } else if (e.key === "Insert") {
+        const novy = document.querySelector(".obsah [data-insert]");
+        if (novy) { e.preventDefault(); novy.click(); }
+      } else if (hledani && e.key.length === 1 && /[\p{L}\p{N}]/u.test(e.key)) {
+        hledani.focus();  // znak se zapíše do pole hledání
+        const konec = hledani.value.length;
+        hledani.setSelectionRange(konec, konec);
+      }
+    });
+
     // ---- Okno Přidat z ceníku: řádek s data-pridat přidá dvojklik nebo Enter (s množstvím z řádku, předvyplněno 1).
     // Šipky ↓ ↑ v hledání i v mřížce vybírají řádek, Enter ho přidá.
     function pridejRadek(tr) {

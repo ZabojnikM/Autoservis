@@ -4,7 +4,7 @@
 {% block title %}Ceník prací{% endblock %}
 {% block content %}
 <div class="lista-filtru-seznamu">
-  <a href="/prace/nova" role="button" data-okno>Nová práce</a>
+  <a href="/prace/nova" role="button" data-okno data-insert title="Klávesa Insert">Nová práce</a>
   <form method="get" class="filtr">
     {{ hledani_seznamu('Kód nebo název práce…', napoveda='kód nebo název práce') }}
     <label class="tlumene"><input type="checkbox" name="neaktivni" value="1" {% if neaktivni %}checked{% endif %}

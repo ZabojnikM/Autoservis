@@ -126,8 +126,8 @@
 <div class="titulek-mrizky tlacitka-vlevo">
   <h2 class="nadpis-oddilu">{{ nazev }}</h2>
   {% if lze_menit %}<span class="tlacitka-mrizky neni-tisk">
-    <a href="/zakazky/{{ zakazka.id }}/cenik?typ={{ typ }}" role="button" data-okno
-       title="{{ nazev }} z ceníku" aria-label="{{ nazev }} z ceníku">Ceník</a>
+    <a href="/zakazky/{{ zakazka.id }}/cenik?typ={{ typ }}" role="button" data-okno{% if typ == 'material' %} data-insert{% endif %}
+       title="{{ nazev }} z ceníku{% if typ == 'material' %} (klávesa Insert){% endif %}" aria-label="{{ nazev }} z ceníku">Ceník</a>
     <a href="/zakazky/{{ zakazka.id }}/polozky/nova?typ={{ typ }}" role="button" class="secondary outline" data-okno
        title="{{ 'Nová práce' if typ == 'prace' else 'Nový materiál' }} – jen do zakázky, nebo i do ceníku"
        aria-label="{{ 'Nová práce' if typ == 'prace' else 'Nový materiál' }}">Nový</a>
