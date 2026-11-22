@@ -475,6 +475,22 @@ async def polozka_mnozstvi(request: Request, db: DB, polozka_id: int):
     return _presmeruj(zpet)
 
 
+@router.post("/polozky/{polozka_id}/cena")
+async def polozka_cena(request: Request, db: DB, polozka_id: int):
+    """#163: ruční cena za jednotku bez DPH přímo v řádku zakázky – uloží se jen do řádku, ceník se nemění."""
+    data = await _formular(request)
+    radek = polozky.ziskej(db, polozka_id)
+    zpet = f"/zakazky/{radek.zakazka_id}#polozky"
+    try:
+        if radek.zakazka.platna_faktura:
+            raise ChybaValidace("Zakázka je vyúčtovaná – řádek nejde změnit.")
+        polozky.uprav(db, polozka_id, {"cena": data.get("cena", "")})
+    except ChybaValidace as e:
+        db.rollback()
+        return _presmeruj_s_chybou(zpet, e)
+    return _presmeruj(zpet)
+
+
 @router.post("/polozky/{polozka_id}/smazat", response_class=HTMLResponse)
 async def polozka_smazat(request: Request, db: DB, polozka_id: int):
     """Odebrání řádku – z detailu zakázky (přesměrování), nebo z okna Přidat z ceníku (okno zůstane)."""

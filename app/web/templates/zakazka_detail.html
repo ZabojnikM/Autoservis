@@ -175,7 +175,14 @@
           <button type="button" class="krok" data-krok="1" tabindex="-1" aria-label="Přidat 1">+</button>
         </form>{% else %}{{ r.mnozstvi|mnozstvi }}{% endif %}</td>
       <td>{{ r.jednotka }}</td>
-      <td class="cislo">{{ r.cena|penize }}</td>
+      <td class="cislo">{% if lze_menit %}
+        {# #163: cena za jednotku bez DPH přímo tady – jen pro tento řádek, ceník se nemění #}
+        <form method="post" action="/polozky/{{ r.id }}/cena" class="cena-radku">
+          <input type="text" name="cena" value="{{ r.cena|penize }}" inputmode="decimal"
+                 aria-label="Cena za jednotku bez DPH – {{ r.nazev }}" title="Cena jen pro tuto zakázku – ceník se nezmění"
+                 onfocus="this.select()" onchange="this.form.requestSubmit()">
+        </form>{% else %}{{ r.cena|penize }}{% endif %}
+        {%- if r.cena_ceniku_jina is not none %}<br><small class="cena-ceniku" title="Cena v zakázce je upravená ručně">ceník {{ r.cena_ceniku_jina|penize }}</small>{% endif %}</td>
       {% if nast.platce_dph %}<td class="cislo tlumene">{{ r.sazba_dph|mnozstvi }} %</td>{% endif %}
       {# #162: tučně celkem s DPH (u neplátce celkem) #}
       {% if nast.platce_dph %}
