@@ -14,6 +14,29 @@ def seznam(session: Session) -> list[Katalog]:
     return list(session.exec(select(Katalog).order_by(Katalog.poradi, Katalog.id)))
 
 
+def viditelne(session: Session) -> list[Katalog]:
+    """#150: katalogy pro běžné nabídky (karta Materiál, okno Přidat materiál, nový díl) – bez skrytých."""
+    return [k for k in seznam(session) if not k.skryty]
+
+
+def viditelny(session: Session, hodnota) -> Katalog:
+    """Jako `podle_id`, ale skrytý katalog (např. zapamatovaný v prohlížeči) nahradí výchozím (#150)."""
+    katalog = podle_id(session, hodnota)
+    return vychozi(session) if katalog.skryty else katalog
+
+
+def nastav_skryti(session: Session, katalog_id: int, skryty: bool) -> Katalog:
+    """#150: skrýt / znovu zobrazit katalog. Výchozí (s pracemi) skrýt nejde. Díly ani zakázky se nemění."""
+    katalog = ziskej(session, katalog_id)
+    if skryty and katalog.vychozi:
+        raise ChybaValidace("Výchozí katalog (s pracemi) nejde skrýt.")
+    katalog.skryty = skryty
+    session.add(katalog)
+    session.commit()
+    session.refresh(katalog)
+    return katalog
+
+
 def vychozi(session: Session) -> Katalog:
     katalog = session.exec(select(Katalog).where(Katalog.vychozi == True).order_by(Katalog.id)).first()  # noqa: E712
     if katalog is None:  # databáze bez migrace (nemělo by nastat) – založit

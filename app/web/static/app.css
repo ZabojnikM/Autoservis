@@ -799,6 +799,8 @@ button.kopirovat svg { display: block; }
 .kod-s-kopii { white-space: nowrap; }
 /* #158: kód materiálu v zakázce a na kartě vozidla tučně a tmavě (kódy práce zůstávají šedé) */
 td.kod-materialu { color: var(--text); font-weight: 700; }
+/* #150: skrytý sklad v Nastavení */
+.stitek-skryty { background: #f3f4f6; color: #4b5563; border-radius: 999px; padding: 0 .5rem; font-weight: 600; font-size: .8rem; }
 /* #160: Statistiky */
 /* se Správou dat i Statistikami má menu 9 záložek – menší písmo, aby zůstalo na jednom řádku */
 .jedna-lista .menu.menu-husta a { font-size: 1rem; padding: 6px 7px; white-space: nowrap; }

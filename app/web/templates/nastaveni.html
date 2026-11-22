@@ -149,7 +149,9 @@
   <fieldset class="panel panel-katalogu">
     <legend>Katalogy materiálu</legend>
     <p class="tlumene">Každý katalog má vlastní díly a ceny; stejný kód dílu může být ve více katalozích.
-      Katalog se přepíná na kartě <a href="/cenik">Materiál</a>. Práce mají jeden společný katalog.</p>
+      Katalog se přepíná na kartě <a href="/cenik">Materiál</a>. Práce mají jeden společný katalog.
+      <strong>Skrytý</strong> katalog se nenabízí na kartě Materiál ani při přidávání materiálu do zakázky;
+      staré zakázky a doklady se nemění a ve Správě dat je vidět dál.</p>
     <table class="katalogy">
       <tbody>
       {% for k in katalogy %}
@@ -160,7 +162,16 @@
             <button type="submit" class="secondary outline maly">Přejmenovat</button>
           </form>
         </td>
-        <td class="tlumene">{{ pocty_katalogu[k.id] }} položek{% if k.vychozi %} · výchozí{% endif %}</td>
+        <td class="tlumene">{{ pocty_katalogu[k.id] }} položek{% if k.vychozi %} · výchozí{% endif %}
+          {%- if k.skryty %} · <span class="stitek-skryty">skrytý</span>{% endif %}</td>
+        <td>
+          {# #150: skrytý sklad se nenabízí v zakázkách ani na kartě Materiál; staré zakázky beze změny #}
+          <form method="post" action="/katalogy/{{ k.id }}/skryt">
+            <input type="hidden" name="skryty" value="{{ '0' if k.skryty else '1' }}">
+            <button type="submit" class="secondary outline maly" {% if k.vychozi %}disabled title="Výchozí katalog (s pracemi) nejde skrýt."{% endif %}
+                    title="{{ 'Znovu nabízet v zakázkách a na kartě Materiál' if k.skryty else 'Nenabízet v zakázkách ani na kartě Materiál – historie zůstane' }}">{{ 'Zobrazit' if k.skryty else 'Skrýt' }}</button>
+          </form>
+        </td>
         <td>
           <form method="post" action="/katalogy/{{ k.id }}/smazat"
                 data-potvrdit="Smazat katalog {{ k.nazev }}?" data-potvrdit-ano="Smazat">

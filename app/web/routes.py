@@ -296,7 +296,7 @@ LIMIT_CENIKU = 100
 
 def _katalog(request: Request, db):
     """Katalog materiálu vybraný na kartě Materiál (cookie prohlížeče, #62); jinak výchozí."""
-    return katalogy.podle_id(db, request.cookies.get(katalogy.KLIC_COOKIE))
+    return katalogy.viditelny(db, request.cookies.get(katalogy.KLIC_COOKIE))  # #150: skrytý → výchozí
 
 
 def _typ_ceniku(typ) -> str | None:
@@ -324,7 +324,7 @@ def _okno_ceniku(request, db, zakazka_id, q="", okno=False, chyba=None, zprava=N
     historie = typ == TypPolozky.MATERIAL and zdroj == HISTORIE
     return _stranka(request, "zakazka_cenik.html", _status_formulare(okno, chyba), aktivni="zakazky",
                     zakazka=zakazka, zakazka_id=zakazka_id, q=q, okno=okno, typ_okna=typ, katalog=katalog,
-                    katalogy=katalogy.seznam(db) if typ == TypPolozky.MATERIAL else [], historie=historie,
+                    katalogy=katalogy.viditelne(db) if typ == TypPolozky.MATERIAL else [], historie=historie,
                     **_vysledky_okna(db, zakazka, q, typ, katalog, historie),
                     nast=nastaveni.nacti(db), hlaseni_chyba=chyba, hlaseni=zprava, pridano=pridano)
 
@@ -353,7 +353,7 @@ def zakazka_cenik(request: Request, db: DB, zakazka_id: int, q: str = "", okno: 
     if zdroj == HISTORIE:
         return _okno_ceniku(request, db, zakazka_id, q, okno=bool(okno), typ=typ, zdroj=HISTORIE)
     if katalog:
-        vybrany = katalogy.podle_id(db, katalog)
+        vybrany = katalogy.viditelny(db, katalog)
         return _zapamatuj_katalog(_okno_ceniku(request, db, zakazka_id, q, okno=bool(okno), typ=typ,
                                                katalog=vybrany), vybrany)
     return _okno_ceniku(request, db, zakazka_id, q, okno=bool(okno), typ=typ)
@@ -377,7 +377,7 @@ def _formular_polozky(request, db, zakazka_id, hodnoty, okno=False, chyba=None, 
     `radek` = úprava ručního řádku zakázky; chyba KodUzVCeniku nabídne existující položku ceníku."""
     return _stranka(request, "polozka_form.html", _status_formulare(okno, chyba), aktivni="zakazky",
                     zakazka=zakazky.ziskej(db, zakazka_id), hodnoty=hodnoty, nast=nastaveni.nacti(db),
-                    okno=okno, chyba=chyba, radek=radek, katalogy=katalogy.seznam(db),
+                    okno=okno, chyba=chyba, radek=radek, katalogy=katalogy.viditelne(db),
                     existujici=chyba.polozka if isinstance(chyba, polozky.KodUzVCeniku) else None)
 
 
@@ -908,7 +908,7 @@ def _seznam_ceniku(request, db, typ, q, neaktivni, razeni, od, vse_radky, zvyraz
     sablona = "cenik_seznam.html" if material else "prace_seznam.html"
     return _stranka(request, sablona, aktivni="cenik" if material else "prace", q=q, typ=typ,
                     neaktivni=neaktivni, polozky=st.polozky, stranka=st, nast=nastaveni.nacti(db), zvyraznit=zvyraznit,
-                    katalog=katalog, katalogy=katalogy.seznam(db) if material else [],
+                    katalog=katalog, katalogy=katalogy.viditelne(db) if material else [],
                     pouziti=cenik.pocty_pouziti(db, (p.id for p in st.polozky)) if material else {})
 
 
@@ -921,7 +921,7 @@ def cenik_seznam(request: Request, db: DB, q: str = "", typ: str = "", neaktivni
     if typ == TypPolozky.PRACE:  # starší odkazy na záložku Práce
         return RedirectResponse(f"/prace?{request.url.query}", status_code=303)
     if katalog:  # přepínač katalogů: výběr si zapamatuje prohlížeč (cookie), pak seznam bez parametru
-        vybrany = katalogy.podle_id(db, katalog)
+        vybrany = katalogy.viditelny(db, katalog)
         return _zapamatuj_katalog(RedirectResponse("/cenik" + (f"?q={quote(q)}" if q else ""), status_code=303),
                                   vybrany)
     return _seznam_ceniku(request, db, TypPolozky.MATERIAL, q, neaktivni, razeni, od, vse_radky, zvyraznit)
@@ -1022,7 +1022,8 @@ def _formular_ceniku(request, db, polozka, hodnoty, okno=False, chyba=None, zpra
         katalog = katalogy.podle_id(db, hodnoty.get("katalog_id"))
     return _stranka(request, "prace_form.html" if prace else "cenik_form.html", _status_formulare(okno, chyba),
                     aktivni="zakazky" if radek else "prace" if prace else "cenik", polozka=polozka, hodnoty=hodnoty,
-                    katalog=katalog, katalogy=katalogy.seznam(db) if not prace else [],
+                    # #150: nový díl jen do viditelných skladů; úprava existujícího vidí i jeho (skrytý) sklad
+                    katalog=katalog, katalogy=(katalogy.seznam(db) if polozka else katalogy.viditelne(db)) if not prace else [],
                     nast=nastaveni.nacti(db), okno=okno, chyba=chyba, zprava=zprava,
                     adresa_ceniku=_adresa_ceniku(typ), z_ceniku=z_ceniku if okno else None, q_ceniku=q or "",
                     radek_zakazky=radek)
@@ -1205,6 +1206,20 @@ async def katalog_prejmenovat(request: Request, db: DB, katalog_id: int):
         db.rollback()
         return _presmeruj_s_chybou("/nastaveni#katalogy", e)
     return _presmeruj("/nastaveni#katalogy", f"Katalog přejmenován na „{katalog.nazev}“.")
+
+
+@router.post("/katalogy/{katalog_id}/skryt")
+async def katalog_skryt(request: Request, db: DB, katalog_id: int):
+    """#150: skrýt / znovu zobrazit sklad v běžných nabídkách."""
+    data = await _formular(request)
+    skryty = data.get("skryty") == "1"
+    try:
+        katalog = katalogy.nastav_skryti(db, katalog_id, skryty)
+    except ChybaValidace as e:
+        db.rollback()
+        return _presmeruj_s_chybou("/nastaveni#katalogy", e)
+    return _presmeruj("/nastaveni#katalogy",
+                      f"Katalog „{katalog.nazev}“ {'skrytý' if skryty else 'znovu zobrazený'}.")
 
 
 @router.post("/katalogy/{katalog_id}/smazat")

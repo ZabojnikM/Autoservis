@@ -133,6 +133,9 @@ tests/
 - Součty: práce, materiál, základ a **DPH po sazbách** (počítá se ze součtu základů), celkem k úhradě.
 - **Nastavení** (`/nastaveni`): plátce DPH, výchozí sazba DPH, měna, API klíč registru vozidel.
 - Řádek zakázky je kopie ceníku – pozdější změna ceníku už vystavené zakázky nemění.
+- **Skrýt sklad** (#150): *Nastavení → Katalogy materiálu → Skrýt / Zobrazit*. Skrytý sklad se nenabízí na kartě
+  Materiál ani při přidávání materiálu do zakázky (seznam, hledání, přesný kód, Z historie). Staré zakázky a doklady
+  se nemění, Správa dat ho vidí dál (přesun dílů). Výchozí katalog skrýt nejde.
 - **Množství a cena za kus bez DPH** se mění přímo v řádku zakázky (Enter nebo opuštění pole uloží, #163).
   Ručně změněná cena platí jen pro tento řádek, ceník se nemění; když se liší od ceníku, je pod ní šedě
   „ceník …“. Tlačítko *Upravit* u položky z ceníku dál upravuje kartu ceníku (i s cenou v ceníku).
