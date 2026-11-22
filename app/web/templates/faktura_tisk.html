@@ -5,6 +5,12 @@
 {% block styl %}
     table.polozky td { font-size: 8pt; padding: 1mm 1mm; }
     table.polozky th { font-size: 7.5pt; padding: 1mm 1mm; }
+    /* #179: víc místa pro Položku: číselné sloupce jen na šířku obsahu, jejich nadpis se smí zalomit */
+    table.polozky th.cislo, table.polozky td.cislo { width: 1%; }
+    table.polozky td.cislo { white-space: nowrap; }
+    table.polozky th.cislo, table.polozky td.cislo { padding-left: 3.5mm; }  /* mírná mezera mezi čísly */
+    table.polozky th.cislo { white-space: normal; line-height: 1.15; }
+    table.polozky th:nth-child(2), table.polozky td.kod-polozky { width: 38mm; white-space: nowrap; }  /* Kód jako dřív */
 {% endblock %}
 {% block obsah %}
   <div class="hlava">

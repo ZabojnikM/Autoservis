@@ -406,6 +406,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-22 | Skrýt sklad z nabídek a z výběru materiálu v zakázkách, přepínač v Nastavení → Katalogy materiálu (#150) |
 | 2026-11-22 | Přehled Faktury: přepínač Vyúčtování / Faktury jako tlačítka, bez volby Všechny (#175) |
 | 2026-11-22 | Tisk faktury a vyúčtování: položky menším písmem 8 pt (#177) |
+| 2026-11-22 | Tisk faktury a vyúčtování: víc místa pro název položky, číselné sloupce úzké (#179) |
 
 ## Zdroje průzkumu
 
