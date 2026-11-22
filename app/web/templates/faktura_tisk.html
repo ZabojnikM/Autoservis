@@ -68,7 +68,6 @@
   {% set poznamka = f.poznamka|bez_poznamky_importu %}
   {% if poznamka %}<div class="poznamka">{{ poznamka }}</div>{% endif %}
   {% if nast.text_pod_fakturou %}<div class="poznamka tlumene">{{ nast.text_pod_fakturou }}</div>{% endif %}
-  {% if f.je_uhrazena and f.typ == 'faktura' %}<div class="uhrazeno">Uhrazeno – neplaťte.</div>{% endif %}
 
   <div class="paticka">
     <div>
