@@ -18,4 +18,4 @@ PRIJEM_JSON = os.environ.get(
     "AUTOSERVIS_PRIJEM_JSON", "/var/lib/openbot/OpenBot/Shared/autoservis-prototype/json-data/visits.json")
 
 APP_NAME = "Autoservis"
-APP_VERSION = "0.11.0"
+APP_VERSION = "1.0.0"
