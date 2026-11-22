@@ -1725,4 +1725,6 @@ def test_tisk_dokladu_mensi_pismo_polozek():
     r = client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "uhrazeno_ihned": "1"}, follow_redirects=False)
     tisk = client.get(f"{r.headers['location'].split('?')[0]}/tisk").text
     assert "table.polozky td { font-size: 8pt;" in tisk
+    # #179: číselné sloupce na šířku obsahu, Kód pevně 38 mm – zbytek pro Položku
+    assert "table.polozky th.cislo, table.polozky td.cislo { width: 1%; }" in tisk and "width: 38mm" in tisk
     assert "table.polozky td { font-size: 8pt;" not in client.get(f"{loc}/tisk").text
