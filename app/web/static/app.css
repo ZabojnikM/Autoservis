@@ -834,6 +834,11 @@ td.sl-stk { white-space: nowrap; }
 .hlavicka-zakazky dl { gap: 4px 12px; }
 .titulek-mrizky { padding: 10px 16px; font-size: .95rem; }
 .soucty { padding: 10px 16px; font-size: .95rem; gap: 6px 24px; margin-top: calc(-1 * var(--mezera)); margin-bottom: var(--mezera); }
+/* #162: ostatní součty polotučně, hlavní částka (celkem s DPH) větší a tučně */
+.soucty { align-items: baseline; }
+.soucty strong { font-weight: 600; }
+.soucty .celkem { font-size: 1.1rem; }
+.soucty .celkem strong { font-size: 1.35rem; font-weight: 800; }
 .prazdna-mrizka { padding: 16px; }
 article { padding: 18px 20px; margin-bottom: var(--mezera); }
 article > header { margin: -18px -20px 14px; padding: 12px 20px; }
