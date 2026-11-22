@@ -354,10 +354,11 @@ form.mnozstvi-radku input { margin: 0 !important; padding: 2px 6px !important; h
   font-size: inherit; width: 100%; }
 @media print { form.mnozstvi-radku input { border: 0; padding: 0 !important; background: none; } }
 /* #163: cena za jednotku v řádku zakázky – pole jako množství; pod ním šedě cena z ceníku, když se liší */
-form.cena-radku { margin: 0; }
-form.cena-radku input { margin: 0 !important; padding: 2px 6px !important; height: auto; text-align: right; font-size: inherit; width: 100%; }
+form.cena-radku { margin: 0; display: flex; align-items: center; justify-content: flex-end; gap: 6px; }
+form.cena-radku input { margin: 0 !important; padding: 2px 6px !important; height: auto; text-align: right; font-size: inherit;
+  width: 6.8rem; flex: none; }
 @media print { form.cena-radku input { border: 0; padding: 0 !important; background: none; } }
-small.cena-ceniku { color: var(--text-tlumeny); font-size: .78rem; white-space: nowrap; }
+s.cena-ceniku { color: var(--text-tlumeny); font-size: .82rem; white-space: nowrap; }  /* jen při rozdílu, vlevo od pole */
 table.mrizka-polozek td.sl-upravit, table.mrizka-polozek td.sl-smazat { overflow: visible; white-space: nowrap; vertical-align: middle; }
 table.mrizka-polozek td.sl-upravit { text-align: left; padding-left: 8px; padding-right: 4px; }
 table.mrizka-polozek td.sl-smazat { text-align: right; padding-left: 4px; padding-right: 8px; }
@@ -445,16 +446,14 @@ th.razeni.cislo a { text-align: right; }
 /* mřížka položek zakázky – pevné šířky sloupců, tabulka po změně neposkočí */
 table.mrizka-polozek { table-layout: fixed; width: 100%; }
 table.mrizka-polozek th.sl-kod { width: 9rem; }
-/* #36: na širokých obrazovkách Název omezit a čísla nechat u něj – zbytek šířky zabere prázdný sloupec vpravo */
+/* #163: volné místo bere Název, čísla jsou vpravo u tlačítka Smazat (dřív prázdný sloupec za čísly, #36) */
 table.mrizka-polozek .sl-vypln { display: none; }
 @media (min-width: 1600px) {
   table.mrizka-polozek th.sl-kod { width: 15rem; }
-  table.mrizka-polozek th.sl-nazev { width: 34rem; }
-  table.mrizka-polozek .sl-vypln { display: table-cell; }
 }
 table.mrizka-polozek th.sl-mnozstvi { width: 8.5rem; }
 table.mrizka-polozek th.sl-mj { width: 3.5rem; }
-table.mrizka-polozek th.sl-cena { width: 8.5rem; }
+table.mrizka-polozek th.sl-cena { width: 12rem; }  /* #163: přeškrtnutá cena z ceníku + pole */
 table.mrizka-polozek th.sl-dph { width: 4.5rem; }
 table.mrizka-polozek th.sl-celkem { width: 8.5rem; }
 /* detail zakázky: Materiál a pod ním Práce, každá mřížka s tlačítky v titulku */
