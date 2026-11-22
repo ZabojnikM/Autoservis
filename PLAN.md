@@ -404,6 +404,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-22 | Seznam zakázek jen Otevřené (i předané bez dokladu) a Uzavřené (#166) |
 | 2026-11-22 | Stav tisku dokladů: sloupec Tisk v přehledu faktur, dotaz po tisku, ruční přepnutí; doklady ze starého systému označeny jako vytištěné (#167) |
 | 2026-11-22 | Skrýt sklad z nabídek a z výběru materiálu v zakázkách, přepínač v Nastavení → Katalogy materiálu (#150) |
+| 2026-11-22 | Přehled Faktury: přepínač Vyúčtování / Faktury jako tlačítka, bez volby Všechny (#175) |
 
 ## Zdroje průzkumu
 
