@@ -173,6 +173,10 @@ table.vyber-cenik td { padding: .3rem .5rem; vertical-align: middle; }
 .stav-dokladu-neuhrazena { background: #fef3c7; color: #92400e; }
 .stav-dokladu-castecne { background: repeating-linear-gradient(135deg, #fef3c7 0 6px, #dcfce7 6px 12px); color: #78350f; }
 .stav-dokladu-po_splatnosti { background: #fee2e2; color: #991b1b; }
+/* #167: stav tisku dokladu */
+.stav-tisku { display: inline-block; padding: .1rem .55rem; border-radius: 999px; font-size: .8rem; font-weight: 600; white-space: nowrap; vertical-align: middle; }
+.stav-tisku.vytisteno { background: #dcfce7; color: #166534; }
+.stav-tisku.nevytisteno { background: #f3f4f6; color: #4b5563; }
 .stav-dokladu-stornovano { background: #f3f4f6; color: #6b7280; text-decoration: line-through; }
 h1 .stav-dokladu { font-size: 1rem; }
 tr.doklad-po_splatnosti td { color: var(--c-chyba); }

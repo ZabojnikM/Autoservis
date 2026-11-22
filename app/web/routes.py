@@ -1331,6 +1331,15 @@ def faktura_tisk(request: Request, db: DB, faktura_id: int):
                     iban=iban, cislo_uctu=cislo_uctu, qr=_qr(f, nast))
 
 
+@router.post("/faktury/{faktura_id}/vytisteno")
+async def faktura_vytisteno(request: Request, db: DB, faktura_id: int):
+    """#167: označit doklad jako vytištěný / nevytištěný (z detailu nebo z dotazu po tisku)."""
+    data = await _formular(request)
+    vytisteno = data.get("vytisteno") == "1"
+    faktury.nastav_vytisteno(db, faktura_id, vytisteno)
+    return _presmeruj(f"/faktury/{faktura_id}", "Označeno jako vytištěné." if vytisteno else "Označení tisku zrušeno.")
+
+
 @router.post("/faktury/{faktura_id}/uhrazeno")
 async def faktura_uhrazeno(request: Request, db: DB, faktura_id: int):
     """Vyúčtování: přepnout stav Uhrazeno ⇄ Neuhrazeno (#55)."""

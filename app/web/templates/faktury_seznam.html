@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% from "_makra.html" import spz, zahlavi, hledani_seznamu, stavovy_radek, vyber_roku with context %}
+{% from "_makra.html" import spz, zahlavi, hledani_seznamu, stavovy_radek, vyber_roku, stav_tisku with context %}
 {% block title %}Faktury{% endblock %}
 {% block content %}
 {% set zobrazit_splatnost = filtr != "vyuctovani" %}
@@ -24,7 +24,7 @@
   <thead><tr>
     {{ zahlavi('cislo', 'Číslo', stranka) }}{{ zahlavi('vystaveno', 'Vystaveno', stranka) }}{% if zobrazit_splatnost %}{{ zahlavi('splatnost', 'Splatnost', stranka) }}{% endif %}
     {{ zahlavi('odberatel', 'Odběratel', stranka) }}{{ zahlavi('vozidlo', 'Vozidlo', stranka) }}
-    {{ zahlavi('celkem', 'Celkem', stranka, 'cislo') }}{{ zahlavi('zbyva', 'Zbývá', stranka, 'cislo') }}{{ zahlavi('stav', 'Stav', stranka) }}
+    {{ zahlavi('celkem', 'Celkem', stranka, 'cislo') }}{{ zahlavi('zbyva', 'Zbývá', stranka, 'cislo') }}{{ zahlavi('stav', 'Stav', stranka) }}<th>Tisk</th>
   </tr></thead>
   <tbody>
   {% for f in faktury %}
@@ -35,7 +35,7 @@
       <td>{{ f.datum_vystaveni|datum }}</td>
       {% if zobrazit_splatnost %}<td></td>{% endif %}
       <td class="tlumene">Volné po smazání</td>
-      <td></td><td></td><td></td><td></td>
+      <td></td><td></td><td></td><td></td><td></td>
     </tr>
     {% else %}
     <tr class="doklad-{{ f.stav }}" data-otevrit="/faktury/{{ f.id }}">
@@ -48,6 +48,7 @@
       <td class="cislo castka-hlavni">{{ f.celkem|penize }}</td>
       <td class="cislo">{% if f.zbyva %}{{ f.zbyva|penize }}{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td><span class="stav-dokladu stav-dokladu-{{ f.stav }}">{{ f.nazev_stavu }}</span></td>
+      <td>{{ stav_tisku(f) }}</td>
     </tr>
     {% endif %}
   {% endfor %}
@@ -56,7 +57,7 @@
     <td colspan="{{ 5 if zobrazit_splatnost else 4 }}">Součet za {{ souhrn.pocet }} dokladů{% if stranka.dalsi is not none %} (všechny, i nenačtené){% endif %}</td>
     <td class="cislo">{{ souhrn.celkem|penize }}</td>
     <td class="cislo"><strong>{{ souhrn.zbyva|penize }}</strong></td>
-    <td>{{ nast.mena }}</td>
+    <td>{{ nast.mena }}</td><td></td>
   </tr></tfoot>
 </table>
 </div>

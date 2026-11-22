@@ -302,6 +302,9 @@ class Faktura(SQLModel, table=True):
     celkem: Decimal = Field(default=Decimal("0"), sa_type=DesetinneCislo, description="K úhradě vč. DPH a zaokrouhlení")
     # storno zrušeno (#15) – doklad se maže; sloupec zůstal kvůli starším databázím, nové doklady mají vždy False
     stornovano: bool = Field(default=False, index=True)
+    # #167: stav tisku – potvrzuje uživatel (prohlížeč tisk neumí ověřit); doklady ze starého systému = vytištěné
+    vytisteno: bool = Field(default=False)
+    vytisteno_kdy: Optional[NaiveDatetime] = None
     vytvoreno: NaiveDatetime = Field(default_factory=datetime.now)
 
     polozky: list["PolozkaFaktury"] = Relationship(

@@ -69,3 +69,27 @@
     </div>
   </div>
 {% endblock %}
+
+{# #167: po zavření tiskového okna se zeptat, jestli se doklad vytiskl – prohlížeč to sám nepozná #}
+{% block po_tisku %}
+<div class="po-tisku" id="po-tisku" hidden>
+  <span>Vytiskl se doklad {{ f.cislo }}?</span>
+  <button type="button" class="ano" id="tisk-ano">Ano, označit jako vytištěné</button>
+  <button type="button" id="tisk-ne">Ne</button>
+</div>
+<script>
+  (() => {
+    const auto = {{ 'true' if request.query_params.get('tisk') else 'false' }};
+    const okno = document.getElementById("po-tisku");
+    const zavri = () => { if (auto) window.close(); else okno.hidden = true; };
+    document.getElementById("tisk-ne").onclick = zavri;
+    document.getElementById("tisk-ano").onclick = async () => {
+      await fetch("/faktury/{{ f.id }}/vytisteno", {method: "POST", body: new URLSearchParams({vytisteno: "1"})});
+      try { if (window.opener && !window.opener.closed) window.opener.location.reload(); } catch (e) {}
+      zavri();
+    };
+    window.addEventListener("afterprint", () => { {% if not f.vytisteno %}okno.hidden = false;{% else %}zavri();{% endif %} });
+    if (auto) window.addEventListener("load", () => window.print(), { once: true });
+  })();
+</script>
+{% endblock %}

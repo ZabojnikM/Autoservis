@@ -42,6 +42,14 @@
     .poznamka { white-space: pre-line; margin-top: 4mm; }
     .uhrazeno { margin-top: 3mm; font-weight: 700; }
     {% block styl %}{% endblock %}
+    /* #167: dotaz po tisku dokladu */
+    .po-tisku { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); background: #fff; border: 1px solid #d1d5db;
+      border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.18); padding: 14px 18px; font-size: 11pt; z-index: 10;
+      display: flex; align-items: center; gap: 12px; }
+    .po-tisku[hidden] { display: none; }
+    .po-tisku button { font: inherit; padding: 6px 14px; border-radius: 8px; border: 1px solid #d1d5db; background: #fff; cursor: pointer; }
+    .po-tisku button.ano { background: #5b5bd6; border-color: #5b5bd6; color: #fff; font-weight: 600; }
+    @media print { .po-tisku { display: none !important; } }
     @media print {
       body { background: #fff; }
       .lista { display: none; }
@@ -59,6 +67,7 @@
 <div class="list">
 {% block obsah %}{% endblock %}
 </div>
+{% block po_tisku %}
 {% if request.query_params.get('tisk') %}
 <script>
   window.addEventListener("load", () => {
@@ -67,5 +76,6 @@
   }, { once: true });
 </script>
 {% endif %}
+{% endblock %}
 </body>
 </html>

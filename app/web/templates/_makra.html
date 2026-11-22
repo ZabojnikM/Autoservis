@@ -300,3 +300,10 @@ hx-get="{{ url }}" hx-target="#seznam" hx-select="#seznam" hx-swap="outerHTML" h
 </div>
 {%- endmacro %}
 
+
+
+{# #167: stav tisku dokladu – Vytištěno (s datem v bublině) / Nevytištěno #}
+{% macro stav_tisku(f) -%}
+{% if f.vytisteno %}<span class="stav-tisku vytisteno" title="{{ ('Vytištěno ' ~ (f.vytisteno_kdy|datumcas)) if f.vytisteno_kdy else 'Vytištěno (ve starém systému)' }}">Vytištěno</span>
+{%- else %}<span class="stav-tisku nevytisteno" title="Zatím nepotvrzeno – po tisku potvrďte, nebo v detailu Označit jako vytištěné">Nevytištěno</span>{% endif %}
+{%- endmacro %}
