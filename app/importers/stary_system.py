@@ -470,6 +470,7 @@ class ImporterStarySystem:
             vystaveno = _datum(f["D_VYSTAV"]) or zakazka.datum_prijeti.date()
             forma = FormaUhrady.PREVOD if _text(f["FORM_UHR"]) == "PP" else FormaUhrady.HOTOVE
             faktura = Faktura(
+                vytisteno=True,  # #167: tiskl se ve starém systému
                 cislo=cislo, typ=TypDokladu.VYUCTOVANI if _text(f["VYUCTOV"]) == "1" else TypDokladu.FAKTURA,
                 zakazka_id=zakazka.id, zakaznik_id=self.zakaznik(f["ID_ODBER"], f),
                 odb_nazev=_jmeno(f) or "",

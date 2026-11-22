@@ -1680,3 +1680,36 @@ def test_seznam_zakazek_jen_otevrene_a_uzavrene():
     client.post(f"{loc}/stav", data={"stav": "predano", "bez_dokladu": "1"})
     assert "1PR1660" not in client.get("/zakazky").text
     assert "1PR1660" in client.get("/zakazky", params={"stav": "predano"}).text
+
+
+def test_stav_tisku_dokladu():
+    """#167: sloupec Tisk v seznamu, otevření náhledu stav nemění, potvrzení / zrušení ručně."""
+    client.post("/nastaveni", data={"nazev_servisu": "Autoservis Test", "platce_dph": "1", "vychozi_dph": "21",
+                                    "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    loc = _zakazka_s_polozkou(spz="1TI1670")
+    r = client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "uhrazeno_ihned": "1"}, follow_redirects=False)
+    doklad = r.headers["location"].split("?")[0]
+    seznam = client.get("/faktury", params={"rok": "vse"}).text
+    assert "<th>Tisk</th>" in seznam and 'class="stav-tisku nevytisteno"' in seznam
+    tisk = client.get(f"{doklad}/tisk", params={"tisk": "1"}).text
+    assert 'id="po-tisku" hidden' in tisk and "Ano, označit jako vytištěné" in tisk
+    assert 'class="stav-tisku nevytisteno"' in client.get(doklad).text  # náhled stav nezměnil
+    client.post(f"{doklad}/vytisteno", data={"vytisteno": "1"})
+    detail = client.get(doklad).text
+    assert 'class="stav-tisku vytisteno" title="Vytištěno ' in detail and "Zrušit označení tisku" in detail
+    assert 'class="stav-tisku vytisteno"' in client.get("/faktury", params={"rok": "vse"}).text
+    client.post(f"{doklad}/vytisteno", data={"vytisteno": "0"})
+    assert "Označit jako vytištěné" in client.get(doklad).text
+
+
+def test_stare_doklady_oznaci_jako_vytistene(engine, session):
+    """#167: při zavedení stavu tisku se doklady ze starého systému označí jako vytištěné, ostatní ne."""
+    from app.db import oznacit_stare_doklady_vytistene
+    from app.models import Faktura
+    session.add(Faktura(cislo="SS1", odb_nazev="A", poznamka="Importováno ze starého systému"))
+    session.add(Faktura(cislo="FV1", odb_nazev="B", poznamka="vlastní"))
+    session.commit()
+    assert oznacit_stare_doklady_vytistene(engine) == 1
+    session.expire_all()
+    stav = {f.cislo: f.vytisteno for f in session.exec(__import__("sqlmodel").select(Faktura)).all()}
+    assert stav == {"SS1": True, "FV1": False}

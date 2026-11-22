@@ -402,6 +402,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-21 | Záložka Statistiky (zapíná se v Nastavení): výkon servisu po měsících a za rok z uzavřených zakázek, výdělek na materiálu jako odhad, srovnání s předchozím rokem (#160) |
 | 2026-11-22 | Detail zakázky: celkem s DPH tučně (#162), smazání zakázky v okně úpravy (#165), ruční cena za kus jen v řádku zakázky – ceník beze změny (#163) |
 | 2026-11-22 | Seznam zakázek jen Otevřené (i předané bez dokladu) a Uzavřené (#166) |
+| 2026-11-22 | Stav tisku dokladů: sloupec Tisk v přehledu faktur, dotaz po tisku, ruční přepnutí; doklady ze starého systému označeny jako vytištěné (#167) |
 
 ## Zdroje průzkumu
 

@@ -201,6 +201,11 @@ tests/
 5. Chyba na dokladu → **Stornovat**, opravit zakázku a vystavit nový doklad. Případné úhrady storno zruší
    (potvrzení na ně upozorní) – peníze vraťte, nebo je započtěte na nový doklad. Zakázku s doklady nejde smazat.
 
+- **Stav tisku** (#167): v přehledu Faktury sloupec **Tisk** – *Vytištěno* / *Nevytištěno*. Otevření náhledu stav
+  nemění. Po zavření tiskového okna se aplikace zeptá „Vytiskl se doklad?“ (prohlížeč to sám nepozná); ručně jde
+  stav přepnout v detailu dokladu (*Označit jako vytištěné* / *Zrušit označení tisku*). Doklady ze starého systému
+  jsou označené jako vytištěné.
+
 ### Výstupní doklady
 
 Aplikace tiskne jen tyto doklady:

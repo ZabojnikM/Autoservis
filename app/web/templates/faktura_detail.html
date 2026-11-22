@@ -1,8 +1,13 @@
 {% extends "base.html" %}
-{% from "_makra.html" import spz, adresa, tlacitko_smazat %}
+{% from "_makra.html" import spz, adresa, tlacitko_smazat, stav_tisku %}
 {% block title %}{{ f.nazev_typu }} {{ f.cislo }}{% endblock %}
 {% block akce %}
   <a href="/faktury/{{ f.id }}/tisk?tisk=1" target="_blank" role="button" class="secondary outline tlacitko-tisk">Tisk / PDF</a>
+  {# #167: stav tisku – ruční potvrzení #}
+  <form method="post" action="/faktury/{{ f.id }}/vytisteno">
+    <input type="hidden" name="vytisteno" value="{{ '0' if f.vytisteno else '1' }}">
+    <button type="submit" class="secondary outline">{{ 'Zrušit označení tisku' if f.vytisteno else 'Označit jako vytištěné' }}</button>
+  </form>
   {% if f.zakazka_id %}<a href="/zakazky/{{ f.zakazka_id }}" role="button" class="secondary">Zakázka</a>{% endif %}
   {% if f.typ == 'vyuctovani' %}
   {# #55: vyúčtování má jen stav Uhrazeno / Neuhrazeno – přepíná se oběma směry #}
@@ -26,7 +31,8 @@
 {% endblock %}
 {% block content %}
 <div class="nadpis-radek">
-  <h1>{{ f.nazev_typu }} {{ f.cislo }} <span class="stav-dokladu stav-dokladu-{{ f.stav }}">{{ f.nazev_stavu }}</span></h1>
+  <h1>{{ f.nazev_typu }} {{ f.cislo }} <span class="stav-dokladu stav-dokladu-{{ f.stav }}">{{ f.nazev_stavu }}</span>
+    {{ stav_tisku(f) }}</h1>
 </div>
 
 <div class="dva-sloupce">

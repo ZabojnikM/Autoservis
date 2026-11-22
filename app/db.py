@@ -73,7 +73,9 @@ def init_db(eng: Engine | None = None) -> None:
     eng = eng or engine
     config.DATA_DIR.mkdir(parents=True, exist_ok=True)
     SQLModel.metadata.create_all(eng)
-    doplnit_sloupce(eng)
+    pridane = doplnit_sloupce(eng)
+    if "faktura.vytisteno" in pridane:
+        oznacit_stare_doklady_vytistene(eng)
     uvolnit_povinne_sloupce(eng)
     zavest_katalogy(eng)
 
@@ -107,6 +109,14 @@ def doplnit_sloupce(eng: Engine) -> list[str]:
                 conn.execute(text(f'ALTER TABLE "{tabulka.name}" ADD COLUMN "{sloupec.name}" {typ}{vychozi}'))
                 pridane.append(f"{tabulka.name}.{sloupec.name}")
     return pridane
+
+
+def oznacit_stare_doklady_vytistene(eng: Engine) -> int:
+    """#167: doklady převedené ze starého systému se tiskly tam – při zavedení stavu tisku je jednou
+    označí jako vytištěné (bez data). Vrací počet označených."""
+    with eng.begin() as conn:
+        return conn.execute(text(
+            "UPDATE faktura SET vytisteno = 1 WHERE poznamka LIKE '%Importováno ze starého systému%'")).rowcount
 
 
 def _zaloha_pred_migraci(eng: Engine) -> Path | None:

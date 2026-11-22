@@ -305,6 +305,17 @@ def zrus_uhradu(session: Session, uhrada_id: int) -> int:
 smaz_uhradu = zrus_uhradu  # starší název
 
 
+def nastav_vytisteno(session: Session, faktura_id: int, vytisteno: bool) -> Faktura:
+    """#167: ruční potvrzení tisku dokladu (prohlížeč neumí ověřit, že se opravdu tisklo)."""
+    faktura = ziskej(session, faktura_id)
+    faktura.vytisteno = vytisteno
+    faktura.vytisteno_kdy = datetime.now() if vytisteno else None
+    session.add(faktura)
+    session.commit()
+    session.refresh(faktura)
+    return faktura
+
+
 def nastav_uhrazeno(session: Session, faktura_id: int, uhrazeno: bool) -> Faktura:
     """Přepne stav vyúčtování Uhrazeno ⇄ Neuhrazeno (#55). Formu úhrady nepředpokládá a částku nemění.
 
