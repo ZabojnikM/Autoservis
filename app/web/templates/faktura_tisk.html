@@ -1,6 +1,11 @@
 {% extends "_tisk_a4.html" %}
 {% block title %}{{ f.nadpis }} {{ f.cislo }}{% endblock %}
 {% block zpet %}/faktury/{{ f.id }}{% endblock %}
+{# #177: položky dokladu menším písmem (8 pt), hlavička tabulky úměrně, menší odsazení #}
+{% block styl %}
+    table.polozky td { font-size: 8pt; padding: 1mm 1mm; }
+    table.polozky th { font-size: 7.5pt; padding: 1mm 1mm; }
+{% endblock %}
 {% block obsah %}
   <div class="hlava">
     <div>
