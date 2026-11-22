@@ -1647,7 +1647,9 @@ def test_rucni_cena_v_radku_zakazky_nemeni_cenik():
     r = client.post(f"/polozky/{rid}/cena", data={"cena": "1 299,50"}, follow_redirects=True)
     text = re.sub(r"\s+", " ", r.text.replace(" ", " "))
     assert 'value="1 299,50"' in text and "2 599,00" in text and "3 144,79" in text  # 2 × 1 299,50 bez / s DPH
-    assert '<small class="cena-ceniku" title="Cena v zakázce je upravená ručně">ceník 1 399,00</small>' in text
+    # ceníková cena přeškrtnutě vlevo od pole, ve stejném řádku (bez <br>)
+    assert '<s class="cena-ceniku" title="Cena v ceníku – v zakázce upravená ručně">1 399,00</s> <input' in text
+    assert 'ceník 1 399,00' not in text
     from app.db import get_session
     s = next(app.dependency_overrides[get_session]())
     assert cenik.ziskej(s, int(cid)).cena == 1399  # ceník beze změny
