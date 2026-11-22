@@ -1616,6 +1616,8 @@ def test_detail_zakazky_celkem_s_dph_a_smazani_v_uprave():
     client.post(f"{loc}/polozky", data={"typ": "prace", "nazev": "Diagnostika", "mnozstvi": "1", "cena": "1000"})
     detail = client.get(loc).text
     assert '<span class="celkem">Celkem s DPH <strong>1 210,00' in detail.replace("\u00a0", " ")
+    radek = re.sub(r"\s+", " ", detail.replace("\u00a0", " "))
+    assert '<td class="cislo">1 000,00</td> <td class="cislo celkem-s-dph"><strong>1 210,00</strong></td>' in radek
     assert "Smazat zakázku" not in detail
     uprava = client.get(f"{loc}/upravit").text
     assert f'action="{loc}/smazat"' in uprava and "Smazání nejde vrátit." in uprava

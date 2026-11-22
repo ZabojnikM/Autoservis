@@ -177,8 +177,13 @@
       <td>{{ r.jednotka }}</td>
       <td class="cislo">{{ r.cena|penize }}</td>
       {% if nast.platce_dph %}<td class="cislo tlumene">{{ r.sazba_dph|mnozstvi }} %</td>{% endif %}
+      {# #162: tučně celkem s DPH (u neplátce celkem) #}
+      {% if nast.platce_dph %}
+      <td class="cislo">{{ r.zaklad|penize }}</td>
+      <td class="cislo celkem-s-dph"><strong>{{ (r.zaklad * (100 + r.sazba_dph) / 100)|penize }}</strong></td>
+      {% else %}
       <td class="cislo"><strong>{{ r.zaklad|penize }}</strong></td>
-      {% if nast.platce_dph %}<td class="cislo">{{ (r.zaklad * (100 + r.sazba_dph) / 100)|penize }}</td>{% endif %}
+      {% endif %}
       <td class="sl-vypln" aria-hidden="true"></td>
       {% if lze_menit %}<td class="sl-smazat neni-tisk">
         <button type="button" class="maly smazat-radek" data-smazat-radek="/polozky/{{ r.id }}/smazat"
