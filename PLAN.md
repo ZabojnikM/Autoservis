@@ -400,6 +400,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-21 | Filtr dílů: vzor kódu se zástupnými znaky (* ? # [ ]) i v API/MCP, předpona pro psaní, okno Nápověda k hledání (#151) |
 | 2026-11-21 | Tisk dokladů: sloupce Kód a S DPH, bez poznámky importu (#127); ikona kopírování před VIN a kódem materiálu (#154, #156); kód materiálu tučně (#158) |
 | 2026-11-21 | Záložka Statistiky (zapíná se v Nastavení): výkon servisu po měsících a za rok z uzavřených zakázek, výdělek na materiálu jako odhad, srovnání s předchozím rokem (#160) |
+| 2026-11-22 | Detail zakázky: celkem s DPH tučně (#162), smazání zakázky v okně úpravy (#165), ruční cena za kus jen v řádku zakázky – ceník beze změny (#163) |
 
 ## Zdroje průzkumu
 

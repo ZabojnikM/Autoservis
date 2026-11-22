@@ -240,6 +240,16 @@ class PolozkaZakazky(CenaRadku, SQLModel, table=True):
 
     zakazka: Optional[Zakazka] = Relationship(back_populates="polozky")
     katalog: Optional[Katalog] = Relationship()
+    # #163: jen pro zobrazení rozdílu ceny řádku proti ceníku (cena řádku se z ceníku nepřepisuje)
+    polozka_ceniku: Optional[PolozkaCeniku] = Relationship()
+
+    @property
+    def cena_ceniku_jina(self) -> Decimal | None:
+        """Cena v ceníku, když se liší od ceny řádku (ručně upravená cena v zakázce), jinak None."""
+        vzor = self.polozka_ceniku
+        if vzor is None or vzor.cena == self.cena:
+            return None
+        return vzor.cena
 
 
 class TypDokladu:

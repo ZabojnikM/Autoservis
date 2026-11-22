@@ -132,6 +132,9 @@ tests/
 - Součty: práce, materiál, základ a **DPH po sazbách** (počítá se ze součtu základů), celkem k úhradě.
 - **Nastavení** (`/nastaveni`): plátce DPH, výchozí sazba DPH, měna, API klíč registru vozidel.
 - Řádek zakázky je kopie ceníku – pozdější změna ceníku už vystavené zakázky nemění.
+- **Množství a cena za kus bez DPH** se mění přímo v řádku zakázky (Enter nebo opuštění pole uloží, #163).
+  Ručně změněná cena platí jen pro tento řádek, ceník se nemění; když se liší od ceníku, je pod ní šedě
+  „ceník …“. Tlačítko *Upravit* u položky z ceníku dál upravuje kartu ceníku (i s cenou v ceníku).
 - Peníze se ukládají přesně (desetinná čísla jako text, žádné zaokrouhlovací chyby float).
 - **Správa dat** (#132): samostatná záložka v horním menu pro hromadné úpravy skladu a databáze. Běžně je
   skrytá, zapíná se v *Nastavení → Správa dat*. Vypnutá záložka se nezobrazuje a její stránky nejdou otevřít.

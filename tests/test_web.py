@@ -1626,3 +1626,41 @@ def test_detail_zakazky_celkem_s_dph_a_smazani_v_uprave():
     detail = client.get(loc).text
     assert re.search(r'<button type="button" class="secondary outline" disabled[^>]*>Smazat zakázku</button>', detail)
     assert f'action="{loc}/smazat"' not in detail
+
+
+def test_rucni_cena_v_radku_zakazky_nemeni_cenik():
+    """#163: cena za jednotku se mění přímo v řádku zakázky, ceník zůstane; rozdíl proti ceníku je vidět."""
+    from app.services import cenik
+    client.post("/nastaveni", data={"nazev_servisu": "Autoservis Test", "platce_dph": "1", "vychozi_dph": "21",
+                                    "rada_faktura": "FV{RRRR}", "rada_vyuctovani": "VY{RRRR}"})
+    client.post("/cenik/nova", data={"typ": "material", "kod": "OPT FAF10128", "nazev": "Vzduchový filtr",
+                                     "jednotka": "ks", "cena": "1399", "sazba_dph": "21"})
+    loc = _prijem(spz="1CE1630").headers["location"].split("?")[0]
+    zid = loc.rsplit("/", 1)[1]
+    vyber = client.get("/cenik/vyber", params={"q": "FAF10128", "zakazka_id": zid}).text
+    cid = re.search(r'name="polozka_ceniku_id" value="(\d+)"', vyber).group(1)
+    client.post(f"{loc}/polozky", data={"polozka_ceniku_id": cid, "mnozstvi": "2"})
+    detail = client.get(loc).text
+    rid = re.search(r'action="/polozky/(\d+)/cena"', detail).group(1)
+    assert 'class="cena-ceniku"' not in detail  # cena z ceníku – žádný rozdíl
+    # zápis s mezerou a čárkou jako v poli (1 299,50)
+    r = client.post(f"/polozky/{rid}/cena", data={"cena": "1 299,50"}, follow_redirects=True)
+    text = re.sub(r"\s+", " ", r.text.replace(" ", " "))
+    assert 'value="1 299,50"' in text and "2 599,00" in text and "3 144,79" in text  # 2 × 1 299,50 bez / s DPH
+    assert '<small class="cena-ceniku" title="Cena v zakázce je upravená ručně">ceník 1 399,00</small>' in text
+    from app.db import get_session
+    s = next(app.dependency_overrides[get_session]())
+    assert cenik.ziskej(s, int(cid)).cena == 1399  # ceník beze změny
+    # chybná cena se neuloží
+    from urllib.parse import unquote
+    r = client.post(f"/polozky/{rid}/cena", data={"cena": "-5"}, follow_redirects=False)
+    assert r.status_code == 303 and "Cena nemůže být záporná." in unquote(r.cookies.get("zprava", ""))
+    r = client.post(f"/polozky/{rid}/cena", data={"cena": ""}, follow_redirects=False)
+    assert "Vyplňte cenu za jednotku." in unquote(r.cookies.get("zprava", ""))
+    r = client.get(loc)
+    assert 'value="1 299,50"' in re.sub(r"\s+", " ", r.text.replace(" ", " "))
+    # vyúčtovaná zakázka: pole není a cenu nejde změnit
+    client.post(f"{loc}/vystavit", data={"typ": "vyuctovani", "uhrazeno_ihned": "1"})
+    assert f'action="/polozky/{rid}/cena"' not in client.get(loc).text
+    r = client.post(f"/polozky/{rid}/cena", data={"cena": "1"}, follow_redirects=False)
+    assert "vyúčtovaná" in unquote(r.cookies.get("zprava", ""))
