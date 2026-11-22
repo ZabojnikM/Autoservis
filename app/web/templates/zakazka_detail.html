@@ -45,7 +45,7 @@
       {% for s in StavZakazky.OTEVRENE %}
         <button type="submit" name="stav" value="{{ s }}" class="stav-tlacitko{% if s == zakazka.stav %} aktivni{% endif %}"
                 {% if s == zakazka.stav %}aria-pressed="true" disabled{% endif %}
-                {% if s == 'hotovo' %}title="Zmizí z otevřených. Doklad ještě není."{% endif %}>{{ StavZakazky.NAZVY[s] }}</button>
+                {% if s == 'hotovo' %}title="Vozidlo předané zákazníkovi. Zakázka zůstává otevřená, dokud není doklad."{% endif %}>{{ StavZakazky.NAZVY[s] }}</button>
       {% endfor %}
     </form>
     {# #90: jiné znění než štítek „Uzavřeno“ u zakázky s dokladem #}
@@ -56,7 +56,7 @@
               {% if zakazka.uzavrena_bez_dokladu %}aria-pressed="true" disabled{% endif %}>
         {{ 'Uzavřeno bez dokladu' if zakazka.uzavrena_bez_dokladu else 'Uzavřít bez dokladu' }}</button>
     </form>
-    <p class="napoveda-stavu">Předáno schová zakázku z otevřených. Doklad ještě není.</p>
+    <p class="napoveda-stavu">Zakázka zůstává otevřená, dokud není doklad.</p>
   </div>
   {% endif %}
 </div>

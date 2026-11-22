@@ -104,7 +104,7 @@ def test_zmena_stavu():
     loc = _prijem().headers["location"].split("?")[0]
     otevrena = client.get(loc).text
     assert "Uzavřít bez dokladu" in otevrena  # #90: jiné znění než štítek zakázky s dokladem
-    assert "Předáno schová zakázku z otevřených" in otevrena
+    assert "Zakázka zůstává otevřená, dokud není doklad." in otevrena  # #166
     assert ">Uzavřeno</button>" not in otevrena
     r = client.post(f"{loc}/stav", data={"stav": "predano", "bez_dokladu": "1"}, follow_redirects=True)
     assert "Uzavřeno bez dokladu" in r.text
@@ -1666,3 +1666,17 @@ def test_rucni_cena_v_radku_zakazky_nemeni_cenik():
     assert f'action="/polozky/{rid}/cena"' not in client.get(loc).text
     r = client.post(f"/polozky/{rid}/cena", data={"cena": "1"}, follow_redirects=False)
     assert "vyúčtovaná" in unquote(r.cookies.get("zprava", ""))
+
+
+def test_seznam_zakazek_jen_otevrene_a_uzavrene():
+    """#166: předaná zakázka (bez dokladu) zůstává mezi otevřenými; filtr má jen Otevřené, Uzavřené a Všechny."""
+    loc = _prijem(spz="1PR1660").headers["location"].split("?")[0]
+    client.post(f"{loc}/stav", data={"stav": "hotovo"})
+    seznam = client.get("/zakazky").text
+    assert "1PR1660" in seznam
+    assert "Předané" not in seznam and "Uzavřené" in seznam and "Otevřené (1)" in seznam
+    assert "Zakázka zůstává otevřená, dokud není doklad." in client.get(loc).text
+    # uzavřená bez dokladu → mezi uzavřenými
+    client.post(f"{loc}/stav", data={"stav": "predano", "bez_dokladu": "1"})
+    assert "1PR1660" not in client.get("/zakazky").text
+    assert "1PR1660" in client.get("/zakazky", params={"stav": "predano"}).text
