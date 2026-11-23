@@ -67,9 +67,11 @@ powershell -ExecutionPolicy Bypass -File nastroje\zastupce-autoservis.ps1 -Adres
     **Insert** a **Ctrl+N** = nový záznam (u Faktur a Příjmu nic). **Home** / **End** první a poslední řádek,
     **Page Up** / **Page Down** o deset řádků. Psaní písmen a číslic skočí do hledání; z hledání **↓** zpět do seznamu, **Esc** ven.
   - **Detail zakázky**: **↑/↓** projde materiál i práci, **Enter** otevře úpravu položky, **Insert** otevře ceník
-    oddílu vybraného řádku (bez výběru ceník materiálu), **Ctrl+←/→** změní množství o 1 (pod 1 jen ručně),
+    oddílu vybraného řádku (bez výběru ceník materiálu), **Ctrl+←/→** změní množství o 1 a řádek zůstane vybraný,
+    takže to jde opakovat (pod 1 jen ručně),
     **Delete** položku odebere. **Home** / **End** a **Page Up** / **Page Down** platí i tady.
-  - **Otazník** v horní liště, vlevo od ozubeného kola, otevře okno s klávesami právě otevřené obrazovky. **Esc** ho zavře.
+  - **Otazník** v horní liště, vlevo od ozubeného kola, otevře okno s klávesami právě otevřené obrazovky. **Esc** ho zavře
+    a šipky zase ovládají seznam.
   - **Okno Přidat z ceníku**: **Tab / Shift+Tab** přepne sklad, **↑/↓** vybere řádek,
     **←/→** ubere / přidá kus (u vybraného řádku), **Enter** vloží. Ikona vedle kódu ho zkopíruje do schránky.
   - **Okno Z historie** (tlačítko *Z historie* u materiálu zakázky, #188): materiál dříve vydaný na vozidlo, od

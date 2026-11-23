@@ -1771,6 +1771,13 @@ def test_ovladani_sipkami_znacky_v_sablonach():
     # Nápověda v liště vlevo od ozubeného kola, okno není stránka menu.
     assert zakazky.index('aria-label="Nápověda"') < zakazky.index('aria-label="Nastavení"')
     assert 'id="okno-napoveda-klaves"' in zakazky and "PageDown" in zakazky and "polozkyNapovedy" in zakazky
+    # #204: po zavření nápovědy výběr odejde z tlačítka, text okna se zalamuje, řádek po změně množství zůstane.
+    assert 'activeElement?.id === "tlacitko-napoveda"' in zakazky
+    assert "autoservis-vyber" in detail
+    assert "mnozstvi-radku button.krok" in detail
+    import pathlib
+    css = (pathlib.Path(__file__).parent.parent / "app/web/static/app.css").read_text(encoding="utf-8")
+    assert "dialog.napoveda-klaves td:nth-child(2) { white-space: normal; }" in css
 
 
 def test_kopirovani_nahradne_pres_udalost_copy():

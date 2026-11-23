@@ -966,12 +966,13 @@ dd .vedle { margin-left: 1rem; margin-right: .35rem; }
 .jedna-lista .ozubene-kolo:hover, .jedna-lista .ozubene-kolo.aktivni { background: var(--akcent-svetly); color: var(--akcent-tmavy); }
 button.ozubene-kolo { background: none; border: 0; padding: 0; margin: 0; cursor: pointer; }
 dialog.napoveda-klaves { background: rgba(0,0,0,.25); }
-dialog.napoveda-klaves article { width: min(520px, 94vw); max-width: none; margin: 0; padding: 1rem 1.15rem 1.1rem;
+dialog.napoveda-klaves article { width: min(640px, 94vw); max-width: none; margin: 0; padding: 1rem 1.15rem 1.1rem;
   border: 0; border-radius: 14px; box-shadow: 0 10px 40px rgba(0,0,0,.35); }
 dialog.napoveda-klaves .hlavicka-napovedy { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .6rem; }
 dialog.napoveda-klaves h2 { margin: 0; font-size: 1.25rem; }
-dialog.napoveda-klaves table { margin: 0; }
+dialog.napoveda-klaves table { margin: 0; width: 100%; }
 dialog.napoveda-klaves td:first-child { font-weight: 600; white-space: nowrap; width: 12.5rem; }
+dialog.napoveda-klaves td:nth-child(2) { white-space: normal; }
 @media (max-width: 1400px) {
   .horni-lista.jedna-lista { grid-template-columns: 1fr auto auto; }
   .jedna-lista .hledani input { width: clamp(200px, 23vw, 320px); }
