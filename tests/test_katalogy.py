@@ -165,7 +165,8 @@ def test_okno_ceniku_novy_a_prepinac(session):
         r = klient.get(f"/zakazky/{z.id}/cenik", params={"typ": typ, "okno": "1"})
         assert f'/zakazky/{z.id}/polozky/nova?typ={typ}' in r.text
     r = klient.get(f"/zakazky/{z.id}/cenik", params={"typ": "material", "okno": "1"})
-    assert 'data-s-hledanim="kod"' in r.text and "Z historie" in r.text and "Díl z LKQ" not in r.text
+    assert 'data-s-hledanim="kod"' in r.text and "Díl z LKQ" not in r.text
+    assert "zdroj=historie" not in r.text   # #188: Z historie má vlastní okno, v okně ceníku už není
     r = klient.get(f"/zakazky/{z.id}/cenik", params={"typ": "material", "okno": "1", "katalog": str(lkq.id)})
     assert "Díl z LKQ" in r.text and katalogy.KLIC_COOKIE in r.headers["set-cookie"]
     r = klient.get(f"/zakazky/{z.id}/polozky/nova", params={"typ": "material", "okno": "1", "kod": "ABC 12"})
@@ -253,3 +254,58 @@ def test_uprava_materialu_volba_katalogu_a_presun(session):
     r = klient.post(f"/cenik/{dil.id}/upravit", data={"typ": "material", "kod": "DUP124", "nazev": "Díl 124", "cena": "10",
                                                        "katalog_id": str(lkq.id), "aktivni": "1"})
     assert "už v tomto katalogu má položka" in r.text
+
+
+
+def test_okno_z_historie_hromadne_vlozeni(session):
+    """#188: tlačítko Z historie v zakázce, okno se zaškrtávátky, Vložit vloží všechno označené za aktuální ceny."""
+    klient = TestClient(app)
+    dil = cenik.vytvor(session, {"kod": "UFI 25.011.00", "nazev": "Olejový filtr", "cena": "150"})
+    stara = _zakazka(session, "7KT7777")
+    r_dil = polozky.pridej_z_ceniku(session, stara.id, dil.id, "1")
+    r_rucni = polozky.pridej_rucne(session, stara.id, {"typ": "material", "kod": "X9", "nazev": "Těsnění",
+                                                       "cena": "30", "mnozstvi": "1"})
+    cenik.uprav(session, dil.id, {"cena": "199"})
+    nova = _zakazka(session, "7KT7777")
+
+    detail = klient.get(f"/zakazky/{nova.id}").text
+    i_cenik, i_hist, i_novy = (detail.index(t) for t in (f"/zakazky/{nova.id}/cenik?typ=material",
+                                                         f"/zakazky/{nova.id}/historie",
+                                                         f"/zakazky/{nova.id}/polozky/nova?typ=material"))
+    assert i_cenik < i_hist < i_novy   # mezi Ceník a Nový
+    okno = klient.get(f"/zakazky/{nova.id}/historie", params={"okno": "1"}).text
+    assert 'name="vybrano"' in okno and "vlozit-radek" not in okno and 'form="vlozit-historii"' in okno
+    assert 'data-kopirovat="UFI 25.011.00"' in okno and "(mimo ceník)" in okno
+    hledani = klient.get(f"/zakazky/{nova.id}/historie", params={"q": "těs", "vysledky": "1", "okno": "1"}).text
+    assert "Těsnění" in hledani and "Olejový filtr" not in hledani and "<header" not in hledani
+
+    # nic neoznačeno → chyba v okně, nic se nevloží
+    r = klient.post(f"/zakazky/{nova.id}/historie/vlozit", data={"okno": "1"})
+    assert "Zaškrtněte díly" in r.text
+    r = klient.post(f"/zakazky/{nova.id}/historie/vlozit",
+                    data={"okno": "1", "vybrano": [str(r_dil.id), str(r_rucni.id)],
+                          f"mnozstvi_{r_dil.id}": "2", f"mnozstvi_{r_rucni.id}": "1"})
+    assert r.status_code == 204
+    session.refresh(nova)
+    assert sorted((p.kod, p.mnozstvi, p.cena) for p in nova.polozky) == [("UFI 25.011.00", 2, 199), ("X9", 1, 30)]
+
+
+def test_kopirovani_kodu_v_okne_ceniku(session):
+    klient = TestClient(app)
+    cenik.vytvor(session, {"kod": "BO 123", "nazev": "Svíčka", "cena": "80"})
+    z = _zakazka(session, "8KT8888")
+    r = klient.get(f"/zakazky/{z.id}/cenik", params={"typ": "material", "okno": "1"})
+    assert 'data-kopirovat="BO 123"' in r.text
+
+
+def test_vlozeni_z_historie_je_atomicke(session):
+    dil = cenik.vytvor(session, {"kod": "A1", "nazev": "Díl", "cena": "10"})
+    stara = _zakazka(session, "9KT9999")
+    r1 = polozky.pridej_z_ceniku(session, stara.id, dil.id, "1")
+    cizi = _zakazka(session, "9KT0000")
+    r_cizi = polozky.pridej_z_ceniku(session, cizi.id, dil.id, "1")
+    nova = _zakazka(session, "9KT9999")
+    with pytest.raises(ChybaValidace):
+        polozky.vloz_z_historie(session, nova.id, [(r1.id, "1"), (r_cizi.id, "1")])
+    session.refresh(nova)
+    assert nova.polozky == []

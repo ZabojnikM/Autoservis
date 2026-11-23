@@ -1185,3 +1185,14 @@ dialog.napoveda-okno h4 { margin: 1rem 0 .4rem; font-size: 1rem; }
 
 /* #189 odkaz na PDF v seznamu dokladů */
 .odkaz-pdf { margin-left: .4rem; font-size: .8rem; font-weight: 600; }
+
+/* #188 okno Z historie: sloupec zaškrtávátek, užší množství (bez tlačítka Vložit), kód s ikonou kopírování */
+.okno-cenik .vyber-historie .sl-vyber { width: 2.6rem; text-align: center; }
+.okno-cenik .vyber-historie td.sl-vyber input, .okno-cenik .vyber-historie th.sl-vyber input { margin: 0; }
+.okno-cenik .vyber-historie .sl-kod { width: 11rem; }
+.okno-cenik .vyber-historie .sl-mnozstvi { width: 9rem; }
+.okno-cenik .vyber-historie input.vstup-mnozstvi { width: 4.5rem; padding: 6px 8px; font-size: .95rem; text-align: right; margin: 0; height: auto; }
+.okno-cenik .kod-polozky-okna.kod-s-kopii button.kopirovat { margin-right: 6px; padding: 2px !important; }
+.okno-cenik .kod-polozky-okna.kod-s-kopii button.kopirovat svg { width: 14px; height: 14px; }
+.okno-historie .vlozit-historii-tlacitko, .okno-historie .tlacitka-hlavicky.vlevo button { width: auto; }
+.okno-cenik .vyber-historie td.sl-vyber, .okno-cenik .vyber-historie th.sl-vyber { overflow: visible; text-overflow: clip; padding-left: .4rem; padding-right: .2rem; }

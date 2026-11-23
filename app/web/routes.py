@@ -350,13 +350,49 @@ def _zapamatuj_katalog(odpoved: Response, katalog) -> Response:
 def zakazka_cenik(request: Request, db: DB, zakazka_id: int, q: str = "", okno: str = "", typ: str = "",
                   zdroj: str = "", katalog: str = ""):
     """`katalog` = přepnutí katalogu v okně (zapamatuje se), `zdroj=historie` = materiál z historie vozidla."""
-    if zdroj == HISTORIE:
-        return _okno_ceniku(request, db, zakazka_id, q, okno=bool(okno), typ=typ, zdroj=HISTORIE)
+    if zdroj == HISTORIE:  # #188: historie má vlastní okno Z historie
+        return _okno_historie(request, db, zakazka_id, q, okno=bool(okno))
     if katalog:
         vybrany = katalogy.viditelny(db, katalog)
         return _zapamatuj_katalog(_okno_ceniku(request, db, zakazka_id, q, okno=bool(okno), typ=typ,
                                                katalog=vybrany), vybrany)
     return _okno_ceniku(request, db, zakazka_id, q, okno=bool(okno), typ=typ)
+
+
+# ---------------------------------------------------------------- okno Z historie (#188)
+
+def _okno_historie(request, db, zakazka_id, q="", okno=False, chyba=None, jen_vysledky=False):
+    """Materiál dříve vydaný na vozidlo zakázky – zaškrtávátka, Vložit nahoře vloží všechno označené
+    (díl z ceníku za aktuální cenu z ceníku)."""
+    q = cisty_text(q) or ""
+    zakazka = zakazky.ziskej(db, zakazka_id)
+    return _stranka(request, "_historie_vysledky.html" if jen_vysledky else "zakazka_historie.html",
+                    _status_formulare(okno, chyba), aktivni="zakazky", zakazka=zakazka, q=q, okno=okno,
+                    radky_historie=polozky.historie_vozidla(db, zakazka, q), nast=nastaveni.nacti(db),
+                    hlaseni_chyba=chyba)
+
+
+@router.get("/zakazky/{zakazka_id}/historie", response_class=HTMLResponse)
+def zakazka_historie(request: Request, db: DB, zakazka_id: int, q: str = "", okno: str = "", vysledky: str = ""):
+    """`vysledky=1` = jen tabulka (HTMX hledání v okně)."""
+    return _okno_historie(request, db, zakazka_id, q, okno=bool(okno), jen_vysledky=bool(vysledky))
+
+
+@router.post("/zakazky/{zakazka_id}/historie/vlozit", response_class=HTMLResponse)
+async def zakazka_historie_vlozit(request: Request, db: DB, zakazka_id: int):
+    """Vložit z okna Z historie: zaškrtnuté řádky (vybrano[] = id řádku starší zakázky, mnozstvi_<id>)."""
+    form = await request.form()
+    okno = bool(form.get("okno"))
+    vyber = [(v, form.get(f"mnozstvi_{v}") or "1") for v in form.getlist("vybrano") if str(v).isdigit()]
+    try:
+        radky = polozky.vloz_z_historie(db, zakazka_id, vyber)
+    except ChybaValidace as e:
+        db.rollback()
+        return _okno_historie(request, db, zakazka_id, str(form.get("q") or ""), okno, chyba=str(e))
+    zprava = f"Vloženo z historie: {len(radky)} " + ("díl" if len(radky) == 1 else "díly" if len(radky) < 5 else "dílů")
+    if okno:
+        return _po_ulozeni_okna(zprava=zprava)
+    return _presmeruj(f"/zakazky/{zakazka_id}#polozky", zprava)
 
 
 @router.post("/zakazky/{zakazka_id}/polozky/vlozit")

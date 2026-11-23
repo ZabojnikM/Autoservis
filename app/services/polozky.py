@@ -331,7 +331,8 @@ def historie_vozidla(session: Session, zakazka: Zakazka, hledat: str | None = No
     return sorted((h for h in vysledek.values() if h is not None), key=lambda h: (not presne(h), -h.pocet))
 
 
-def pridej_z_historie(session: Session, zakazka_id: int, radek_id: int, mnozstvi="1") -> PolozkaZakazky:
+def pridej_z_historie(session: Session, zakazka_id: int, radek_id: int, mnozstvi="1",
+                      commit: bool = True) -> PolozkaZakazky:
     """Vloží díl ze starší zakázky: je-li v ceníku, jako z ceníku (aktuální cena),
     jinak kopie starého řádku (jeho cena) se zadaným množstvím."""
     zakazka = _otevrena_zakazka(session, zakazka_id)
@@ -340,7 +341,7 @@ def pridej_z_historie(session: Session, zakazka_id: int, radek_id: int, mnozstvi
         raise ChybaValidace("Položka nepatří do historie vozidla této zakázky.")
     vzor = cenik_sluzba.najdi(session, puvodni.polozka_ceniku_id) if puvodni.polozka_ceniku_id else None
     if vzor:
-        return pridej_z_ceniku(session, zakazka_id, vzor.id, mnozstvi=mnozstvi)
+        return pridej_z_ceniku(session, zakazka_id, vzor.id, mnozstvi=mnozstvi, commit=commit)
     nast = nastaveni_sluzba.nacti(session)
     radek = PolozkaZakazky(
         zakazka_id=zakazka.id, typ=puvodni.typ, kod=puvodni.kod, nazev=puvodni.nazev, jednotka=puvodni.jednotka,
@@ -348,6 +349,29 @@ def pridej_z_historie(session: Session, zakazka_id: int, radek_id: int, mnozstvi
         sazba_dph=puvodni.sazba_dph if nast.platce_dph else Decimal("0"), katalog_id=puvodni.katalog_id,
     )
     session.add(radek)
+    if not commit:
+        session.flush()
+        return radek
     session.commit()
     session.refresh(radek)
     return radek
+
+
+def vloz_z_historie(session: Session, zakazka_id: int, vyber: list[tuple]) -> list[PolozkaZakazky]:
+    """Okno Z historie (#188) → Vložit: všechny zaškrtnuté díly (id řádku starší zakázky, množství) najednou,
+    díl z ceníku za aktuální cenu z ceníku. Buď se vloží všechny, nebo (při chybě) žádný."""
+    if not vyber:
+        raise ChybaValidace("Zaškrtněte díly, které se mají vložit.")
+    try:
+        radky = [pridej_z_historie(session, zakazka_id, int(rid), mnozstvi=mnozstvi, commit=False)
+                 for rid, mnozstvi in vyber]
+        session.commit()
+    except (ValueError, NenalezenoError) as e:
+        session.rollback()
+        raise ChybaValidace(f"Díl z historie se nepodařilo vložit ({e}).") from e
+    except Exception:
+        session.rollback()
+        raise
+    for radek in radky:
+        session.refresh(radek)
+    return radky
