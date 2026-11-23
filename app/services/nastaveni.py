@@ -42,6 +42,7 @@ class NastaveniServisu:
     rada_faktura: str = "FV{RRRR}"
     rada_vyuctovani: str = "VY{RRRR}"
     cifry_cisla: int = 4
+    # název z doby, kdy se zaokrouhlovala jen hotovost; dnes platí pro všechny doklady
     zaokrouhlit_hotovost: bool = True
     text_pod_fakturou: str = ""
     # Registr silničních vozidel (dataovozidlech.cz) – načtení údajů vozidla podle VIN

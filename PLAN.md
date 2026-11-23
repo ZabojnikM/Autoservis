@@ -411,6 +411,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-22 | Přehled Faktury si pamatuje poslední volbu Vyúčtování / Faktury (#183) |
 | 2026-11-22 | Ovládání šipkami v seznamech a v detailu zakázky (↑/↓, Enter, ←/→ záložky, Insert, psaní do hledání) (#185) |
 | 2026-11-22 | Šipky: ←/→ přepínají hlavní záložky menu (dokola); okno ceníku Tab = další ceník, ←/→ = kusy (#185) |
+| 2026-11-23 | Na celé koruny se zaokrouhlují všechny nové doklady včetně faktury převodem (i částka v QR platbě) (#190) |
 
 ## Zdroje průzkumu
 

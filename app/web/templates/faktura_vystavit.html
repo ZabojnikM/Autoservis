@@ -87,7 +87,7 @@
       </label>
       <label class="volba"><input type="checkbox" name="uhrazeno_ihned" value="1" {% if hodnoty.get('uhrazeno_ihned') %}checked{% endif %}>
         zákazník <strong>platí hned</strong> (zapíše se úhrada celé částky)</label>
-      {% if nast.zaokrouhlit_hotovost %}<p class="tlumene napoveda">Při platbě v hotovosti se částka zaokrouhlí na celé koruny.</p>{% endif %}
+      {% if nast.zaokrouhlit_hotovost %}<p class="tlumene napoveda">Částka k úhradě se zaokrouhlí na celé koruny.</p>{% endif %}
       {% else %}
       {# #55: vyúčtování formu úhrady nemá – jen stav, který jde později v detailu přepnout #}
       <label class="volba"><input type="checkbox" name="uhrazeno_ihned" value="1" {% if hodnoty.get('uhrazeno_ihned') %}checked{% endif %}>
