@@ -38,6 +38,10 @@
                title="Hledá v celém servisu: vozidla (SPZ, VIN), zákazníci a zakázky"
                accesskey="f">
       </form>
+      <button type="button" class="ozubene-kolo" id="tlacitko-napoveda" aria-label="Nápověda" title="Nápověda ke klávesám">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.2a2.5 2.5 0 1 1 3.4 2.3c-.7.4-1.1.9-1.1 1.7"/><path d="M12 17h.01"/></svg>
+      </button>
       <a href="/nastaveni" class="ozubene-kolo{% if aktivni == 'nastaveni' %} aktivni{% endif %}" aria-label="Nastavení"
          title="Nastavení · verze {{ APP_VERSION }}" {% if aktivni == 'nastaveni' %}aria-current="page"{% endif %}>
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8"
@@ -485,7 +489,132 @@
         if (r.length) { r[0].classList.add("vybrany"); vybranyRadek = r[0]; obnovTlacitkaRadku(); }
       }
     });
+    function otevriInsert() {
+      // Detail zakázky: ceník oddílu vybraného řádku (materiál nebo práce). Bez výběru ceník materiálu.
+      if (mrizkaPolozek()) {
+        const sekce = vybranyRadek && document.contains(vybranyRadek)
+          ? vybranyRadek.closest("section.sekce-polozek") : null;
+        const odkaz = (sekce || document.querySelector("#polozky-material"))?.querySelector("[data-insert]");
+        if (odkaz) odkaz.click();
+        return;
+      }
+      document.querySelector(".obsah [data-insert]")?.click();
+    }
+    // Nápověda v liště: klávesy jen té obrazovky (nebo otevřeného okna), ne nová stránka.
+    const RADKY_NAPOVEDY = {
+      seznam: [
+        ["↑  ↓", "vybere řádek"],
+        ["Enter", "otevře vybraný řádek"],
+        ["←  →", "další a předchozí záložka menu, dokola"],
+        ["Insert", "nový záznam"],
+        ["Ctrl+N", "totéž co Insert"],
+        ["Home / End", "první a poslední řádek"],
+        ["Page Up / Page Down", "o deset řádků"],
+        ["psaní", "písmeno nebo číslice skočí do hledání; ↓ zpět do seznamu, Esc z hledání ven"],
+      ],
+      seznamBez: [
+        ["↑  ↓", "vybere řádek"],
+        ["Enter", "otevře vybraný řádek"],
+        ["←  →", "další a předchozí záložka menu, dokola"],
+        ["Home / End", "první a poslední řádek"],
+        ["Page Up / Page Down", "o deset řádků"],
+        ["psaní", "písmeno nebo číslice skočí do hledání; ↓ zpět do seznamu, Esc z hledání ven"],
+      ],
+      zakazka: [
+        ["↑  ↓", "položky materiálu a práce"],
+        ["Enter", "úprava vybrané položky"],
+        ["Insert", "ceník oddílu vybraného řádku; bez výběru ceník materiálu"],
+        ["Delete", "odebere položku, až po dotazu"],
+        ["Ctrl+←  Ctrl+→", "množství o 1; pod 1 jen ručně"],
+        ["Home / End", "první a poslední řádek"],
+        ["Page Up / Page Down", "o deset řádků"],
+      ],
+      mrizka: [
+        ["↑  ↓", "vybere řádek"],
+        ["Enter", "otevře vybraný řádek"],
+        ["Home / End", "první a poslední řádek"],
+        ["Page Up / Page Down", "o deset řádků"],
+      ],
+      cenik: [
+        ["Tab / Shift+Tab", "přepne ceník"],
+        ["↑  ↓", "vybere řádek"],
+        ["←  →", "ubere nebo přidá kus; pod 1 jen ručně"],
+        ["Enter", "vloží"],
+        ["Esc", "zavře okno"],
+      ],
+      historie: [
+        ["↑  ↓", "vybere řádek"],
+        ["Mezerník", "zaškrtne řádek"],
+        ["Enter", "vloží označené"],
+        ["Esc", "zavře okno"],
+      ],
+      formular: [
+        ["Enter", "další pole"],
+        ["Ctrl+Enter", "uloží"],
+        ["Esc", "zavře okno; při změnách se zeptá"],
+      ],
+      nastaveni: [
+        ["Enter", "další pole"],
+        ["Ctrl+Enter", "uloží"],
+      ],
+      obecne: [
+        ["?", "na této obrazovce nejsou zvláštní klávesy"],
+      ],
+    };
+    function polozkyNapovedy() {
+      const obsah = document.getElementById("okno-formular-obsah");
+      const okno = document.getElementById("okno-formular");
+      if (okno?.open && obsah) {
+        if (obsah.querySelector(".okno-historie")) return RADKY_NAPOVEDY.historie;
+        if (obsah.querySelector(".okno-cenik")) return RADKY_NAPOVEDY.cenik;
+        return RADKY_NAPOVEDY.formular;
+      }
+      const p = location.pathname;
+      if (["/zakazky", "/vozidla", "/zakaznici", "/cenik", "/prace"].includes(p)) return RADKY_NAPOVEDY.seznam;
+      if (p === "/faktury" || p === "/prijem") return RADKY_NAPOVEDY.seznamBez;
+      if (/^\/zakazky\/\d+$/.test(p)) return RADKY_NAPOVEDY.zakazka;
+      if (/^\/vozidla\/\d+$/.test(p) || /^\/zakaznici\/\d+$/.test(p)) return RADKY_NAPOVEDY.mrizka;
+      if (p.startsWith("/nastaveni")) return RADKY_NAPOVEDY.nastaveni;
+      if (document.querySelector(".obsah form.prijem, .obsah form.formular")) return RADKY_NAPOVEDY.formular;
+      if (radkyKlavesnici().length) return RADKY_NAPOVEDY.mrizka;
+      return RADKY_NAPOVEDY.obecne;
+    }
+    function ukazNapovedu() {
+      const d = document.getElementById("okno-napoveda-klaves");
+      const telo = d.querySelector("tbody");
+      telo.replaceChildren();
+      for (const [klavesa, popis] of polozkyNapovedy()) {
+        const tr = document.createElement("tr");
+        const a = document.createElement("td");
+        const b = document.createElement("td");
+        a.textContent = klavesa;
+        b.textContent = popis;
+        tr.append(a, b);
+        telo.append(tr);
+      }
+      if (!d.open) d.showModal();
+    }
+    document.addEventListener("DOMContentLoaded", () => {
+      document.getElementById("tlacitko-napoveda")?.addEventListener("click", ukazNapovedu);
+    });
     document.addEventListener("keydown", (e) => {
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === "n") {
+        e.preventDefault();  // nezaloží nové okno prohlížeče
+        if (document.querySelector("dialog[open]")) return;
+        if (e.target.closest("input, textarea, select, [contenteditable]")) return;
+        if (!["/zakazky", "/vozidla", "/zakaznici", "/cenik", "/prace"].includes(location.pathname)) return;
+        document.querySelector(".obsah [data-insert]")?.click();
+        return;
+      }
+      if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey
+          && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
+        if (document.querySelector("dialog[open]")) return;
+        if (e.target.closest("input, textarea, select, [contenteditable], button, a[href]")) return;
+        if (!mrizkaPolozek() || !vybranyRadek || !document.contains(vybranyRadek)) return;
+        e.preventDefault();
+        vybranyRadek.querySelector(`[data-krok="${e.key === "ArrowRight" ? 1 : -1}"]`)?.click();
+        return;
+      }
       if (e.ctrlKey || e.altKey || e.metaKey || document.querySelector("dialog[open]")) return;
       const hledani = poleHledani();
       if (hledani && e.target === hledani) {  // v hledání: ↓ do seznamu, Esc ven z pole
@@ -509,9 +638,21 @@
         otevriRadekKlavesnici(vybranyRadek);
       } else if (e.key === "ArrowLeft" || e.key === "ArrowRight") {
         if (prepniZalozku(e.key === "ArrowRight" ? 1 : -1)) e.preventDefault();
+      } else if (e.key === "Home" || e.key === "End") {
+        if (!radky.length) return;
+        e.preventDefault();
+        vyberRadekKlavesnici(e.key === "Home" ? radky[0] : radky[radky.length - 1]);
+      } else if (e.key === "PageUp" || e.key === "PageDown") {
+        if (!radky.length) return;
+        e.preventDefault();
+        const od = i < 0 ? 0 : i;
+        const krok = e.key === "PageDown" ? 10 : -10;
+        vyberRadekKlavesnici(radky[Math.min(Math.max(od + krok, 0), radky.length - 1)]);
       } else if (e.key === "Insert") {
-        const novy = document.querySelector(".obsah [data-insert]");
-        if (novy) { e.preventDefault(); novy.click(); }
+        if (mrizkaPolozek() || document.querySelector(".obsah [data-insert]")) {
+          e.preventDefault();
+          otevriInsert();
+        }
       } else if (hledani && e.key.length === 1 && /[\p{L}\p{N}]/u.test(e.key)) {
         hledani.focus();  // znak se zapíše do pole hledání
         const konec = hledani.value.length;
@@ -729,6 +870,18 @@
     <div id="okno-formular-obsah"></div>
   </dialog>
   {# Potvrzení / upozornění (funkce potvrd a upozorni) – nad všemi ostatními okny #}
+  <dialog id="okno-napoveda-klaves" class="napoveda-klaves" aria-label="Nápověda"
+          onclick="if (event.target === this) this.close()">
+    <article>
+      <div class="hlavicka-napovedy">
+        <h2>Klávesy</h2>
+        <button type="button" class="zpet maly" onclick="this.closest('dialog').close()" title="Zavřít (Esc)">✕ Zavřít</button>
+      </div>
+      <table class="striped">
+        <tbody></tbody>
+      </table>
+    </article>
+  </dialog>
   <dialog id="okno-potvrzeni" class="potvrzeni" aria-label="Potvrzení">
     <article>
       <p class="potvrzeni-text"></p>

@@ -126,8 +126,8 @@
 <div class="titulek-mrizky tlacitka-vlevo">
   <h2 class="nadpis-oddilu">{{ nazev }}</h2>
   {% if lze_menit %}<span class="tlacitka-mrizky neni-tisk">
-    <a href="/zakazky/{{ zakazka.id }}/cenik?typ={{ typ }}" role="button" data-okno{% if typ == 'material' %} data-insert{% endif %}
-       title="{{ nazev }} z ceníku{% if typ == 'material' %} (klávesa Insert){% endif %}" aria-label="{{ nazev }} z ceníku">Ceník</a>
+    <a href="/zakazky/{{ zakazka.id }}/cenik?typ={{ typ }}" role="button" data-okno data-insert
+       title="{{ nazev }} z ceníku (klávesa Insert ve vybraném oddílu)" aria-label="{{ nazev }} z ceníku">Ceník</a>
     {% if typ == 'material' %}
     {# #188: materiál dříve vydaný na vozidlo – zaškrtávátka a hromadné vložení #}
     <a href="/zakazky/{{ zakazka.id }}/historie" role="button" class="secondary outline" data-okno

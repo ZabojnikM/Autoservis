@@ -1758,13 +1758,19 @@ def test_prehled_faktur_pamatuje_typ_dokladu():
 
 def test_ovladani_sipkami_znacky_v_sablonach():
     """#185: Insert má v seznamech a v detailu zakázky svůj cíl (data-insert), stavový řádek ukazuje nápovědu kláves."""
-    for url in ("/zakazky", "/vozidla", "/zakaznici", "/cenik", "/prace"):
+    zakazky = client.get("/zakazky").text
+    for url in ("/vozidla", "/zakaznici", "/cenik", "/prace"):
         assert "data-insert" in client.get(url).text, url
+    assert "data-insert" in zakazky
     loc = _zakazka_s_polozkou(spz="1KL1850")
     detail = client.get(loc).text
     assert re.search(r'cenik\?typ=material" role="button" data-okno data-insert', detail)
+    assert re.search(r'cenik\?typ=prace" role="button" data-okno data-insert', detail)
     assert "↑↓ výběr · Enter otevřít" in client.get("/vozidla").text
     assert "radkyKlavesnici" in detail  # obsluha kláves je v base.html
+    # Nápověda v liště vlevo od ozubeného kola, okno není stránka menu.
+    assert zakazky.index('aria-label="Nápověda"') < zakazky.index('aria-label="Nastavení"')
+    assert 'id="okno-napoveda-klaves"' in zakazky and "PageDown" in zakazky and "polozkyNapovedy" in zakazky
 
 
 def test_kopirovani_nahradne_pres_udalost_copy():

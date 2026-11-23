@@ -417,6 +417,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-23 | Kopírování kódu/VIN spolehlivě i na http a v řádcích seznamů (zápis v události copy), fajfka jen při úspěchu (#195) |
 | 2026-11-23 | Okna Přidat z ceníku a Z historie: nadpis na středu, tlačítka nad hledáním, hláška dole (#197) |
 | 2026-11-23 | Import LKQ čte i PDF dodací list (jen dodané zboží, knihovna pypdf) (#199) |
+| 2026-11-23 | Klávesy: Insert na zakázce otevře ceník vybraného oddílu, otazník s nápovědou obrazovky, Ctrl+N jako Insert na seznamech, Home/End a Page Up/Down, Ctrl+šipky mění množství (#202) |
 
 ## Zdroje průzkumu
 
