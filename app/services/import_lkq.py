@@ -1,9 +1,10 @@
-"""Import dodacího listu LKQ (CSV) do ceníku materiálu a volitelně do zakázky (#8).
+"""Import dodacího listu LKQ (CSV, od #199 i PDF) do ceníku materiálu a volitelně do zakázky (#8).
 
 Postup: `nacti_csv` → náhled (`nahled` spáruje díly s ceníkem podle kódu) → `importuj` vybrané díly.
 Ceny vždy z LKQ: nákupní = „Cena/ks“, prodejní = „MOC bez DPH/ks“, sazba DPH z listu. U existující
 položky se mění jen ceny. Opakovaný import stejného listu nic nezdvojí – díly se jen spárují.
 """
+import io
 import json
 import re
 from dataclasses import asdict, dataclass, field
@@ -20,6 +21,9 @@ ZAHLAVI_POLOZEK = "Cislo;Kod;Nazev"
 SLOUPCE = {"kod": "Kod", "nazev": "Nazev", "mnozstvi": "Mnozstvi", "moc": "MOC bez DPH/ks",
            "dph": "DPH (%)", "nakup": "Cena/ks"}
 CHYBA_SOUBORU = "Soubor není dodací list LKQ (CSV). Stáhněte dodací list z e-shopu LKQ ve formátu CSV a zkuste to znovu."
+CHYBA_PDF = ("PDF není čitelný dodací list LKQ (chybí tabulka dodaného zboží – např. sken bez textu). "
+             "Použijte PDF nebo CSV dodacího listu z e-shopu LKQ.")
+DPH_PDF = Decimal("21")  # v PDF je sloupec sazby u dodaného zboží prázdný
 
 
 @dataclass
@@ -109,6 +113,92 @@ def nacti_csv(obsah: bytes) -> DodaciList:
             except InvalidOperation:
                 pass
     return vysledek
+
+
+# ---------------------------------------------------------------- PDF dodací list (#199)
+
+_CASTKA = r"\d{1,3}(?: \d{3})*,\d{2}"
+_RADEK_PDF = re.compile(rf"^(?P<vodni>.+?) (?P<mn>\d+(?:,\d+)?) (?P<mj>\S+) (?P<nakup>{_CASTKA}) (?P<nakup_s>{_CASTKA}) "
+                        rf"(?P<celkem>{_CASTKA}) (?P<moc>{_CASTKA}) (?P<moc_s>{_CASTKA})(?: \S+)?$")
+
+
+def _castka_pdf(text: str) -> Decimal:
+    return Decimal(text.replace(" ", "").replace(",", "."))
+
+
+def _kody_ze_sloupcu(text_rozvrzeni: str) -> list[str]:
+    """Kódy dílů z rozvrženého textu: první sloupec řádku tabulky (sloupce dělí víc mezer). Kód je bez diakritiky,
+    takže mu nevadí, že rozvržený text u některých písmen posouvá háčky – název se bere z běžného textu."""
+    kody = []
+    for radek in text_rozvrzeni.splitlines():
+        casti = re.split(r"\s{2,}", radek.strip())
+        if len(casti) >= 7 and re.fullmatch(r"\d+(?:,\d+)? \S+", casti[2]):
+            kody.append(casti[0])
+    return kody
+
+
+def _dily_stranky(text: str, kody: list[str]) -> list[tuple[DilListu, Decimal]]:
+    """Díly stránky a k nim cena celkem s DPH (množství × „Vaše cena/ks s DPH“)."""
+    dily, v_tabulce = [], False
+    for radek in text.splitlines():
+        radek = radek.strip()
+        if radek.startswith("Objednací kód Název Množství"):
+            v_tabulce = True
+            continue
+        if not v_tabulce:
+            continue
+        if radek.startswith(("Výše uvedené", "Celkem bez DPH", "Zatím nedodané")):
+            break
+        shoda = _RADEK_PDF.match(radek)
+        if not shoda:
+            continue
+        vodni = shoda["vodni"]
+        kod = next((k for k in kody if vodni.startswith(k + " ")), None) or " ".join(vodni.split()[:2])
+        nazev = vodni[len(kod):].strip()
+        if not nazev:
+            continue
+        mnozstvi = _castka_pdf(shoda["mn"])
+        dily.append((DilListu(kod=kod, nazev=nazev, mnozstvi=mnozstvi, nakup=_castka_pdf(shoda["nakup"]),
+                              moc=_castka_pdf(shoda["moc"]), dph=DPH_PDF),
+                     mnozstvi * _castka_pdf(shoda["nakup_s"])))
+    return dily
+
+
+def nacti_pdf(obsah: bytes) -> DodaciList:
+    """PDF dodacího listu LKQ (tisk z e-shopu) → DodaciList. Jen dodané zboží; „Zatím nedodané zboží“ se přeskočí.
+    Nákup = „Vaše cena/ks bez DPH“, prodej = „Běžná cena/ks bez DPH“ (jako MOC u CSV), DPH 21 %."""
+    try:
+        from pypdf import PdfReader
+        stranky = PdfReader(io.BytesIO(obsah)).pages
+        texty = [(s.extract_text() or "", s.extract_text(extraction_mode="layout") or "") for s in stranky]
+    except Exception:  # poškozené nebo zašifrované PDF
+        raise ChybaValidace(CHYBA_PDF) from None
+    vysledek = DodaciList()
+    s_dph = Decimal("0")
+    for text, rozvrzeni in texty:
+        for dil, celkem_s_dph in _dily_stranky(text, _kody_ze_sloupcu(rozvrzeni)):
+            vysledek.dily.append(dil)
+            s_dph += celkem_s_dph
+    if not vysledek.dily:
+        raise ChybaValidace(CHYBA_PDF)
+    vysledek.s_dph = zaokrouhli(s_dph)  # PDF celkovou částku s DPH neuvádí
+    vse = "\n".join(t for t, _ in texty)
+    if m := re.search(r"Dodací list č\.\s*(\d+)", vse):
+        vysledek.cislo = m[1]
+    if m := re.search(r"Datum vystavení dokladu:\s*(\d{2}\.\d{2}\.\d{4})", vse):
+        vysledek.datum = m[1]
+    if m := re.search(r"^(LKQ CZ [^,\n]+),", vse, re.M):
+        vysledek.dodavatel = m[1].strip()
+    if m := re.search(rf"Celkem bez DPH:\s*({_CASTKA})", vse):
+        vysledek.bez_dph = _castka_pdf(m[1])
+    return vysledek
+
+
+def nacti_soubor(obsah: bytes) -> DodaciList:
+    """Dodací list LKQ jako CSV nebo PDF (#199) – podle obsahu souboru."""
+    if obsah[:5] == b"%PDF-":
+        return nacti_pdf(obsah)
+    return nacti_csv(obsah)
 
 
 # ---------------------------------------------------------------- párování s ceníkem

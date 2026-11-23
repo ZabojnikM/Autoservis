@@ -999,7 +999,7 @@ async def import_lkq_nahled(request: Request, db: DB):
     okno, zakazka_id = bool(form.get("okno")), _id_zakazky(form.get("zakazka_id"))
     soubor, katalog_id = form.get("soubor"), form.get("katalog_id")
     try:
-        dodaci_list = import_lkq.nacti_csv(await soubor.read() if hasattr(soubor, "read") else b"")
+        dodaci_list = import_lkq.nacti_soubor(await soubor.read() if hasattr(soubor, "read") else b"")
     except ChybaValidace as e:
         return _okno_importu(request, db, okno, zakazka_id, chyba=e, katalog_id=katalog_id)
     return _okno_importu(request, db, okno, zakazka_id, dodaci_list, katalog_id=katalog_id)

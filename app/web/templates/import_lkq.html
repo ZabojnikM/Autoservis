@@ -37,9 +37,9 @@
   <input type="hidden" name="katalog_id" value="{{ katalog.id }}">
   <fieldset class="panel">
     <legend>Soubor</legend>
-    <label>Dodací list LKQ (CSV)
-      <input type="file" name="soubor" accept=".csv,text/csv" required autofocus onchange="if (this.files.length) this.form.requestSubmit()"></label>
-    <p class="tlumene napoveda">Dodací list stáhněte z e-shopu LKQ ve formátu CSV. Díly se spárují s ceníkem podle kódu
+    <label>Dodací list LKQ (CSV nebo PDF)
+      <input type="file" name="soubor" accept=".csv,.pdf,text/csv,application/pdf" required autofocus onchange="if (this.files.length) this.form.requestSubmit()"></label>
+    <p class="tlumene napoveda">Dodací list stáhněte z e-shopu LKQ ve formátu CSV, nebo vyberte jeho PDF. Díly se spárují s ceníkem podle kódu
       (např. <code>OPT 06-S383</code>): existující položce se přepíše nákupní a prodejní cena, chybějící se založí.
       {% if zakazka %}Zaškrtnuté díly se zároveň vloží do zakázky v množství z dodacího listu.{% endif %}</p>
   </fieldset>

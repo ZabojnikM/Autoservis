@@ -149,6 +149,9 @@ tests/
 - **Skrýt sklad** (#150): *Nastavení → Katalogy materiálu → Skrýt / Zobrazit*. Skrytý sklad se nenabízí na kartě
   Materiál ani při přidávání materiálu do zakázky (seznam, hledání, přesný kód, Z historie). Staré zakázky a doklady
   se nemění, Správa dat ho vidí dál (přesun dílů). Výchozí katalog skrýt nejde.
+- **Import LKQ** (Materiál i zakázka, #8, #199): dodací list LKQ jako **CSV** z e-shopu, nebo jeho **PDF**. Z PDF se
+  načte jen dodané zboží (oddíl „Zatím nedodané zboží“ se přeskočí); nákup = „Vaše cena/ks bez DPH“, prodej =
+  „Běžná cena/ks bez DPH“, DPH 21 %. Díly se spárují s ceníkem podle kódu, nové se založí, v zakázce se vloží zaškrtnuté.
 - **Množství a cena za kus bez DPH** se mění přímo v řádku zakázky (Enter nebo opuštění pole uloží, #163).
   Ručně změněná cena platí jen pro tento řádek, ceník se nemění; když se liší od ceníku, je pod ní šedě
   „ceník …“. Tlačítko *Upravit* u položky z ceníku dál upravuje kartu ceníku (i s cenou v ceníku).

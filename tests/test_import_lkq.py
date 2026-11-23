@@ -132,3 +132,64 @@ def test_okno_importu_web():
     detail = client.get(loc).text
     assert "OPT FAF10128" in detail and "Vzduchový filtr Optimal" in detail
     assert "Dodací list <strong>3116034551</strong>" in detail
+
+
+# ---------------------------------------------------------------- #199: PDF dodací list
+# Text ve stejné podobě, jakou pypdf vrací z PDF dodacího listu e-shopu LKQ (běžný a rozvržený režim), smyšlené údaje.
+PDF_TEXT = """Není daňový doklad Dodací list č. 3116099999 (strana 1)
+Dodavatel:
+LKQ CZ s.r.o.
+Datum vystavení dokladu:
+20.11.2026 10:00:00
+Odběratel:
+Servis Test
+LKQ CZ ZLIN, Testovací 1, 760 01 Zlín, tel.: +420000000000
+Objednací kód Název Množství Vaše cena/ks bez DPH Vaše cena/ks s DPH Vaše cena celkem bez DPH Běžná cena/ks bez DPH Běžná cena/ks s DPH Sazba DPH
+BO 0986494500 Sada brzdových destiček BOSCH 2 ks 759,39 918,86 1 518,78 1 489,00 1 801,69
+OPT FCF20098-S Kabinový filtr Optimal 1 ks 193,23 233,81 193,23 339,00 410,19
+CA 7 000 140 Olej převodový Castrol 1,5 l 300,00 363,00 450,00 1 200,00 1 452,00
+Výše uvedené částky jsou v Kč.
+Celkem bez DPH: 2 162,01 Kč
+Zatím nedodané zboží. Částky jsou uvedeny v Kč.
+Zadal Objednací kód Název rezervované položky Chybějící množství Vaše cena/ks bez DPH
+www AT 580186 Brzdové lanko ATE 0 ks 279,99 338,79 23.11.2026 664,29 C
+"""
+PDF_ROZVRZENI = """Objednací kód                       Název                                 Množství     Vaše cena/ks
+BO 0986494500              Sada brzdových destiček BOSCH        2 ks           759,39         918,86       1 518,78      1 489,00      1 801,69
+OPT FCF20098-S              Kabinový filtr Optimal              1 ks         193,23         233,81         193,23         339,00         410,19
+CA 7 000 140               Olej převodový Castrol               1,5 l        300,00         363,00         450,00       1 200,00       1 452,00
+www      AT 580186          Brzdové lanko ATE                   0 ks         279,99         338,79  23.11.2026         664,29     C
+"""
+
+
+class _Stranka:
+    def __init__(self, text, rozvrzeni):
+        self.text, self.rozvrzeni = text, rozvrzeni
+
+    def extract_text(self, extraction_mode="plain"):
+        return self.rozvrzeni if extraction_mode == "layout" else self.text
+
+
+def test_nacteni_pdf_jen_dodane_zbozi(monkeypatch):
+    import pypdf
+    monkeypatch.setattr(pypdf, "PdfReader", lambda _soubor: type("R", (), {"pages": [_Stranka(PDF_TEXT, PDF_ROZVRZENI)]})())
+    d = import_lkq.nacti_soubor(b"%PDF-1.7 ...")
+    assert (d.cislo, d.datum, d.dodavatel, d.bez_dph) == ("3116099999", "20.11.2026", "LKQ CZ ZLIN", Decimal("2162.01"))
+    assert d.s_dph == Decimal("2616.03")  # 2 × 918,86 + 233,81 + 1,5 × 363,00
+    assert [(x.kod, x.nazev, x.mnozstvi, x.nakup, x.moc, x.dph) for x in d.dily] == [
+        ("BO 0986494500", "Sada brzdových destiček BOSCH", Decimal("2"), Decimal("759.39"), Decimal("1489.00"), Decimal("21")),
+        ("OPT FCF20098-S", "Kabinový filtr Optimal", Decimal("1"), Decimal("193.23"), Decimal("339.00"), Decimal("21")),
+        # kód se čtyřmi slovy – hranici kódu a názvu dává rozvržený text (sloupce)
+        ("CA 7 000 140", "Olej převodový Castrol", Decimal("1.5"), Decimal("300.00"), Decimal("1200.00"), Decimal("21")),
+    ]  # nedodané (0 ks) se přeskočí
+
+
+def test_pdf_bez_tabulky_se_odmitne():
+    from weasyprint import HTML
+    prazdne = HTML(string="<p>Faktura od jiného dodavatele</p>").write_pdf()
+    with pytest.raises(ChybaValidace, match="PDF není čitelný dodací list LKQ"):
+        import_lkq.nacti_soubor(prazdne)
+    with pytest.raises(ChybaValidace, match="PDF není čitelný dodací list LKQ"):
+        import_lkq.nacti_soubor(b"%PDF-1.4 poskozene")
+    r = client.post("/cenik/import/nahled", data={"okno": "1"}, files={"soubor": ("list.pdf", prazdne, "application/pdf")})
+    assert "PDF není čitelný dodací list LKQ" in r.text
