@@ -646,15 +646,36 @@
     // V řádku zakázky se uloží až chvíli po posledním kliknutí (víc kliknutí = jedno uložení).
     let casovacKroku = null;
     // Tlačítko Kopírovat (např. VIN na kartě vozidla): text z data-kopirovat do schránky, krátce zelená fajfka (#154)
+    // #195: na http (síť dílny) není navigator.clipboard. Náhradní kopírování nesmí záviset na označení textu –
+    // řádky seznamů mají user-select: none a prohlížeč pak zkopíroval prázdný výběr. Text se proto vloží přímo
+    // v události copy. Fajfka jen při skutečném úspěchu, jinak hláška s textem k ručnímu zkopírování.
+    function kopirujNahradne(text) {
+      let zapsano = false;
+      const priKopirovani = (ev) => { ev.clipboardData.setData("text/plain", text); ev.preventDefault(); zapsano = true; };
+      document.addEventListener("copy", priKopirovani, true);
+      const pole = Object.assign(document.createElement("textarea"), {value: text, readOnly: true});
+      pole.style.cssText = "position:fixed;top:0;left:0;opacity:0;user-select:text;-webkit-user-select:text";
+      document.body.append(pole);
+      pole.focus(); pole.select();
+      let ok = false;
+      try { ok = document.execCommand("copy"); } catch { ok = false; }
+      pole.remove();
+      document.removeEventListener("copy", priKopirovani, true);
+      return ok && zapsano;
+    }
+    async function kopiruj(text) {
+      if (navigator.clipboard && window.isSecureContext) {
+        try { await navigator.clipboard.writeText(text); return true; } catch { /* zkusit náhradní */ }
+      }
+      return kopirujNahradne(text);
+    }
     document.addEventListener("click", async (e) => {
       const b = e.target.closest("[data-kopirovat]");
       if (!b) return;
       const text = b.dataset.kopirovat;
-      try {
-        await navigator.clipboard.writeText(text);
-      } catch {
-        const pole = Object.assign(document.createElement("textarea"), {value: text});  // starší prohlížeč / http
-        document.body.append(pole); pole.select(); document.execCommand("copy"); pole.remove();
+      if (!(await kopiruj(text))) {
+        ukazZpravu("!Kopírování se nepovedlo – označte text a stiskněte Ctrl+C: " + text);
+        return;
       }
       const popisek = b.dataset.popisek ||= b.title;
       b.classList.add("zkopirovano"); b.title = "Zkopírováno";

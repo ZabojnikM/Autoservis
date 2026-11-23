@@ -1765,3 +1765,11 @@ def test_ovladani_sipkami_znacky_v_sablonach():
     assert re.search(r'cenik\?typ=material" role="button" data-okno data-insert', detail)
     assert "↑↓ výběr · Enter otevřít" in client.get("/vozidla").text
     assert "radkyKlavesnici" in detail  # obsluha kláves je v base.html
+
+
+def test_kopirovani_nahradne_pres_udalost_copy():
+    """#195: náhradní kopírování (http) vkládá text přímo v události copy a fajfku ukáže jen při úspěchu."""
+    stranka = client.get("/zakazky").text
+    assert "function kopirujNahradne(text)" in stranka
+    assert 'ev.clipboardData.setData("text/plain", text)' in stranka
+    assert "Kopírování se nepovedlo" in stranka
