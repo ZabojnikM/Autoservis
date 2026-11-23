@@ -2,7 +2,7 @@
 
 Doklad se vystavuje ze zakázky a zakázku uzavře. Po vystavení se nemění – jen úhrady. Chybný doklad se smaže
 (#15): jeho číslo zůstane v přehledu jako „Volné po smazání“ a jde ho ručně použít při dalším vystavení.
-Faktura: úhrada převodem nebo hotově (hotovost volitelně zaokrouhlená na koruny).
+Faktura: úhrada převodem nebo hotově. Částka k úhradě se zaokrouhluje na celé koruny (vypnout jde v Nastavení).
 Vyúčtování (#55): formu úhrady nemá, jen stav Uhrazeno / Neuhrazeno; QR platba z vlastního účtu v Nastavení.
 """
 import re
@@ -190,8 +190,8 @@ def vystav(session: Session, zakazka_id: int, data: dict) -> Faktura:
             cena=r.cena, sazba_dph=r.sazba_dph if nast.platce_dph else Decimal("0"),
         ))
     celkem = polozky_sluzba.rekapitulace_radku(faktura.polozky).celkem
-    # vyúčtování se zaokrouhluje na koruny stejně jako hotovostní faktura (dřív se vystavovalo jen hotově)
-    if (forma == FormaUhrady.HOTOVE or je_vyuctovani) and nast.zaokrouhlit_hotovost:
+    # všechny doklady (faktura převodem i hotově, vyúčtování) se zaokrouhlují na celé koruny; vypnout jde v Nastavení
+    if nast.zaokrouhlit_hotovost:
         na_koruny = celkem.quantize(Decimal("1"), rounding=ROUND_HALF_UP)
         faktura.zaokrouhleni = na_koruny - celkem
         celkem = na_koruny

@@ -49,11 +49,12 @@ def test_predpona_a_cislovani(session, zakazka):
 
 def test_vystaveni_faktury(session, zakazka):
     f = _vystav(session, zakazka)
-    assert f.celkem == Decimal("786.50") and f.zaokrouhleni == 0
+    # i faktura převodem se zaokrouhluje na celé koruny
+    assert f.celkem == Decimal("787") and f.zaokrouhleni == Decimal("0.50")
     assert f.odb_nazev == "Jan Novák" and f.odb_mesto == "Brno"
     assert f.spz == "1AB2345" and f.cislo_zakazky == zakazka.cislo and f.tachometr == 120000
     assert len(f.polozky) == 2 and f.datum_splatnosti == date.today() + timedelta(days=14)
-    assert f.stav == "neuhrazena" and f.zbyva == Decimal("786.50")
+    assert f.stav == "neuhrazena" and f.zbyva == Decimal("787")
     session.refresh(zakazka)
     assert zakazka.stav == StavZakazky.PREDANO and zakazka.platna_faktura.id == f.id
 
@@ -62,7 +63,7 @@ def test_faktura_je_kopie_zakazky(session, zakazka):
     f = _vystav(session, zakazka)
     cenik.uprav(session, cenik.seznam(session)[0].id, {"cena": "9999"})
     session.refresh(f)
-    assert f.celkem == Decimal("786.50")
+    assert f.celkem == Decimal("787")
 
 
 def test_nelze_vystavit_dvakrat_ani_prazdnou(session, zakazka):
@@ -120,10 +121,10 @@ def test_uhrady(session, zakazka):
     f = _vystav(session, zakazka)
     faktury.pridej_uhradu(session, f.id, {"castka": "500"})
     session.refresh(f)
-    assert f.zbyva == Decimal("286.50") and not f.je_uhrazena
+    assert f.zbyva == Decimal("287") and not f.je_uhrazena
     with pytest.raises(ChybaValidace):
         faktury.pridej_uhradu(session, f.id, {"castka": "300"})  # přeplatek
-    u = faktury.pridej_uhradu(session, f.id, {"castka": "286,50", "zpusob": "hotove"})
+    u = faktury.pridej_uhradu(session, f.id, {"castka": "287", "zpusob": "hotove"})
     session.refresh(f)
     assert f.je_uhrazena
     faktury.pridej_uhradu(session, f.id, {"castka": "-100"})  # vrácení
@@ -162,12 +163,12 @@ def test_smazani_otevre_zakazku(session, zakazka):
 
 def test_zruseni_uhrady_zustane_v_historii(session, zakazka):
     f = _vystav(session, zakazka)
-    u = faktury.pridej_uhradu(session, f.id, {"castka": "786,50 Kč"})  # „Kč“ za částkou nevadí
+    u = faktury.pridej_uhradu(session, f.id, {"castka": "787 Kč"})  # „Kč“ za částkou nevadí
     session.refresh(f)
     assert f.je_uhrazena
     assert faktury.zrus_uhradu(session, u.id) == f.id
     session.refresh(f)
-    assert len(f.uhrady) == 1 and f.uhrady[0].zruseno and f.zbyva == Decimal("786.50")
+    assert len(f.uhrady) == 1 and f.uhrady[0].zruseno and f.zbyva == Decimal("787")
     with pytest.raises(ChybaValidace):
         faktury.zrus_uhradu(session, u.id)  # už zrušená
 
@@ -224,7 +225,7 @@ def test_spayd_a_qr(session, zakazka):
     assert faktury.spayd(f, bez_uctu) is None  # bez účtu
     nast = nastaveni.nacti(session)
     kod = faktury.spayd(f, nast)
-    assert kod.startswith("SPD*1.0*ACC:CZ6508000000192000145399*AM:786.50*CC:CZK")
+    assert kod.startswith("SPD*1.0*ACC:CZ6508000000192000145399*AM:787.00*CC:CZK")
     assert f"X-VS:{f.variabilni_symbol}" in kod
     svg = faktury.qr_svg(kod)
     # #59: viewBox se čtvercovým poměrem a bez pevné velikosti; bílý okraj 4 moduly
@@ -315,3 +316,9 @@ def test_neplatce_bez_dic_vystavi_fakturu(session, zakazka):
     nastaveni.uloz(session, {"platce_dph": "0"})
     f = _vystav(session, zakazka)
     assert not f.platce_dph and f.celkem == Decimal("650.00")
+
+
+def test_bez_zaokrouhleni_po_vypnuti(session, zakazka):
+    nastaveni.uloz(session, {"zaokrouhlit_hotovost": ""})
+    f = _vystav(session, zakazka)
+    assert f.celkem == Decimal("786.50") and f.zaokrouhleni == 0
