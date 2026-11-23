@@ -42,6 +42,10 @@
     .poznamka { white-space: pre-line; margin-top: 4mm; }
     .uhrazeno { margin-top: 3mm; font-weight: 700; }
     {% block styl %}{% endblock %}
+    {% if pdf %}
+    /* #189: PDF ze serveru (WeasyPrint) neumí minmax(…, max-content) v mřížce – rekapitulace s pevnou šířkou čísel */
+    .rekapitulace dl { grid-template-columns: auto 42mm; width: 95mm; }
+    {% endif %}
     /* #167: dotaz po tisku dokladu */
     .po-tisku { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); background: #fff; border: 1px solid #d1d5db;
       border-radius: 12px; box-shadow: 0 6px 24px rgba(0,0,0,.18); padding: 14px 18px; font-size: 11pt; z-index: 10;

@@ -10,7 +10,7 @@ from sqlmodel import Session
 
 from app.db import get_session
 from app.models import FormaUhrady, StavZakazky, TypDokladu, TypPolozky, Uhrada
-from app.services import ares, import_lkq, prijem_vozidel, zastupce
+from app.services import ares, import_lkq, pdf, prijem_vozidel, zastupce
 from app.services import (
     ChybaValidace, cenik, cisty_text, faktury, hledani, katalogy, nastaveni, polozky, registr_hromadne, registr_vozidel,
     vozidla,
@@ -1342,8 +1342,7 @@ def faktura_detail(request: Request, db: DB, faktura_id: int):
     return _detail_faktury(request, db, faktura_id)
 
 
-@router.get("/faktury/{faktura_id}/tisk", response_class=HTMLResponse)
-def faktura_tisk(request: Request, db: DB, faktura_id: int):
+def _kontext_tisku(db, faktura_id: int) -> dict:
     f = faktury.ziskej(db, faktura_id)
     nast = nastaveni.nacti(db)
     if f.typ == TypDokladu.VYUCTOVANI:  # #55: vlastní účet pro vyúčtování, nikdy účet pro faktury
@@ -1351,8 +1350,29 @@ def faktura_tisk(request: Request, db: DB, faktura_id: int):
         cislo_uctu = nast.ucet_vyuctovani if iban and "/" in nast.ucet_vyuctovani else ""
     else:
         iban, cislo_uctu = faktury.iban_servisu(nast), nast.cislo_uctu
-    return _stranka(request, "faktura_tisk.html", f=f, rek=faktury.rekapitulace(f), nast=nast,
-                    iban=iban, cislo_uctu=cislo_uctu, qr=_qr(f, nast))
+    return {"f": f, "rek": faktury.rekapitulace(f), "nast": nast, "iban": iban, "cislo_uctu": cislo_uctu,
+            "qr": _qr(f, nast)}
+
+
+@router.get("/faktury/{faktura_id}/tisk", response_class=HTMLResponse)
+def faktura_tisk(request: Request, db: DB, faktura_id: int):
+    return _stranka(request, "faktura_tisk.html", **_kontext_tisku(db, faktura_id))
+
+
+@router.get("/faktury/{faktura_id}/pdf")
+def faktura_pdf(request: Request, db: DB, faktura_id: int):
+    """#189: doklad rovnou jako PDF (stejná šablona jako tisk); stažení se počítá jako vytištění (#167)."""
+    kontext = _kontext_tisku(db, faktura_id)
+    f = kontext["f"]
+    if not pdf.dostupne():
+        return _presmeruj(f"/faktury/{faktura_id}", pdf.NENI, chyba=True)
+    html = templates.get_template("faktura_tisk.html").render(
+        {"request": request, "lista": _udaje_listy(request), "pdf": True, **kontext})
+    obsah = pdf.z_html(html)
+    if not f.vytisteno:
+        faktury.nastav_vytisteno(db, faktura_id, True)
+    return Response(obsah, media_type="application/pdf",
+                    headers={"Content-Disposition": f'attachment; filename="{pdf.nazev_souboru(f.cislo)}"'})
 
 
 @router.post("/faktury/{faktura_id}/vytisteno")
