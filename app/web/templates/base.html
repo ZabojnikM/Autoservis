@@ -596,6 +596,12 @@
     }
     document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("tlacitko-napoveda")?.addEventListener("click", ukazNapovedu);
+      // Po Esc prohlížeč vrátí výběr na tlačítko Nápověda a šipky pak seznam neposlouchají.
+      document.getElementById("okno-napoveda-klaves")?.addEventListener("close", () => {
+        setTimeout(() => {
+          if (document.activeElement?.id === "tlacitko-napoveda") document.activeElement.blur();
+        }, 0);
+      });
     });
     document.addEventListener("keydown", (e) => {
       if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey && e.key.toLowerCase() === "n") {
@@ -609,7 +615,9 @@
       if ((e.ctrlKey || e.metaKey) && !e.altKey && !e.shiftKey
           && (e.key === "ArrowLeft" || e.key === "ArrowRight")) {
         if (document.querySelector("dialog[open]")) return;
-        if (e.target.closest("input, textarea, select, [contenteditable], button, a[href]")) return;
+        // Tlačítko +/− v řádku smí mít výběr: jinak druhá šipka množství už nic neudělá.
+        if (e.target.closest("input, textarea, select, [contenteditable], button, a[href]")
+            && !e.target.closest(".mnozstvi-radku button.krok")) return;
         if (!mrizkaPolozek() || !vybranyRadek || !document.contains(vybranyRadek)) return;
         e.preventDefault();
         vybranyRadek.querySelector(`[data-krok="${e.key === "ArrowRight" ? 1 : -1}"]`)?.click();
@@ -833,8 +841,11 @@
       const nove = krok > 0 ? ted + krok : (ted > 1 ? Math.max(1, ted + krok) : ted);
       if (nove === ted) return;
       pole.value = textMnozstvi(nove);
+      if (document.activeElement === tlacitko) tlacitko.blur();
       const form = pole.closest("form.mnozstvi-radku");
       if (form) {
+        const tr = form.closest("tr");
+        if (tr?.dataset.otevrit) sessionStorage.setItem("autoservis-vyber", tr.dataset.otevrit);
         clearTimeout(casovacKroku);
         casovacKroku = setTimeout(() => form.requestSubmit(), 700);
       }
@@ -853,6 +864,19 @@
 
     // ---- Zvýrazněný řádek (např. právě uložená položka ceníku): vybrat ho a odrolovat na něj.
     document.addEventListener("DOMContentLoaded", () => {
+      // Po uložení množství se stránka překreslí. Stejný řádek vybrat znovu, ať Ctrl+šipka jde opakovat.
+      const ulozene = sessionStorage.getItem("autoservis-vyber");
+      if (ulozene) {
+        sessionStorage.removeItem("autoservis-vyber");
+        const zachovat = [...document.querySelectorAll(".obsah tbody tr")].find((r) => r.dataset.otevrit === ulozene);
+        if (zachovat) {
+          zachovat.classList.add("vybrany");
+          vybranyRadek = zachovat;
+          obnovTlacitkaRadku();
+          zachovat.scrollIntoView({block: "nearest"});
+          return;
+        }
+      }
       const tr = document.querySelector(".obsah tbody tr.zvyrazneny");
       if (!tr) return;
       tr.classList.add("vybrany"); vybranyRadek = tr; obnovTlacitkaRadku();
