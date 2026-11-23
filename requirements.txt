@@ -6,6 +6,7 @@ sqlmodel>=0.0.22
 alembic>=1.14
 segno>=1.6          # QR platba (QR code on invoices)
 mcp>=2.3,<3         # MCP server pro boty (#148)
+weasyprint>=62      # PDF dokladů ze serveru (#189); na Windows bez GTK se PDF jen nenabídne
 
 # testy
 pytest>=8.3

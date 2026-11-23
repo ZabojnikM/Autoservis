@@ -1182,3 +1182,6 @@ dialog.napoveda-okno h4 { margin: 1rem 0 .4rem; font-size: 1rem; }
 .napoveda-pole dd { margin: 0; }
 .napoveda-tabulka { font-size: .9rem; margin-bottom: .5rem; }
 .napoveda-okno code { white-space: nowrap; }
+
+/* #189 odkaz na PDF v seznamu dokladů */
+.odkaz-pdf { margin-left: .4rem; font-size: .8rem; font-weight: 600; }

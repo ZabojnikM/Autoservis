@@ -52,7 +52,8 @@
       <td class="cislo castka-hlavni">{{ f.celkem|penize }}</td>
       <td class="cislo">{% if f.zbyva %}{{ f.zbyva|penize }}{% else %}{{ none|pomlcka }}{% endif %}</td>
       <td><span class="stav-dokladu stav-dokladu-{{ f.stav }}">{{ f.nazev_stavu }}</span></td>
-      <td>{{ stav_tisku(f) }}</td>
+      <td>{{ stav_tisku(f) }} <a href="/faktury/{{ f.id }}/pdf" class="odkaz-pdf" download="{{ f.cislo }}.pdf"
+             title="Stáhnout PDF {{ f.cislo }}.pdf">PDF</a></td>
     </tr>
     {% endif %}
   {% endfor %}

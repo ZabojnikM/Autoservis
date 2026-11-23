@@ -322,3 +322,40 @@ def test_bez_zaokrouhleni_po_vypnuti(session, zakazka):
     nastaveni.uloz(session, {"zaokrouhlit_hotovost": ""})
     f = _vystav(session, zakazka)
     assert f.celkem == Decimal("786.50") and f.zaokrouhleni == 0
+
+
+def test_pdf_dokladu(session, zakazka):
+    from fastapi.testclient import TestClient
+    from app.main import app
+    from app.services import pdf
+    if not pdf.dostupne():
+        pytest.skip("WeasyPrint tu není (Windows bez GTK)")
+    f = _vystav(session, zakazka)
+    assert not f.vytisteno
+    odpoved = TestClient(app).get(f"/faktury/{f.id}/pdf")
+    assert odpoved.status_code == 200 and odpoved.headers["content-type"] == "application/pdf"
+    assert odpoved.content.startswith(b"%PDF") and len(odpoved.content) > 5000
+    assert f'filename="{f.cislo}.pdf"' in odpoved.headers["content-disposition"]
+    session.refresh(f)
+    assert f.vytisteno and f.vytisteno_kdy   # stažení PDF se počítá jako tisk (#167)
+    klient = TestClient(app)
+    assert f"/faktury/{f.id}/pdf" in klient.get(f"/faktury/{f.id}").text
+    assert f"/faktury/{f.id}/pdf" in klient.get("/faktury?filtr=faktury").text
+
+
+def test_pdf_bez_knihovny_hlaska(session, zakazka, monkeypatch):
+    from fastapi.testclient import TestClient
+    from app.main import app
+    from app.services import pdf
+    monkeypatch.setattr(pdf, "weasyprint", None)
+    f = _vystav(session, zakazka)
+    odpoved = TestClient(app).get(f"/faktury/{f.id}/pdf", follow_redirects=False)
+    assert odpoved.status_code == 303 and odpoved.headers["location"] == f"/faktury/{f.id}"
+    session.refresh(f)
+    assert not f.vytisteno
+
+
+def test_nazev_souboru_pdf():
+    from app.services import pdf
+    assert pdf.nazev_souboru("FV20260087") == "FV20260087.pdf"
+    assert pdf.nazev_souboru('A/1"x') == "A1x.pdf"

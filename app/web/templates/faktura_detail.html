@@ -3,6 +3,9 @@
 {% block title %}{{ f.nazev_typu }} {{ f.cislo }}{% endblock %}
 {% block akce %}
   <a href="/faktury/{{ f.id }}/tisk?tisk=1" target="_blank" role="button" class="secondary outline tlacitko-tisk">Tisk / PDF</a>
+  {# #189: PDF rovnou ze serveru, soubor podle čísla dokladu #}
+  <a href="/faktury/{{ f.id }}/pdf" role="button" class="secondary outline" download="{{ f.cislo }}.pdf"
+     title="Uloží doklad jako PDF ({{ f.cislo }}.pdf) a označí ho jako vytištěný">Stáhnout PDF</a>
   {# #167: stav tisku – ruční potvrzení #}
   <form method="post" action="/faktury/{{ f.id }}/vytisteno">
     <input type="hidden" name="vytisteno" value="{{ '0' if f.vytisteno else '1' }}">
