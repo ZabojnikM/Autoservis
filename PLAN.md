@@ -415,6 +415,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-23 | Faktura a vyúčtování: tlačítko Stáhnout PDF (server, WeasyPrint, stejná tisková šablona), stažení označí doklad jako vytištěný (#189) |
 | 2026-11-23 | Zakázka: tlačítko a okno Z historie se zaškrtávátky a hromadným vložením (aktuální ceny z ceníku), Z historie odebráno z okna ceníku, kopírování kódu v obou oknech (#188) |
 | 2026-11-23 | Kopírování kódu/VIN spolehlivě i na http a v řádcích seznamů (zápis v události copy), fajfka jen při úspěchu (#195) |
+| 2026-11-23 | Okna Přidat z ceníku a Z historie: nadpis na středu, tlačítka nad hledáním, hláška dole (#197) |
 
 ## Zdroje průzkumu
 

@@ -1773,3 +1773,12 @@ def test_kopirovani_nahradne_pres_udalost_copy():
     assert "function kopirujNahradne(text)" in stranka
     assert 'ev.clipboardData.setData("text/plain", text)' in stranka
     assert "Kopírování se nepovedlo" in stranka
+
+
+def test_okna_ceniku_a_historie_jednotna_hlavicka():
+    """#197: hlavička oken ceníku a historie – nadpis na středu, tlačítka nad hledáním, hláška dole."""
+    import pathlib
+    css = (pathlib.Path(__file__).parent.parent / "app/web/static/app.css").read_text(encoding="utf-8")
+    assert "grid-template-columns: 1fr auto 1fr" in css
+    assert ".okno-cenik > .hlaseni-okna { position: absolute;" in css
+    assert ".okno-historie .okno-hlavicka .tlacitka-hlavicky.vlevo > button[type=submit]" in css
