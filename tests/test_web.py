@@ -1775,6 +1775,13 @@ def test_ovladani_sipkami_znacky_v_sablonach():
     assert 'activeElement?.id === "tlacitko-napoveda"' in zakazky
     assert "autoservis-vyber" in detail
     assert "mnozstvi-radku button.krok" in detail
+    # #206: Esc na detailu = tlačítko Zpět na seznam
+    assert 'e.key === "Escape"' in detail and ".akce a.zpet" in detail
+    assert "zpět na seznam zakázek" in detail
+    vid = re.search(r'href="/vozidla/(\d+)"', detail).group(1)
+    karta = client.get(f"/vozidla/{vid}").text
+    assert 'href="/vozidla" role="button" class="zpet"' in karta
+    assert "RADKY_NAPOVEDY.karta" in karta
     import pathlib
     css = (pathlib.Path(__file__).parent.parent / "app/web/static/app.css").read_text(encoding="utf-8")
     assert "dialog.napoveda-klaves td:nth-child(2) { white-space: normal; }" in css

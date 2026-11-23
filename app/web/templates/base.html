@@ -528,12 +528,20 @@
         ["Ctrl+←  Ctrl+→", "množství o 1; pod 1 jen ručně"],
         ["Home / End", "první a poslední řádek"],
         ["Page Up / Page Down", "o deset řádků"],
+        ["Esc", "zpět na seznam zakázek; z pole nejdřív vyskočí, okno zavře"],
       ],
       mrizka: [
         ["↑  ↓", "vybere řádek"],
         ["Enter", "otevře vybraný řádek"],
         ["Home / End", "první a poslední řádek"],
         ["Page Up / Page Down", "o deset řádků"],
+      ],
+      karta: [
+        ["↑  ↓", "vybere řádek"],
+        ["Enter", "otevře vybraný řádek"],
+        ["Home / End", "první a poslední řádek"],
+        ["Page Up / Page Down", "o deset řádků"],
+        ["Esc", "zpět na seznam; z pole nejdřív vyskočí, okno zavře"],
       ],
       cenik: [
         ["Tab / Shift+Tab", "přepne ceník"],
@@ -573,7 +581,7 @@
       if (["/zakazky", "/vozidla", "/zakaznici", "/cenik", "/prace"].includes(p)) return RADKY_NAPOVEDY.seznam;
       if (p === "/faktury" || p === "/prijem") return RADKY_NAPOVEDY.seznamBez;
       if (/^\/zakazky\/\d+$/.test(p)) return RADKY_NAPOVEDY.zakazka;
-      if (/^\/vozidla\/\d+$/.test(p) || /^\/zakaznici\/\d+$/.test(p)) return RADKY_NAPOVEDY.mrizka;
+      if (/^\/vozidla\/\d+$/.test(p) || /^\/zakaznici\/\d+$/.test(p)) return RADKY_NAPOVEDY.karta;
       if (p.startsWith("/nastaveni")) return RADKY_NAPOVEDY.nastaveni;
       if (document.querySelector(".obsah form.prijem, .obsah form.formular")) return RADKY_NAPOVEDY.formular;
       if (radkyKlavesnici().length) return RADKY_NAPOVEDY.mrizka;
@@ -598,9 +606,12 @@
       document.getElementById("tlacitko-napoveda")?.addEventListener("click", ukazNapovedu);
       // Po Esc prohlížeč vrátí výběr na tlačítko Nápověda a šipky pak seznam neposlouchají.
       document.getElementById("okno-napoveda-klaves")?.addEventListener("close", () => {
-        setTimeout(() => {
+        // Prohlížeč vrací výběr na tlačítko až po zavření, někdy později než první odložený krok.
+        const pust = () => {
           if (document.activeElement?.id === "tlacitko-napoveda") document.activeElement.blur();
-        }, 0);
+        };
+        setTimeout(pust, 0);
+        setTimeout(pust, 50);
       });
     });
     document.addEventListener("keydown", (e) => {
@@ -630,6 +641,15 @@
           e.preventDefault();
           hledani.blur();
           if (e.key === "ArrowDown") vyberRadekKlavesnici(vybranyRadek && document.contains(vybranyRadek) ? vybranyRadek : radkyKlavesnici()[0]);
+        }
+        return;
+      }
+      if (e.key === "Escape") {  // detail zakázky, vozidla a zákazníka: Esc = tlačítko Zpět
+        const pole = e.target.closest("input, textarea, select, [contenteditable]");
+        if (pole) { e.preventDefault(); pole.blur(); return; }
+        if (/^\/(zakazky|vozidla|zakaznici)\/\d+$/.test(location.pathname)) {
+          const zpet = document.querySelector(".akce a.zpet");
+          if (zpet) { e.preventDefault(); zpet.click(); }
         }
         return;
       }

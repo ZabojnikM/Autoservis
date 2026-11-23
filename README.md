@@ -70,6 +70,9 @@ powershell -ExecutionPolicy Bypass -File nastroje\zastupce-autoservis.ps1 -Adres
     oddílu vybraného řádku (bez výběru ceník materiálu), **Ctrl+←/→** změní množství o 1 a řádek zůstane vybraný,
     takže to jde opakovat (pod 1 jen ručně),
     **Delete** položku odebere. **Home** / **End** a **Page Up** / **Page Down** platí i tady.
+    **Esc** vrátí na seznam zakázek. Když je kurzor v poli, první Esc z pole vyskočí a další vrátí na seznam.
+    Otevřené okno Esc nejdřív zavře.
+  - **Karta vozidla a zákazníka**: **Esc** stejně vrátí na seznam vozidel nebo zákazníků.
   - **Otazník** v horní liště, vlevo od ozubeného kola, otevře okno s klávesami právě otevřené obrazovky. **Esc** ho zavře
     a šipky zase ovládají seznam.
   - **Okno Přidat z ceníku**: **Tab / Shift+Tab** přepne sklad, **↑/↓** vybere řádek,
