@@ -67,8 +67,12 @@ powershell -ExecutionPolicy Bypass -File nastroje\zastupce-autoservis.ps1 -Adres
     **Insert** = nový záznam (u Faktur a Příjmu nic). Psaní písmen a číslic skočí do hledání; z hledání **↓** zpět do seznamu, **Esc** ven.
   - **Detail zakázky**: **↑/↓** projde materiál i práci, **Enter** otevře úpravu položky, **Insert** přidá materiál
     z ceníku, **Delete** položku odebere.
-  - **Okno Přidat z ceníku**: **Tab / Shift+Tab** přepne ceník (sklady, Z historie), **↑/↓** vybere řádek,
-    **←/→** ubere / přidá kus (u vybraného řádku), **Enter** vloží.
+  - **Okno Přidat z ceníku**: **Tab / Shift+Tab** přepne sklad, **↑/↓** vybere řádek,
+    **←/→** ubere / přidá kus (u vybraného řádku), **Enter** vloží. Ikona vedle kódu ho zkopíruje do schránky.
+  - **Okno Z historie** (tlačítko *Z historie* u materiálu zakázky, #188): materiál dříve vydaný na vozidlo, od
+    nejčastěji použitého. **↑/↓** vybere řádek, **Mezerník** nebo dvojklik ho zaškrtne (v poli hledání a množství
+    se píše normálně), **Enter** / *Vložit* vloží všechno označené (bez označení vybraný řádek), **Esc** zavře.
+    Díl z ceníku se vloží za aktuální cenu z ceníku, díl mimo ceník za cenu ze starší zakázky.
 - Chyba ve formuláři přesune kurzor na pole, kterého se týká, a zvýrazní ho.
 - Mazání, storno a zavření okna s neuloženými změnami se ptá v **okně aplikace** (výchozí volba je bezpečná „Ne“);
   po uložení se vpravo dole krátce ukáže hláška („Vozidlo uloženo.“ apod.), chyba červeně.

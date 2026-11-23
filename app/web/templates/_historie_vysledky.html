@@ -1,0 +1,41 @@
+{% from "_makra.html" import kopirovat %}
+{# #188: tabulka okna Z historie – jeden řádek na díl (poslední použití, počet použití), zaškrtávátko a množství.
+   Cena: díl v ceníku = aktuální cena z ceníku, jinak cena ze starší zakázky (mimo ceník). #}
+{% if not zakazka.vozidlo_id %}
+<p class="tlumene" style="padding:.5rem .6rem">Zakázka nemá přiřazené vozidlo – historie materiálu není k dispozici.</p>
+{% elif radky_historie %}
+<table class="vyber-cenik striped vyber-historie">
+  <colgroup><col class="sl-vyber"><col class="sl-kod"><col><col class="sl-naposledy"><col class="sl-pocet"><col class="sl-cena-mj"><col class="sl-cena"><col class="sl-mnozstvi"></colgroup>
+  <thead><tr><th class="sl-vyber"><input type="checkbox" aria-label="Označit vše" tabindex="-1"
+      onchange="this.closest('table').querySelectorAll('[name=vybrano]').forEach(c => c.checked = this.checked)"></th>
+    <th>Kód</th><th>Název</th><th>Naposledy</th><th class="cislo">Použito</th>
+    <th class="cislo">Cena bez DPH</th>
+    <th class="cislo">{% if nast.platce_dph %}Cena s DPH{% endif %}</th><th class="cislo">Množství</th></tr></thead>
+  <tbody>
+  {% for h in radky_historie %}
+    {% set r = h.radek %}
+    <tr data-historie data-kod="{{ r.kod or '' }}" title="Mezerník nebo dvojklik = označit, Enter = vložit označené">
+      <td class="sl-vyber"><input type="checkbox" name="vybrano" value="{{ r.id }}" aria-label="Označit {{ r.nazev }}"></td>
+      <td class="zkratit kod-polozky-okna kod-s-kopii" title="{{ r.kod or '' }}">{% if r.kod %}{{ kopirovat(r.kod, 'kód') }}{% endif %}<strong>{{ r.kod or '' }}</strong></td>
+      <td title="{{ r.nazev }}">{{ r.nazev }}{% if not h.vzor %} <span class="tlumene" title="Díl není v ceníku – cena ze starší zakázky">(mimo ceník)</span>{% endif %}</td>
+      <td class="tlumene zkratit" title="Zakázka {{ h.zakazka.cislo }}, množství {{ r.mnozstvi|mnozstvi }} {{ r.jednotka }}">{{ h.zakazka.datum_prijeti|datum }} · {{ h.zakazka.cislo }}</td>
+      <td class="cislo tlumene">{{ h.pocet }}×</td>
+      <td class="cislo">{{ h.cena|penize }} <span class="tlumene">/ {{ r.jednotka }}</span></td>
+      <td class="cislo tlumene">{% if nast.platce_dph %}{{ (h.cena * (100 + h.sazba_dph) / 100)|penize }}{% endif %}</td>
+      <td class="bunka-pridat"><div>
+        <span class="krokovac">
+          <button type="button" class="krok" data-krok="-1" tabindex="-1" aria-label="Ubrat 1">−</button>
+          <input type="text" name="mnozstvi_{{ r.id }}" value="1" inputmode="decimal" aria-label="Množství – {{ r.nazev }}"
+                 class="vstup-mnozstvi" onfocus="this.select()">
+          <button type="button" class="krok" data-krok="1" tabindex="-1" aria-label="Přidat 1">+</button>
+        </span>
+      </div></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% elif q %}
+<p class="tlumene" style="padding:.5rem .6rem">V historii vozidla nic nenalezeno.</p>
+{% else %}
+<p class="tlumene" style="padding:.5rem .6rem">Na vozidlo {{ zakazka.vozidlo.spz or '' }} zatím nebyl ve starších zakázkách vydán žádný materiál.</p>
+{% endif %}

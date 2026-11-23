@@ -1,0 +1,38 @@
+{% extends "_okno.html" if okno else "base.html" %}
+{# #188: okno Z historie – materiál dříve vydaný na vozidlo zakázky (od nejčastěji použitého), vzhled jako okno
+   Přidat materiál z ceníku. Řádky se zaškrtávají, Vložit nahoře vloží všechno označené najednou (díl z ceníku
+   za aktuální cenu z ceníku). Klávesy: ↓ ↑ výběr řádku, Mezerník zaškrtne, Enter vloží označené, Esc zavře. #}
+{% block title %}Z historie – {{ zakazka.cislo }}{% endblock %}
+{% block content %}
+<div class="okno-cenik okno-historie formular prijem siroky" data-bez-potvrzeni>
+  <header class="okno-hlavicka hlavicka-na-stred">
+    <span class="tlacitka-hlavicky vlevo neni-tisk">
+      <button type="submit" form="vlozit-historii" class="maly" title="Vložit označené díly do zakázky (Enter)">Vložit</button>
+    </span>
+    <h1>Materiál z historie vozidla{% if zakazka.vozidlo %} {{ zakazka.vozidlo.spz }}{% endif %}</h1>
+    <span class="tlacitka-hlavicky neni-tisk">
+      {% if okno %}
+      <button type="button" class="zpet maly" data-zavrit-okno title="Zavřít okno (Esc)">✕ Zavřít</button>
+      {% else %}
+      <a href="/zakazky/{{ zakazka.id }}#polozky" role="button" class="zpet maly">✕ Zavřít</a>
+      {% endif %}
+    </span>
+  </header>
+  <p class="hlaseni-okna {% if hlaseni_chyba %}chyba{% endif %}" role="status">{{ hlaseni_chyba or '' }}</p>
+  <div class="radek-hledani-okna">
+    <input type="search" name="q" value="{{ q }}" placeholder="Hledat v historii vozidla – kód nebo název…" autocomplete="off" autofocus
+           hx-get="/zakazky/{{ zakazka.id }}/historie" hx-trigger="input changed delay:250ms, search" hx-target="#historie-vysledky"
+           hx-vals='{{ {"vysledky": "1", "okno": "1" if okno else ""}|tojson }}'>
+  </div>
+  <form id="vlozit-historii" method="post" action="/zakazky/{{ zakazka.id }}/historie/vlozit"
+        {% if okno %}hx-post="/zakazky/{{ zakazka.id }}/historie/vlozit" hx-target="#okno-formular-obsah"{% endif %}>
+    {% if okno %}<input type="hidden" name="okno" value="1">{% endif %}
+    <input type="hidden" name="q" value="{{ q }}">
+    <div id="historie-vysledky" class="vysledky-ceniku">
+      {% include "_historie_vysledky.html" %}
+    </div>
+  </form>
+  <p class="tlumene napoveda-okna neni-tisk">Mezerník nebo dvojklik zaškrtne řádek · Enter / Vložit vloží všechno označené ·
+    šipky ↓ ↑ vybírají · Esc zavře okno · cena z aktuálního ceníku</p>
+</div>
+{% endblock %}

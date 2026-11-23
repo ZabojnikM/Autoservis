@@ -24,7 +24,7 @@
       {% if typ_okna == 'prace' %}{{ tlacitko_novy() }}{% endif %}
       {% if typ_okna == 'material' %}
       {{ tlacitko_novy(s_hledanim=True) }}
-      {# přepínač: jedno tlačítko na každý založený katalog + Z historie; text hledání se přenese #}
+      {# přepínač: jedno tlačítko na každý založený katalog; text hledání se přenese (Z historie má od #188 vlastní okno) #}
       <nav class="prepinac-katalogu" aria-label="Zdroj materiálu">
         {% for k in katalogy %}
         {% set aktivni = not historie and k.id == katalog.id %}
@@ -32,9 +32,6 @@
            class="katalog-tlacitko{% if aktivni %} aktivni{% endif %}" {% if aktivni %}aria-current="true"{% endif %}
            title="{{ k.nadpis }}">{{ k.nazev }}</a>
         {% endfor %}
-        <a href="{{ adresa_okna }}&zdroj=historie" role="button" data-okno data-s-hledanim="q"
-           class="katalog-tlacitko{% if historie %} aktivni{% endif %}" {% if historie %}aria-current="true"{% endif %}
-           title="Materiál dříve vydaný na vozidlo této zakázky">Z historie</a>
       </nav>
       {% endif %}
     </span>

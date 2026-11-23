@@ -413,6 +413,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-22 | Šipky: ←/→ přepínají hlavní záložky menu (dokola); okno ceníku Tab = další ceník, ←/→ = kusy (#185) |
 | 2026-11-23 | Na celé koruny se zaokrouhlují všechny nové doklady včetně faktury převodem (i částka v QR platbě) (#190) |
 | 2026-11-23 | Faktura a vyúčtování: tlačítko Stáhnout PDF (server, WeasyPrint, stejná tisková šablona), stažení označí doklad jako vytištěný (#189) |
+| 2026-11-23 | Zakázka: tlačítko a okno Z historie se zaškrtávátky a hromadným vložením (aktuální ceny z ceníku), Z historie odebráno z okna ceníku, kopírování kódu v obou oknech (#188) |
 
 ## Zdroje průzkumu
 

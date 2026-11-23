@@ -128,6 +128,11 @@
   {% if lze_menit %}<span class="tlacitka-mrizky neni-tisk">
     <a href="/zakazky/{{ zakazka.id }}/cenik?typ={{ typ }}" role="button" data-okno{% if typ == 'material' %} data-insert{% endif %}
        title="{{ nazev }} z ceníku{% if typ == 'material' %} (klávesa Insert){% endif %}" aria-label="{{ nazev }} z ceníku">Ceník</a>
+    {% if typ == 'material' %}
+    {# #188: materiál dříve vydaný na vozidlo – zaškrtávátka a hromadné vložení #}
+    <a href="/zakazky/{{ zakazka.id }}/historie" role="button" class="secondary outline" data-okno
+       title="Materiál dříve vydaný na vozidlo této zakázky" aria-label="Materiál z historie vozidla">Z historie</a>
+    {% endif %}
     <a href="/zakazky/{{ zakazka.id }}/polozky/nova?typ={{ typ }}" role="button" class="secondary outline" data-okno
        title="{{ 'Nová práce' if typ == 'prace' else 'Nový materiál' }} – jen do zakázky, nebo i do ceníku"
        aria-label="{{ 'Nová práce' if typ == 'prace' else 'Nový materiál' }}">Nový</a>

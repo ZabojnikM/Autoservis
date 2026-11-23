@@ -1,3 +1,4 @@
+{% from "_makra.html" import kopirovat %}
 {# Výsledky hledání v ceníku pro přidání do zakázky (okno Přidat z ceníku).
    okno=True: přidání přes HTMX, odpověď = znovu vykreslené okno s hláškou.
    Řádek: jen množství s − / + a Vložit (také dvojklik nebo Enter na vybraném řádku), bez Upravit –
@@ -76,7 +77,7 @@
     <tr data-pridat data-kod="{{ p.kod or '' }}" {% if casty %}class="pouzivany"{% endif %} title="Dvojklik nebo Enter = vložit do zakázky">
       {% if ukaz_typ %}<td><span class="typ typ-{{ p.typ }}">{{ p.nazev_typu }}</span></td>{% endif %}
       {# kód je hlavní údaj – tučně, seznam je podle něj seřazený (#28) #}
-      <td class="zkratit kod-polozky-okna" title="{{ p.kod or '' }}"><strong>{{ p.kod or '' }}</strong></td>
+      <td class="zkratit kod-polozky-okna kod-s-kopii" title="{{ p.kod or '' }}">{% if p.kod %}{{ kopirovat(p.kod, 'kód') }}{% endif %}<strong>{{ p.kod or '' }}</strong></td>
       <td title="{{ p.nazev }}{% if p.poznamka %} – {{ p.poznamka }}{% endif %}">{{ p.nazev }}</td>
       {% if ukaz_zamenitelny %}<td class="tlumene zkratit" title="{{ p.zamenitelny_dil or '' }}">{{ p.zamenitelny_dil or '' }}</td>{% endif %}
       {% if s_pouzitim %}<td class="cislo tlumene"{% if pouzito %} title="Naposledy {{ pouzito[1]|datum }}"{% endif %}>{{ (pouzito[0] ~ '×') if pouzito else '–' }}</td>{% endif %}

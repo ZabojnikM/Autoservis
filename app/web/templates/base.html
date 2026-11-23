@@ -258,6 +258,7 @@
       const tr = e.target.closest(".obsah tbody tr");
       if (!tr || e.target.closest("a, button, input, select, textarea, label")) return;
       if (tr.hasAttribute("data-pridat")) { pridejRadek(tr); return; }  // okno Přidat z ceníku
+      if (tr.hasAttribute("data-historie")) { prepniOznaceni(tr); return; }  // okno Z historie (#188)
       const cil = cilRadku(tr, "otevrit");
       // řádek s data-okno (např. ceník) se dvojklikem otevře jako okno
       if (cil && tr.hasAttribute("data-okno") && !formularNaStrance()) otevriOkno(cil);
@@ -559,8 +560,48 @@
       vybranyRadek = tr;
       tr.scrollIntoView({block: "nearest"});
     }
+    // ---- Okno Z historie (#188): ↓ ↑ vybírají řádek (kurzor na jeho zaškrtávátko), Mezerník zaškrtne,
+    // Enter vloží všechno označené (bez označení vybraný řádek), dvojklik zaškrtne. V polích se píše normálně.
+    function prepniOznaceni(tr) {
+      const c = tr.querySelector("input[name=vybrano]");
+      if (c) c.checked = !c.checked;
+    }
+    function vlozHistorii(okno) {
+      const form = okno.querySelector("#vlozit-historii");
+      if (!form) return;
+      if (!form.querySelector("input[name=vybrano]:checked")) {
+        const vybrany = okno.querySelector(".vyber-historie tbody tr.vybrany");
+        if (!vybrany) return;
+        vybrany.querySelector("input[name=vybrano]").checked = true;
+      }
+      form.requestSubmit();
+    }
+    document.addEventListener("keydown", (e) => {
+      const okno = e.target.closest?.(".okno-historie");
+      if (!okno || e.ctrlKey || e.altKey || e.metaKey) return;
+      const radky = [...okno.querySelectorAll(".vyber-historie tbody tr[data-historie]")];
+      const vybrany = radky.find((r) => r.classList.contains("vybrany"));
+      const vTextu = e.target.matches("input[type=search], input[type=text]");
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        if (!radky.length) return;
+        e.preventDefault();
+        const i = radky.indexOf(vybrany);
+        const cil = radky[i < 0 ? 0 : (e.key === "ArrowDown" ? Math.min(i + 1, radky.length - 1) : Math.max(i - 1, 0))];
+        vyberRadekCeniku(cil);
+        cil.querySelector("input[name=vybrano]")?.focus();
+      } else if (e.key === "Enter") {
+        e.preventDefault();
+        vlozHistorii(okno);
+      } else if (e.key === " " && !vTextu) {
+        const tr = e.target.closest("tr[data-historie]") || vybrany;
+        if (!tr) return;
+        e.preventDefault();
+        prepniOznaceni(tr);
+      }
+    }, true);
     document.addEventListener("keydown", (e) => {
       const okno = e.target.closest?.(".okno-cenik");
+      if (okno?.classList.contains("okno-historie")) return;  // vlastní obsluha výše
       if (!okno || !["ArrowDown", "ArrowUp", "Enter", "Tab", "ArrowLeft", "ArrowRight"].includes(e.key)) return;
       if (e.ctrlKey || e.altKey || e.metaKey) return;
       if (e.target.closest("form.radek-pridat") || e.target.closest("button, a")) return;  // pole množství: Enter = Přidat
