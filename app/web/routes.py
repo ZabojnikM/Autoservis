@@ -1397,7 +1397,10 @@ def faktura_tisk(request: Request, db: DB, faktura_id: int):
 
 @router.get("/faktury/{faktura_id}/pdf")
 def faktura_pdf(request: Request, db: DB, faktura_id: int):
-    """#189: doklad rovnou jako PDF (stejná šablona jako tisk); stažení se počítá jako vytištění (#167)."""
+    """#189: doklad rovnou jako PDF (stejná šablona jako tisk); otevření se počítá jako vytištění (#167).
+
+    #193: posílá se k zobrazení (inline), ne ke stažení – Chrome přes http stažení blokuje,
+    zobrazení v nové záložce ne. Uložit jde z prohlížeče PDF; název souboru zůstává podle čísla dokladu."""
     kontext = _kontext_tisku(db, faktura_id)
     f = kontext["f"]
     if not pdf.dostupne():
@@ -1408,7 +1411,7 @@ def faktura_pdf(request: Request, db: DB, faktura_id: int):
     if not f.vytisteno:
         faktury.nastav_vytisteno(db, faktura_id, True)
     return Response(obsah, media_type="application/pdf",
-                    headers={"Content-Disposition": f'attachment; filename="{pdf.nazev_souboru(f.cislo)}"'})
+                    headers={"Content-Disposition": f'inline; filename="{pdf.nazev_souboru(f.cislo)}"'})
 
 
 @router.post("/faktury/{faktura_id}/vytisteno")
