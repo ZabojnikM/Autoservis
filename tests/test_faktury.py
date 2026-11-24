@@ -335,12 +335,27 @@ def test_pdf_dokladu(session, zakazka):
     odpoved = TestClient(app).get(f"/faktury/{f.id}/pdf")
     assert odpoved.status_code == 200 and odpoved.headers["content-type"] == "application/pdf"
     assert odpoved.content.startswith(b"%PDF") and len(odpoved.content) > 5000
-    assert f'filename="{f.cislo}.pdf"' in odpoved.headers["content-disposition"]
+    assert odpoved.headers["content-disposition"] == f'inline; filename="{f.cislo}.pdf"'   # #193
     session.refresh(f)
     assert f.vytisteno and f.vytisteno_kdy   # stažení PDF se počítá jako tisk (#167)
     klient = TestClient(app)
     assert f"/faktury/{f.id}/pdf" in klient.get(f"/faktury/{f.id}").text
     assert f"/faktury/{f.id}/pdf" in klient.get("/faktury?filtr=faktury").text
+
+
+def test_pdf_dokladu_se_otevira_v_nove_zalozce(session, zakazka):
+    """#193: Chrome přes http blokuje stažení – odkazy na PDF otevírají novou záložku, bez atributu download."""
+    import re
+    from fastapi.testclient import TestClient
+    from app.main import app
+    f = _vystav(session, zakazka)
+    klient = TestClient(app)
+    for html in (klient.get(f"/faktury/{f.id}").text, klient.get("/faktury?filtr=faktury").text):
+        odkazy = re.findall(rf'<a href="/faktury/{f.id}/pdf"[^>]*>', html)
+        assert odkazy
+        for odkaz in odkazy:
+            assert 'target="_blank"' in odkaz and "download" not in odkaz
+    assert "Otevřít PDF" in klient.get(f"/faktury/{f.id}").text
 
 
 def test_pdf_bez_knihovny_hlaska(session, zakazka, monkeypatch):

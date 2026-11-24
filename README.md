@@ -239,7 +239,7 @@ Aplikace tiskne jen tyto doklady:
 
 - **Zakázkový list** (A4) – detail zakázky → **Zakázkový list** (otevře se v nové kartě rovnou s tiskem);
   bez položek má prázdné řádky pro ruční zápis, vždy podpisy pro příjem a předání vozidla
-- **Faktura – daňový doklad** – placená převodem (účet + QR) nebo hotově; tlačítko **Stáhnout PDF** (v detailu i v seznamu dokladů) uloží doklad rovnou jako PDF `<číslo>.pdf` ze stejné šablony jako tisk a označí ho jako vytištěný (#189; na Windows bez GTK se PDF nevytvoří, zůstává Tisk / PDF v prohlížeči); částka k úhradě se zaokrouhlí na celé koruny (vypnout jde v Nastavení → Doklady);
+- **Faktura – daňový doklad** – placená převodem (účet + QR) nebo hotově; tlačítko **Otevřít PDF** (v detailu, v seznamu dokladů odkaz PDF) otevře doklad jako PDF `<číslo>.pdf` ze stejné šablony jako tisk v nové záložce a označí ho jako vytištěný; uložit jde ikonou stahování v prohlížeči PDF nebo Ctrl+S (#189, #193 – Chrome přes http přímé stažení blokuje; na Windows bez GTK se PDF nevytvoří, zůstává Tisk / PDF v prohlížeči); částka k úhradě se zaokrouhlí na celé koruny (vypnout jde v Nastavení → Doklady);
   **vyžaduje zákazníka** na zakázce
 - **Vyúčtování zakázky** – jde i **bez zákazníka** (odběratel nepovinný)
 
