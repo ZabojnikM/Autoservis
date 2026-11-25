@@ -6,13 +6,16 @@
   <a href="/zakazky/nova" role="button" data-okno data-insert title="Klávesa Insert">Nová zakázka</a>
   <form method="get" class="filtr">
     {{ hledani_seznamu('Číslo, SPZ, zákazník, požadavek…', autofocus=False, napoveda='číslo zakázky, SPZ, zákazník, požadavek') }}
-    <select name="stav" onchange="this.form.submit()" aria-label="Stav zakázky">
-      <option value="" {% if not stav and not vse %}selected{% endif %}>Otevřené ({{ pocet_otevrenych }})</option>
-      {% for s, nazev in StavZakazky.ZALOZKY %}
-      <option value="{{ s }}" {% if stav == s %}selected{% endif %}>{{ nazev }} ({{ pocty[s] }})</option>
+    {% set vybrany_stav = stav or ('vse' if vse else '') %}
+    <input type="hidden" name="stav" value="{{ vybrany_stav }}">
+    <div class="filtr-zakazek-stav" role="group" aria-label="Stav zakázky">
+      {% for hodnota, nazev, pocet in [('vse', 'Všechny', pocet_vsech), ('', 'Otevřené', pocet_otevrenych)] %}
+      {% set vybrano = vybrany_stav == hodnota %}
+      <button type="button" value="{{ hodnota }}" aria-pressed="{{ 'true' if vybrano else 'false' }}"
+              {% if not vybrano %}class="outline"{% endif %}
+              onclick="this.form.elements.stav.value = this.value; this.form.requestSubmit()">{{ nazev }} ({{ pocet }})</button>
       {% endfor %}
-      <option value="vse" {% if vse and not stav %}selected{% endif %}>Všechny ({{ pocet_vsech }})</option>
-    </select>
+    </div>
     {{ vyber_roku(roky, rok) }}
   </form>
 </div>
