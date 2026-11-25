@@ -137,6 +137,7 @@ tests/
 
 > **Po aktualizaci programu server restartujte** (zavřít okno `spustit.bat` a spustit znovu) –
 > automatické načtení změn kódu na Windows někdy zamrzne a běží dál stará verze.
+- **Seznam zakázek** se řadí podle čísla od nejnovější – nejnovější zakázka nahoře (#210); jinak řadit jde kliknutím na záhlaví sloupce.
 - **Zakázky**: číslování `RRRR-0001`, stavy Přijato → V opravě → Předáno → Uzavřeno (s dokladem).
   Seznam má jen **Otevřené** (bez dokladu, i předané) a **Uzavřené** (#166): **Předáno** znamená vozidlo
   u zákazníka, zakázka zůstává otevřená, dokud není doklad. **Uzavřít bez dokladu** zavře zakázku
