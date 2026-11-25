@@ -1675,18 +1675,31 @@ def test_rucni_cena_v_radku_zakazky_nemeni_cenik():
     assert "vyúčtovaná" in unquote(r.cookies.get("zprava", ""))
 
 
-def test_seznam_zakazek_jen_otevrene_a_uzavrene():
-    """#166: předaná zakázka (bez dokladu) zůstává mezi otevřenými; filtr má jen Otevřené, Uzavřené a Všechny."""
+def test_seznam_zakazek_filtr_otevrene_vsechny_a_rok():
+    """Předaná zakázka zůstává otevřená, dokud není uzavřená s dokladem nebo ručně."""
     loc = _prijem(spz="1PR1660").headers["location"].split("?")[0]
     client.post(f"{loc}/stav", data={"stav": "hotovo"})
     seznam = client.get("/zakazky").text
     assert "1PR1660" in seznam
-    assert "Předané" not in seznam and "Uzavřené" in seznam and "Otevřené (1)" in seznam
+    assert 'value="" aria-pressed="true"' in seznam
+    assert 'value="vse" aria-pressed="false"' in seznam
+    assert "Otevřené (1)" in seznam and '<select name="stav"' not in seznam
     assert "Zakázka zůstává otevřená, dokud není doklad." in client.get(loc).text
     # uzavřená bez dokladu → mezi uzavřenými
     client.post(f"{loc}/stav", data={"stav": "predano", "bez_dokladu": "1"})
     assert "1PR1660" not in client.get("/zakazky").text
     assert "1PR1660" in client.get("/zakazky", params={"stav": "predano"}).text
+    vsechny = client.get("/zakazky", params={"stav": "vse", "rok": "vse"}).text
+    assert 'value="vse" aria-pressed="true"' in vsechny
+    assert 'type="hidden" name="stav" value="vse"' in vsechny
+    assert "1PR1660" in vsechny
+
+    _prijem(spz="1PR1661")
+    for stav in ("", "vse"):
+        for rok in (date.today().year - 1, date.today().year):
+            seznam = client.get("/zakazky", params={"stav": stav, "rok": rok}).text
+            assert ("1PR1661" in seznam) == (rok == date.today().year)
+            assert ("1PR1660" in seznam) == (rok == date.today().year and stav == "vse")
 
 
 def test_stav_tisku_dokladu():
