@@ -1291,15 +1291,15 @@ def test_splatnost_jen_u_faktury():
     assert "Datum splatnosti" in client.get(f"{doklad}/tisk").text
 
 
-def test_zakazky_vychozi_razeni_od_nejstarsi():
-    """#56: bez zvoleného řazení podle čísla vzestupně, ruční řazení zůstává."""
+def test_zakazky_vychozi_razeni_od_nejnovejsi():
+    """#210: bez zvoleného řazení podle čísla sestupně (nejnovější nahoře), ruční řazení zůstává."""
     for spz in ("1AA1111", "2BB2222", "3CC3333"):
         _prijem(spz=spz)
     text = client.get("/zakazky", params={"vse": "1"}).text
     cisla = re.findall(r"<strong>(\d{4}-\d{4})</strong>", text) or re.findall(r">(\d{4}-\d{4})<", text)
-    assert len(cisla) >= 3 and cisla == sorted(cisla)
-    opacne = re.findall(r">(\d{4}-\d{4})<", client.get("/zakazky", params={"vse": "1", "razeni": "-cislo"}).text)
-    assert opacne[:3] == sorted(set(opacne), reverse=True)[:3]
+    assert len(cisla) >= 3 and cisla == sorted(cisla, reverse=True)
+    vzestupne = re.findall(r">(\d{4}-\d{4})<", client.get("/zakazky", params={"vse": "1", "razeni": "cislo"}).text)
+    assert vzestupne[:3] == sorted(set(vzestupne))[:3]
 
 
 def test_nastaveni_platce_dph_u_dic():

@@ -341,11 +341,11 @@ def seznam(
 def stranka(session: Session, stav: str | list[str] | None = None, jen_otevrene: bool = False, hledat: str | None = None,
             razeni: str | None = None, od=0, limit: int = VELIKOST_STRANKY, rok: int | None = None) -> Stranka:
     """Seznam zakázek pro mřížku – řazení podle sloupce a načítání po dávkách.
-    Výchozí řazení podle čísla od nejstarší (#56)."""
+    Výchozí řazení podle čísla od nejnovější – nejnovější zakázka nahoře (#210, dříve od nejstarší #56)."""
     dotaz = _dotaz_seznamu(stav, jen_otevrene, hledat)
     if rok is not None:
         dotaz = dotaz.where(extract("year", Zakazka.datum_prijeti) == rok)
-    return strankuj_dotaz(session, dotaz, RAZENI, razeni, "cislo",
+    return strankuj_dotaz(session, dotaz, RAZENI, razeni, "-cislo",
                           od, limit, doplnkove=[Zakazka.id])
 
 
