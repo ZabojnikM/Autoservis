@@ -324,11 +324,13 @@ def test_prijem_bez_zakaznika_a_doplneni_web():
     r = client.post("/zakazky/nova", data={"spz": "5DD5555", "k_nazev": "", "k_telefon": "777", "pozadavek": "x"})
     assert r.status_code == 422 and "Vyplňte firmu" in r.text and 'value="777"' in r.text
 
-    # vyúčtování jde i bez zákazníka, faktura ne
+    # vyúčtování jde i bez zákazníka, faktura jen s odběratelem (#208: vybere se v okně vystavení)
     client.post(f"{loc}/polozky", data={"typ": "material", "nazev": "Díl", "mnozstvi": "1", "cena": "100"})
-    assert "Faktura: doplnit zákazníka" in client.get(loc).text
-    r = client.post(f"{loc}/vystavit", data={"typ": "faktura", "odb_nazev": "Někdo"})
-    assert r.status_code == 422 and "vyžaduje zákazníka" in r.text
+    assert "Vystavit fakturu" in client.get(loc).text
+    okno = client.get(f"{loc}/vystavit?typ=faktura").text
+    assert "Zakázka nemá zákazníka" in okno and 'id="panel-odberatel"' in okno
+    r = client.post(f"{loc}/vystavit", data={"typ": "faktura", "odb_nazev": "", "zakaznik_id": ""})
+    assert r.status_code == 422 and "Vyplňte odběratele" in r.text
     assert "u vyúčtování nepovinné" in client.get(f"{loc}/vystavit?typ=vyuctovani").text
 
     # zákazníka lze doplnit na zakázce i u vozidla

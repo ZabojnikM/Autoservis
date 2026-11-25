@@ -618,18 +618,25 @@ LIMIT_OKNA = 200
 
 
 @router.get("/vozidla/okno", response_class=HTMLResponse)
-def vozidla_okno(request: Request, db: DB, q: str = "", zakaznik_id: str = "", vse: str = ""):
+def vozidla_okno(request: Request, db: DB, q: str = "", zakaznik_id: str = "", vse: str = "", cil: str = ""):
     """HTMX: okno „Databáze vozidel“ při příjmu – seznam s filtrem a tlačítkem Vložit.
 
     Je-li na příjmu vybraný zákazník (a nic se nehledá), ukáže nejdřív jeho vozidla.
+    cil=doklad (#208): vždy všechna vozidla, vozidla odběratele nahoře; Vložit nastaví vozidlo dokladu.
     """
     q = cisty_text(q) or ""
     zakaznik = None if (q or vse) else _najdi(db, zakaznici, zakaznik_id)
     nalezena = sorted(zakaznik.vozidla, key=lambda v: v.spz) if zakaznik else []
-    if not nalezena:
+    if cil == "doklad":
+        jeho = {v.id for v in nalezena}
+        nalezena += [v for v in vozidla.seznam(db, q, limit=LIMIT_OKNA) if v.id not in jeho]
+        if not jeho:
+            zakaznik = None
+    elif not nalezena:
         zakaznik = None
         nalezena = vozidla.seznam(db, q, limit=LIMIT_OKNA)
-    return _stranka(request, "_okno_vozidla.html", vozidla=nalezena, zakaznik=zakaznik, q=q, limit=LIMIT_OKNA)
+    return _stranka(request, "_okno_vozidla.html", vozidla=nalezena, zakaznik=zakaznik, q=q, limit=LIMIT_OKNA,
+                    cil=cil, pocet_jeho=len(zakaznik.vozidla) if zakaznik else 0)
 
 
 def _formular_vozidla(request, vozidlo, hodnoty, zakaznik, okno=False, chyba=None):
@@ -816,6 +823,7 @@ def zakaznici_vyber(request: Request, db: DB, q: str = "", pole: str = "zakaznik
 
 @router.get("/zakaznici/okno", response_class=HTMLResponse)
 def zakaznici_okno(request: Request, db: DB, q: str = "", pole: str = "zakaznik_id", cil: str = ""):
+    # cil=doklad (#208): Vložit nastaví odběratele v okně vystavení dokladu
     """HTMX: okno „Databáze zákazníků“ – seznam s filtrem.
 
     Vložit nastaví zákazníka do výběru `pole` (úprava vozidla/zakázky), nebo s `cil=prijem` do panelu příjmu.
@@ -1304,12 +1312,44 @@ def _formular_vystaveni(request, db, zakazka, hodnoty, okno=False, chyba=None):
     if not cisty_text(hodnoty.get("poradi")):
         hodnoty = dict(hodnoty) | {"poradi": faktury.dalsi_cislo(db, typ, rok)[len(predpona):]}
     volna = [c.cislo for c in faktury.volna_cisla(db, typ, rok)]
+    vozidlo, spz = _vozidlo_dokladu(db, hodnoty.get("vozidlo_id"), hodnoty.get("spz"))
     return _stranka(request, "faktura_vystavit.html", _status_formulare(okno, chyba), aktivni="faktury",
+                    vozidlo=vozidlo, spz_dokladu=spz, ze_zakazky=bool(vozidlo and vozidlo.id == zakazka.vozidlo_id),
                     zakazka=zakazka, hodnoty=hodnoty, nast=nast,
                     rek=polozky.rekapitulace(zakazka), FormaUhrady=FormaUhrady, TypDokladu=TypDokladu,
                     okno=okno, chyba=chyba, predpona=predpona, volna=volna, predpona_volnych=len(predpona),
                     typ=typ, ucet_vyuctovani_ok=bool(faktury.iban_vyuctovani(nast)),
                     vzor_rady=nast.rada_faktura if typ == TypDokladu.FAKTURA else nast.rada_vyuctovani)
+
+
+def _vozidlo_dokladu(db, vozidlo_id, spz):
+    """#208: vozidlo v okně vystavení – podle vybraného id, jinak podle SPZ; SPZ mimo databázi zůstane textem."""
+    vozidlo = _najdi(db, vozidla, vozidlo_id)
+    if vozidlo is None and cisty_text(spz):
+        vozidlo = vozidla.najdi_podle_spz(db, spz)
+    return vozidlo, (vozidlo.spz if vozidlo else vozidla.normalizuj_spz(spz or "") or None)
+
+
+@router.get("/doklad/odberatel", response_class=HTMLResponse)
+def doklad_odberatel(request: Request, db: DB, vybrat_id: int | None = None, typ: str = TypDokladu.FAKTURA):
+    """HTMX #208: panel Odběratel ve vystavení dokladu – vložený zákazník z databáze, nebo prázdný (Nový)."""
+    hodnoty = {}
+    if vybrat_id:
+        k = zakaznici.ziskej(db, vybrat_id)
+        hodnoty = {"zakaznik_id": k.id, "odb_nazev": k.nazev, "odb_ulice": k.ulice, "odb_mesto": k.mesto,
+                   "odb_psc": k.psc, "odb_ico": k.ico, "odb_dic": k.dic}
+    return _stranka(request, "_doklad_odberatel.html", hodnoty=hodnoty,
+                    typ=typ if typ in TypDokladu.VSECHNY else TypDokladu.FAKTURA)
+
+
+@router.get("/doklad/vozidlo", response_class=HTMLResponse)
+def doklad_vozidlo(request: Request, db: DB, spz: str = "", vybrat_id: int | None = None, bez: str = "",
+                   vozidlo_zakazky: str = ""):
+    """HTMX #208: vozidlo dokladu – podle SPZ, vybrané z databáze (přepíše i pole SPZ), nebo Bez vozidla."""
+    vozidlo, spz = (None, None) if bez else _vozidlo_dokladu(db, vybrat_id, spz)
+    return _stranka(request, "_doklad_vozidlo_udaje.html", vozidlo=vozidlo, spz_dokladu=spz,
+                    ze_zakazky=bool(vozidlo and str(vozidlo.id) == cisty_text(vozidlo_zakazky)),
+                    prepsat_spz=bool(bez or vybrat_id))
 
 
 @router.get("/zakazky/{zakazka_id}/vystavit", response_class=HTMLResponse)
