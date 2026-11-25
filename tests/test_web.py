@@ -1683,7 +1683,8 @@ def test_seznam_zakazek_filtr_otevrene_vsechny_a_rok():
     assert "1PR1660" in seznam
     assert 'value="" aria-pressed="true"' in seznam
     assert 'value="vse" aria-pressed="false"' in seznam
-    assert "Otevřené (1)" in seznam and '<select name="stav"' not in seznam
+    assert ">Otevřené</button>" in seznam and ">Všechny</button>" in seznam
+    assert '<select name="stav"' not in seznam
     assert "Zakázka zůstává otevřená, dokud není doklad." in client.get(loc).text
     # uzavřená bez dokladu → mezi uzavřenými
     client.post(f"{loc}/stav", data={"stav": "predano", "bez_dokladu": "1"})
