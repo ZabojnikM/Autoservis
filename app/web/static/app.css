@@ -708,8 +708,8 @@ legend { padding: 0 6px; font-size: 1rem; }
 .lista-filtru-seznamu > a[role=button] { margin: 0; padding: 6.5px 15.6px; font-size: 1.144rem; }
 .lista-filtru-seznamu > .filtr { padding: 0; border: 0; flex: 1 1 26rem; }
 .lista-filtru-seznamu input[type=search] { flex: 1 1 14rem; }
-.filtr-zakazek-stav { display: flex; gap: .4rem; }
-.filtr-zakazek-stav button { width: auto; margin: 0; padding: .4rem .75rem; white-space: nowrap; }
+.prepinac-zakazek { flex-wrap: nowrap; }
+.prepinac-zakazek button { width: auto; white-space: nowrap; }
 .filtr input, .filtr select { padding-top: 9px; padding-bottom: 9px; }
 .filtr label { font-size: .88rem; }
 
