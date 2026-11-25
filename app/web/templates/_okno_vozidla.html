@@ -6,10 +6,13 @@
 </header>
 <input type="search" name="q" value="{{ q }}" placeholder="Filtr: SPZ, VIN, značka, model, zákazník…" autofocus autocomplete="off"
        hx-get="/vozidla/okno" hx-trigger="input changed delay:300ms, search" hx-include="this"
+       {% if cil %}hx-vals='{"cil": "{{ cil }}"}'{% endif %}
        hx-select="#okno-tabulka" hx-target="#okno-tabulka" hx-swap="outerHTML"
        onkeydown="if (event.key === 'Enter') event.preventDefault()">
 <div id="okno-tabulka" class="okno-tabulka">
-{% if zakaznik %}
+{% if zakaznik and cil == 'doklad' %}
+<p class="maly-text">Nahoře vozidla odběratele <strong>{{ zakaznik.nazev }}</strong>, pod nimi všechna ostatní.</p>
+{% elif zakaznik %}
 <p class="maly-text">Vozidla zákazníka <strong>{{ zakaznik.nazev }}</strong> –
   <a href="#" hx-get="/vozidla/okno" hx-vals='{"vse": "1"}' hx-target="#okno-obsah">zobrazit všechna vozidla</a></p>
 {% endif %}
@@ -18,16 +21,22 @@
   <thead><tr><th>SPZ</th><th>Vozidlo</th><th>Rok</th><th>VIN</th><th>Zákazník</th><th></th></tr></thead>
   <tbody>
   {% for v in vozidla %}
-    <tr>
+    <tr{% if cil == 'doklad' and loop.index == pocet_jeho %} class="konec-skupiny"{% endif %}>
       <td>{{ spz(v.spz) }}</td>
       <td>{{ v.popis }}</td>
       <td>{{ v.rok_vyroby or '' }}</td>
       <td class="tlumene">{{ v.vin or '' }}</td>
       <td>{{ v.zakaznik.nazev if v.zakaznik else '' }}{% if v.zakaznik and v.zakaznik.telefon %}<br><span class="tlumene">{{ v.zakaznik.telefon }}</span>{% endif %}</td>
       <td class="vpravo">
+        {% if cil == 'doklad' %}
+        <button type="button" class="maly" hx-get="/doklad/vozidlo" hx-vals='{"vybrat_id": "{{ v.id }}"}'
+                hx-target="#vozidlo-dokladu-udaje" hx-swap="outerHTML" hx-include="#vozidlo-zakazky"
+                hx-on::after-request="document.getElementById('okno-databaze').close()">Vložit</button>
+        {% else %}
         <button type="button" class="maly" hx-get="/zakazky/nova/vozidlo" hx-vals='{"vybrat_id": "{{ v.id }}"}'
                 hx-target="#vozidlo-udaje" hx-include="#panel-zakaznik"
                 hx-on::after-request="document.getElementById('okno-databaze').close()">Vložit</button>
+        {% endif %}
       </td>
     </tr>
   {% endfor %}

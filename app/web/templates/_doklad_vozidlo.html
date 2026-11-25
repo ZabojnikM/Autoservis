@@ -1,0 +1,19 @@
+{# #208: panel Vozidlo v okně vystavení dokladu – SPZ, nebo výběr z databáze; vozidlo je nepovinné. #}
+<fieldset class="panel" id="panel-vozidlo-dokladu">
+  <legend>Vozidlo</legend>
+  <input type="hidden" id="vozidlo-zakazky" name="vozidlo_zakazky" value="{{ zakazka.vozidlo_id or '' }}">
+  <div class="radek-s-tlacitky">
+    <label class="roztahnout">SPZ <span class="tlumene">(nepovinné)</span>
+      <input type="text" id="spz-dokladu" name="spz" value="{{ spz_dokladu or '' }}" class="vstup-spz" autocomplete="off" placeholder="např. 1AB 2345"
+             hx-get="/doklad/vozidlo" hx-trigger="change" hx-target="#vozidlo-dokladu-udaje" hx-swap="outerHTML"
+             hx-include="#vozidlo-zakazky" hx-sync="this:replace">
+    </label>
+    <button type="button" tabindex="-1" class="maly outline" title="Vybrat vozidlo z databáze – vozidla odběratele jsou nahoře"
+            hx-get="/vozidla/okno" hx-vals='{"cil": "doklad"}' hx-include="#panel-odberatel [name=zakaznik_id]"
+            hx-target="#okno-obsah" hx-on::after-request="document.getElementById('okno-databaze').showModal()">Vybrat</button>
+    <button type="button" tabindex="-1" class="maly secondary outline" title="Doklad bez vozidla"
+            hx-get="/doklad/vozidlo" hx-vals='{"bez": "1"}' hx-include="#vozidlo-zakazky"
+            hx-target="#vozidlo-dokladu-udaje" hx-swap="outerHTML">Bez vozidla</button>
+  </div>
+  {% include "_doklad_vozidlo_udaje.html" %}
+</fieldset>

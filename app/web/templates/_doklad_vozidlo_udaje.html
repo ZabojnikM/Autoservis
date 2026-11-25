@@ -1,0 +1,18 @@
+{% from "_makra.html" import spz as spz_znacka %}
+{# #208: stav vozidla v okně vystavení dokladu. prepsat_spz = po výběru z databáze / Bez vozidla přepíše i pole SPZ. #}
+<div id="vozidlo-dokladu-udaje">
+  <input type="hidden" name="vozidlo_id" value="{{ vozidlo.id if vozidlo else '' }}">
+  {% if vozidlo %}
+  <p class="stav-panelu">✅ {{ spz_znacka(vozidlo.spz) }} {{ vozidlo.popis }}{% if vozidlo.zakaznik %} <span class="tlumene">· {{ vozidlo.zakaznik.nazev }}</span>{% endif %}
+    {% if not ze_zakazky %}<br><span class="tlumene">Stav tachometru se na doklad nenapíše – patří k vozidlu zakázky.</span>{% endif %}</p>
+  {% elif spz_dokladu %}
+  <p class="tlumene stav-panelu">SPZ není v databázi – na doklad se napíše jen SPZ.</p>
+  {% else %}
+  <p class="tlumene stav-panelu">Bez vozidla – na dokladu nebude.</p>
+  {% endif %}
+</div>
+{% if prepsat_spz %}
+<input type="text" id="spz-dokladu" name="spz" value="{{ spz_dokladu or '' }}" class="vstup-spz" autocomplete="off" placeholder="např. 1AB 2345"
+       hx-get="/doklad/vozidlo" hx-trigger="change" hx-target="#vozidlo-dokladu-udaje" hx-swap="outerHTML"
+       hx-include="#vozidlo-zakazky" hx-sync="this:replace" hx-swap-oob="true">
+{% endif %}

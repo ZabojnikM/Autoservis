@@ -6,8 +6,8 @@ import pytest
 
 from sqlmodel import select
 
-from app.models import Faktura, StavZakazky, TypDokladu, Uhrada
-from app.services import ChybaValidace, cenik, faktury, nastaveni, polozky, zakazky
+from app.models import Faktura, StavZakazky, TypDokladu, Uhrada, Zakaznik
+from app.services import ChybaValidace, cenik, faktury, nastaveni, polozky, vozidla, zakazky, zakaznici
 
 
 @pytest.fixture
@@ -259,14 +259,73 @@ def test_nastaveni_udaje_a_rady(session):
         nastaveni.uloz(session, {"splatnost_dni": "-1"})
 
 
+def _zakazka_bez_zakaznika(session, spz="5EE5555"):
+    z = zakazky.prijem(session, zakazka={"pozadavek": "x"}, vozidlo={"spz": spz}, zakaznik={"vyber": "bez"})
+    polozky.pridej_rucne(session, z.id, {"nazev": "Díl", "cena": "100"})
+    return z
+
+
 def test_faktura_vyzaduje_zakaznika_vyuctovani_ne(session):
     nastaveni.uloz(session, {"ucet_vyuctovani": "2001234567/2010"})
-    z = zakazky.prijem(session, zakazka={"pozadavek": "x"}, vozidlo={"spz": "5EE5555"}, zakaznik={"vyber": "bez"})
-    polozky.pridej_rucne(session, z.id, {"nazev": "Díl", "cena": "100"})
-    with pytest.raises(ChybaValidace, match="vyžaduje zákazníka"):
-        _vystav(session, z, typ=TypDokladu.FAKTURA, odb_nazev="Někdo")
+    z = _zakazka_bez_zakaznika(session)
+    with pytest.raises(ChybaValidace, match="odběratele"):
+        _vystav(session, z, typ=TypDokladu.FAKTURA)
     v = _vystav(session, z, typ=TypDokladu.VYUCTOVANI)
     assert v.odb_nazev == "" and v.zakaznik_id is None and v.celkem == Decimal("121")
+
+
+def test_faktura_ze_zakazky_bez_zakaznika_zalozi_noveho_zakaznika(session, zakazka):
+    """#208: ručně vyplněný odběratel, který není v databázi, se při vystavení uloží jako nový zákazník."""
+    z = _zakazka_bez_zakaznika(session, "6FF6666")
+    f = _vystav(session, z, odb_nazev="Firma Nová s.r.o.", odb_mesto="Zlín", odb_ico="123 45 678")
+    novy = session.get(Zakaznik, f.zakaznik_id)
+    assert novy.nazev == "Firma Nová s.r.o." and novy.mesto == "Zlín" and novy.ico == "12345678"
+    session.refresh(z)
+    assert z.zakaznik_id is None   # zakázka zůstává beze změny
+    assert f in faktury.doklady_zakaznika(session, novy.id)
+
+
+def test_rucni_odberatel_se_stejnym_ico_pouzije_existujiciho_zakaznika(session, zakazka):
+    existujici = zakaznici.vytvor(session, {"nazev": "Leasing a.s.", "ico": "87654321"})
+    z = _zakazka_bez_zakaznika(session, "7GG7777")
+    f = _vystav(session, z, odb_nazev="Leasing a.s. – pobočka", odb_ico="87654321")
+    assert f.zakaznik_id == existujici.id and f.odb_nazev == "Leasing a.s. – pobočka"
+    assert session.exec(select(Zakaznik).where(Zakaznik.ico == "87654321")).all() == [existujici]
+
+
+def test_zmena_zakaznika_a_vozidla_jen_na_dokladu(session, zakazka):
+    """#208: plátce a vozidlo dokladu jdou změnit; zakázka zůstává, doklad je na kartě plátce."""
+    platce = zakaznici.vytvor(session, {"nazev": "Pojišťovna a.s.", "ulice": "Hlavní 1", "mesto": "Praha"})
+    jine = vozidla.vytvor(session, {"spz": "9ZZ9999", "znacka": "Ford", "model": "Focus"})
+    puvodni_zakaznik, puvodni_vozidlo = zakazka.zakaznik_id, zakazka.vozidlo_id
+    f = _vystav(session, zakazka, zakaznik_id=str(platce.id), odb_nazev=platce.nazev, odb_ulice=platce.ulice,
+                odb_mesto=platce.mesto, vozidlo_id=str(jine.id), spz="")
+    assert f.zakaznik_id == platce.id and f.odb_nazev == "Pojišťovna a.s." and f.odb_mesto == "Praha"
+    assert f.spz == "9ZZ9999" and f.vozidlo_popis == "Ford Focus"
+    assert f.tachometr is None   # stav km patří k vozidlu zakázky
+    session.refresh(zakazka)
+    assert (zakazka.zakaznik_id, zakazka.vozidlo_id) == (puvodni_zakaznik, puvodni_vozidlo)
+    assert [d.id for d in faktury.doklady_zakaznika(session, platce.id)] == [f.id]
+    assert faktury.doklady_zakaznika(session, puvodni_zakaznik) == []
+
+
+def test_doklad_bez_vozidla_a_se_spz_mimo_databazi(session, zakazka):
+    nastaveni.uloz(session, {"ucet_vyuctovani": "2001234567/2010"})
+    f = _vystav(session, zakazka, vozidlo_id="", spz="")
+    assert f.spz is None and f.vozidlo_popis is None and f.tachometr is None
+    faktury.smaz(session, f.id)
+    v = _vystav(session, zakazka, typ=TypDokladu.VYUCTOVANI, vozidlo_id="", spz="3a3 3333")
+    assert v.spz == "3A33333" and v.vozidlo_popis is None
+
+
+def test_vozidlo_zakazky_ponecha_tachometr(session, zakazka):
+    f = _vystav(session, zakazka)   # předvyplněné vozidlo_id ze zakázky
+    assert f.spz == "1AB2345" and f.tachometr == 120000
+
+
+def test_neplatny_vyber_zakaznika_odmitne(session, zakazka):
+    with pytest.raises(ChybaValidace, match="neexistuje"):
+        _vystav(session, zakazka, zakaznik_id="999999")
 
 
 def test_platce_dph_potrebuje_dic_a_hotove_splatnost_dnes(session, zakazka):
@@ -374,3 +433,43 @@ def test_nazev_souboru_pdf():
     from app.services import pdf
     assert pdf.nazev_souboru("FV20260087") == "FV20260087.pdf"
     assert pdf.nazev_souboru('A/1"x') == "A1x.pdf"
+
+
+def test_okno_vystaveni_vyber_odberatele_a_vozidla_web(session, zakazka):
+    """#208: panely Odběratel a Vozidlo v okně vystavení, okna databáze s cílem doklad."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+    klient = TestClient(app)
+    platce = zakaznici.vytvor(session, {"nazev": "Platce Firma", "mesto": "Zlín", "ico": "11223344"})
+    jeho = vozidla.vytvor(session, {"spz": "2PL2222", "znacka": "Audi", "zakaznik_id": platce.id})
+    okno = klient.get(f"/zakazky/{zakazka.id}/vystavit?typ=faktura&okno=1").text
+    assert 'name="zakaznik_id" value="%d"' % zakazka.zakaznik_id in okno and "Zákazník z databáze" in okno
+    assert 'name="vozidlo_id" value="%d"' % zakazka.vozidlo_id in okno and 'value="1AB2345"' in okno
+
+    # okno zákazníků vkládá do panelu odběratele, vložení vyplní údaje
+    assert 'hx-get="/doklad/odberatel"' in klient.get("/zakaznici/okno?cil=doklad&q=Platce").text
+    panel = klient.get(f"/doklad/odberatel?vybrat_id={platce.id}&typ=faktura").text
+    assert f'value="{platce.id}"' in panel and 'value="Platce Firma"' in panel and 'value="Zlín"' in panel
+    novy = klient.get("/doklad/odberatel?typ=vyuctovani").text
+    assert 'name="zakaznik_id" value=""' in novy and "Prázdné = bez zákazníka" in novy
+
+    # okno vozidel: vozidla odběratele nahoře, pod nimi ostatní
+    vozidla_okno = klient.get(f"/vozidla/okno?cil=doklad&zakaznik_id={platce.id}").text
+    assert vozidla_okno.index("2PL2222") < vozidla_okno.index("1AB2345") and "Nahoře vozidla odběratele" in vozidla_okno
+    assert 'hx-get="/doklad/vozidlo"' in vozidla_okno
+    vybrane = klient.get(f"/doklad/vozidlo?vybrat_id={jeho.id}&vozidlo_zakazky={zakazka.vozidlo_id}").text
+    assert f'name="vozidlo_id" value="{jeho.id}"' in vybrane and 'hx-swap-oob="true"' in vybrane
+    assert "tachometru se na doklad nenapíše" in vybrane
+    assert "jen SPZ" in klient.get("/doklad/vozidlo?spz=8xx8888").text
+    bez = klient.get("/doklad/vozidlo?bez=1").text
+    assert 'name="vozidlo_id" value=""' in bez and "Bez vozidla" in bez
+
+    # vystavení přes web s vybraným plátcem a jeho vozidlem
+    r = klient.post(f"/zakazky/{zakazka.id}/vystavit", data=faktury.vychozi_udaje(session, zakazka.id) | {
+        "zakaznik_id": str(platce.id), "odb_nazev": "Platce Firma", "vozidlo_id": str(jeho.id), "spz": "2PL2222",
+        "datum_vystaveni": date.today().strftime("%d.%m.%Y"), "duzp": date.today().strftime("%d.%m.%Y"),
+        "datum_splatnosti": date.today().strftime("%d.%m.%Y"), "poradi": ""}, follow_redirects=False)
+    assert r.status_code in (200, 303), r.text[:300]
+    f = session.exec(select(Faktura).where(Faktura.zakazka_id == zakazka.id)).one()
+    assert f.zakaznik_id == platce.id and f.spz == "2PL2222"
+    assert "Platce Firma" in klient.get(f"/zakaznici/{platce.id}").text

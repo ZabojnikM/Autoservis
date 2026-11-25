@@ -1219,3 +1219,9 @@ dialog.napoveda-okno h4 { margin: 1rem 0 .4rem; font-size: 1rem; }
   box-sizing: border-box; width: 8.6rem; height: 2.4rem; padding: 0 .6rem; margin: 0;
   font-size: 1rem; line-height: calc(2.4rem - 2px); text-align: center; white-space: nowrap; }
 .okno-cenik .vyber-historie td.sl-vyber, .okno-cenik .vyber-historie th.sl-vyber { overflow: visible; text-overflow: clip; padding-left: .4rem; padding-right: .2rem; }
+
+/* #208: okno vystavení dokladu – Odběratel a Vozidlo pod sebou v pravém sloupci */
+.panely-sloupec { display: flex; flex-direction: column; gap: var(--mezera); min-width: 0; }
+.panely-sloupec > .panel { margin-top: 0; }
+/* okno vozidel u dokladu: čára pod vozidly odběratele */
+tr.konec-skupiny > td { border-bottom: 2px solid var(--pico-muted-border-color, #888); }

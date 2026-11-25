@@ -1,0 +1,35 @@
+{# #208: panel Odběratel v okně vystavení dokladu. hodnoty = odb_* a zakaznik_id, typ = faktura / vyuctovani. #}
+<fieldset class="panel" id="panel-odberatel">
+  <legend>Odběratel</legend>
+  <input type="hidden" name="zakaznik_id" value="{{ hodnoty.get('zakaznik_id') or '' }}">
+  <div class="radek-s-tlacitky">
+    <label class="roztahnout">Jméno / firma
+      {% if typ == 'faktura' %}<span class="povinne">*</span>{% else %}<span class="tlumene">(u vyúčtování nepovinné)</span>{% endif %}
+      <input type="text" name="odb_nazev" value="{{ hodnoty.get('odb_nazev') or '' }}" autocomplete="off"
+             {% if typ == 'faktura' %}required{% endif %}
+             {% if chyba is defined and chyba and chyba.pole == 'odb_nazev' %}aria-invalid="true"{% endif %}>
+    </label>
+    <button type="button" tabindex="-1" class="maly outline" title="Vybrat zákazníka z databáze"
+            hx-get="/zakaznici/okno" hx-vals='{"cil": "doklad"}' hx-target="#okno-obsah"
+            hx-on::after-request="document.getElementById('okno-databaze').showModal()">Vybrat</button>
+    <button type="button" tabindex="-1" class="maly secondary outline" title="Vyprázdnit – nový odběratel"
+            hx-get="/doklad/odberatel" hx-vals='{"typ": "{{ typ }}"}'
+            hx-target="#panel-odberatel" hx-swap="outerHTML">Nový</button>
+  </div>
+  {% if hodnoty.get('zakaznik_id') %}
+  <p class="stav-panelu">✅ Zákazník z databáze. Změna adresy tady platí jen pro tento doklad.</p>
+  {% elif typ == 'faktura' %}
+  <p class="tlumene stav-panelu">Nový odběratel – při vystavení se uloží jako zákazník.</p>
+  {% else %}
+  <p class="tlumene stav-panelu">Nový odběratel se při vystavení uloží jako zákazník. Prázdné = bez zákazníka.</p>
+  {% endif %}
+  <label>Ulice <input type="text" name="odb_ulice" value="{{ hodnoty.get('odb_ulice') or '' }}"></label>
+  <div class="mrizka mrizka-psc">
+    <label>PSČ <input type="text" name="odb_psc" value="{{ hodnoty.get('odb_psc') or '' }}"></label>
+    <label>Město <input type="text" name="odb_mesto" value="{{ hodnoty.get('odb_mesto') or '' }}"></label>
+  </div>
+  <div class="mrizka">
+    <label>IČO <input type="text" name="odb_ico" value="{{ hodnoty.get('odb_ico') or '' }}"></label>
+    <label>DIČ <input type="text" name="odb_dic" value="{{ hodnoty.get('odb_dic') or '' }}"></label>
+  </div>
+</fieldset>

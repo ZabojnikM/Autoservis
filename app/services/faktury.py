@@ -16,11 +16,14 @@ from sqlalchemy.orm import selectinload
 from sqlmodel import Session, col, select
 
 from app.models import (
-    Faktura, FormaUhrady, PolozkaFaktury, SmazaneCislo, StavZakazky, TypDokladu, Uhrada, zaokrouhli,
+    Faktura, FormaUhrady, PolozkaFaktury, SmazaneCislo, StavZakazky, TypDokladu, Uhrada, Vozidlo, Zakaznik,
+    zaokrouhli,
 )
 from app.services import ChybaValidace, NenalezenoError, cisty_text, desetinne_nebo_none
 from app.services import nastaveni as nastaveni_sluzba
 from app.services import polozky as polozky_sluzba
+from app.services import vozidla as vozidla_sluzba
+from app.services import zakaznici as zakaznici_sluzba
 from app.services import zakazky as zakazky_sluzba
 from app.db import cesky_klic
 from app.services.strankovani import VELIKOST_STRANKY, Stranka, strankuj_seznam
@@ -120,6 +123,10 @@ def vychozi_udaje(session: Session, zakazka_id: int, typ: str = TypDokladu.FAKTU
         # hotovost se platí hned → splatnost = den vystavení
         "datum_splatnosti": dnes if forma == FormaUhrady.HOTOVE else dnes + timedelta(days=nast.splatnost_dni),
         "forma_uhrady": forma,
+        # #208: zákazník a vozidlo dokladu – předvyplněné ze zakázky, v okně vystavení jdou změnit
+        "zakaznik_id": k.id if k else "",
+        "vozidlo_id": zakazka.vozidlo_id or "",
+        "spz": zakazka.vozidlo.spz if zakazka.vozidlo else "",
         "odb_nazev": k.nazev if k else "",
         "odb_ulice": (k.ulice or "") if k else "",
         "odb_mesto": (k.mesto or "") if k else "",
@@ -129,6 +136,56 @@ def vychozi_udaje(session: Session, zakazka_id: int, typ: str = TypDokladu.FAKTU
         "poznamka": "",
         "uhrazeno_ihned": "" if je_faktura else "1",
     }
+
+
+def _cislo_id(hodnota) -> int | None:
+    text = cisty_text(str(hodnota)) if hodnota is not None else None
+    if not text:
+        return None
+    if not text.isdigit():
+        raise ChybaValidace("Neplatný výběr zákazníka nebo vozidla.")
+    return int(text)
+
+
+def _zakaznik_dokladu(session: Session, zakazka, data: dict):
+    """#208: zákazník (plátce) dokladu. Bez klíče `zakaznik_id` ve formuláři zůstává zákazník zakázky.
+    Ručně vyplněný odběratel, který v databázi není, se uloží jako nový zákazník (se stejným IČO se použije existující)."""
+    if "zakaznik_id" not in data:
+        return zakazka.zakaznik
+    zakaznik_id = _cislo_id(data.get("zakaznik_id"))
+    if zakaznik_id:
+        zakaznik = session.get(Zakaznik, zakaznik_id)
+        if zakaznik is None:
+            raise ChybaValidace("Vybraný zákazník neexistuje – vyberte ho znovu.", "odb_nazev")
+        return zakaznik
+    nazev = cisty_text(data.get("odb_nazev"))
+    if not nazev:
+        return None
+    ico = (cisty_text(data.get("odb_ico")) or "").replace(" ", "")
+    if ico:
+        existujici = session.exec(select(Zakaznik).where(Zakaznik.ico == ico)).first()
+        if existujici:
+            return existujici
+    return zakaznici_sluzba.vytvor(session, {p.removeprefix("odb_"): data.get(p) for p in POLE_ODBERATELE},
+                                   commit=False)
+
+
+def _vozidlo_dokladu(session: Session, zakazka, data: dict):
+    """#208: vozidlo dokladu → (vozidlo z databáze nebo None, SPZ). Bez klíče `vozidlo_id` zůstává vozidlo zakázky.
+    SPZ, která v databázi není, se na doklad napíše jen jako text."""
+    if "vozidlo_id" not in data:
+        return zakazka.vozidlo, zakazka.vozidlo.spz if zakazka.vozidlo else None
+    vozidlo_id = _cislo_id(data.get("vozidlo_id"))
+    if vozidlo_id:
+        vozidlo = session.get(Vozidlo, vozidlo_id)
+        if vozidlo is None:
+            raise ChybaValidace("Vybrané vozidlo neexistuje – vyberte ho znovu.", "spz")
+        return vozidlo, vozidlo.spz
+    spz = vozidla_sluzba.normalizuj_spz(data.get("spz") or "")
+    if spz:
+        vozidlo = vozidla_sluzba.najdi_podle_spz(session, spz)
+        return vozidlo, vozidlo.spz if vozidlo else spz
+    return None, None
 
 
 def vystav(session: Session, zakazka_id: int, data: dict) -> Faktura:
@@ -160,9 +217,6 @@ def vystav(session: Session, zakazka_id: int, data: dict) -> Faktura:
         raise ChybaValidace("Datum splatnosti nemůže být před datem vystavení.")
     odb_nazev = cisty_text(data.get("odb_nazev")) or ""
     if typ == TypDokladu.FAKTURA:
-        if not zakazka.zakaznik_id:
-            raise ChybaValidace("Faktura vyžaduje zákazníka – doplňte ho na zakázce (Upravit), "
-                                "nebo vystavte vyúčtování.")
         if not odb_nazev:
             raise ChybaValidace("Vyplňte odběratele.", "odb_nazev")
         if not nast.udaje_vyplneny:
@@ -174,15 +228,20 @@ def vystav(session: Session, zakazka_id: int, data: dict) -> Faktura:
 
     poradi = cisty_text(data.get("poradi"))
     cislo = cislo_z_poradi(session, typ, vystaveni.year, poradi) if poradi else dalsi_cislo(session, typ, vystaveni.year)
-    vuz = zakazka.vozidlo
+    vuz, spz = _vozidlo_dokladu(session, zakazka, data)
+    zakaznik = _zakaznik_dokladu(session, zakazka, data)
+    if typ == TypDokladu.FAKTURA and zakaznik is None:
+        raise ChybaValidace("Faktura vyžaduje zákazníka – vyberte ho, nebo vyplňte odběratele.", "odb_nazev")
+    # tachometr patří k vozidlu zakázky – u jiného vozidla na doklad nepatří
+    tachometr = zakazka.tachometr if (vuz is not None and vuz.id == zakazka.vozidlo_id) else None
     faktura = Faktura(
-        cislo=cislo, typ=typ, zakazka_id=zakazka.id, zakaznik_id=zakazka.zakaznik_id,
+        cislo=cislo, typ=typ, zakazka_id=zakazka.id, zakaznik_id=zakaznik.id if zakaznik else None,
         odb_nazev=odb_nazev,
         **{p: cisty_text(data.get(p)) for p in POLE_ODBERATELE if p != "odb_nazev"},
         datum_vystaveni=vystaveni, duzp=duzp, datum_splatnosti=splatnost, forma_uhrady=forma,
         variabilni_symbol=_jedinecny_vs(session, variabilni_symbol(cislo, typ)), platce_dph=nast.platce_dph, mena=nast.mena,
-        spz=vuz.spz if vuz else None, vozidlo_popis=vuz.popis if vuz and (vuz.znacka or vuz.model) else None,
-        tachometr=zakazka.tachometr, cislo_zakazky=zakazka.cislo, poznamka=cisty_text(data.get("poznamka")),
+        spz=spz, vozidlo_popis=vuz.popis if vuz and (vuz.znacka or vuz.model) else None,
+        tachometr=tachometr, cislo_zakazky=zakazka.cislo, poznamka=cisty_text(data.get("poznamka")),
     )
     for r in zakazka.polozky:
         faktura.polozky.append(PolozkaFaktury(

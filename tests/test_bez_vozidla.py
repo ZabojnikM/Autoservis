@@ -54,8 +54,8 @@ def test_sluzby_bez_vozidla_a_faktura(session):
     z = zakazky.prijem_z_formulare(session, {"pozadavek": "Drobnost"}, {"spz": ""}, {})
     assert z.vozidlo_id is None and z.zakaznik_id is None
     polozky.pridej_rucne(session, z.id, {"typ": "prace", "nazev": "Kontrola", "cena": "200"})
-    with pytest.raises(ChybaValidace, match="Faktura vyžaduje zákazníka"):
-        faktury.vystav(session, z.id, {"typ": "faktura", "odb_nazev": "X"})
+    with pytest.raises(ChybaValidace, match="odběratele"):   # #208: bez odběratele faktura nejde
+        faktury.vystav(session, z.id, {"typ": "faktura", "odb_nazev": ""})
     # se zákazníkem a bez vozidla faktura jde (vozidlo není povinné)
     s_zakaznikem = zakazky.prijem_z_formulare(session, {"pozadavek": "Díl"}, {"spz": ""}, {"nazev": "Firma s.r.o."})
     polozky.pridej_rucne(session, s_zakaznikem.id, {"typ": "material", "nazev": "Žárovka", "cena": "50"})

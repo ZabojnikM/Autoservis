@@ -25,7 +25,12 @@
         {%- if k.vozidla %}{{ k.vozidla|length }}{% if spz_vozidel %} · {{ spz_vozidel[0] }}{% if spz_vozidel|length > 1 %} …{% endif %}{% endif %}{% else %}<span class="tlumene">–</span>{% endif -%}
       </td>
       <td class="vpravo">
-        {% if cil == 'prijem' %}
+        {% if cil == 'doklad' %}
+        <button type="button" class="maly" hx-get="/doklad/odberatel"
+                hx-vals='{"vybrat_id": "{{ k.id }}"}' hx-include="#formular-dokladu [name=typ]"
+                hx-target="#panel-odberatel" hx-swap="outerHTML"
+                hx-on::after-request="document.getElementById('okno-databaze').close()">Vložit</button>
+        {% elif cil == 'prijem' %}
         <button type="button" class="maly" hx-get="/zakazky/nova/zakaznik" hx-vals='{"vybrat_id": "{{ k.id }}"}'
                 hx-target="#panel-zakaznik" hx-swap="outerHTML"
                 hx-on::after-request="document.getElementById('okno-databaze').close()">Vložit</button>

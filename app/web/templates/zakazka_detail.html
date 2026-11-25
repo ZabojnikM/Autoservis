@@ -15,12 +15,8 @@
     <a href="/faktury/{{ doklad.id }}" role="button">{{ doklad.nazev_typu }} {{ doklad.cislo }}</a>
   {% elif zakazka.polozky %}
     <hr>
-    {% if zakazka.zakaznik %}
+    {# #208: odběratele faktury jde vybrat i v okně vystavení – zakázka bez zákazníka už nevadí #}
     <a href="/zakazky/{{ zakazka.id }}/vystavit?typ=faktura" role="button" data-okno>Vystavit fakturu</a>
-    {% else %}
-    <a href="/zakazky/{{ zakazka.id }}/upravit" role="button" class="outline" data-okno
-       title="Faktura vyžaduje zákazníka">Faktura: doplnit zákazníka</a>
-    {% endif %}
     <a href="/zakazky/{{ zakazka.id }}/vystavit?typ=vyuctovani" role="button" class="outline" data-okno>Vyúčtování</a>
   {% endif %}
   {# #165: smazání je v okně Upravit zakázku; tady zůstává jen zašedlé tlačítko s důvodem u zakázky s dokladem #}

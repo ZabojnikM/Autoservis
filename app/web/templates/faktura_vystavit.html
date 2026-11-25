@@ -38,9 +38,7 @@
   <a href="/nastaveni" target="_blank">Doplnit účet</a>.</p>
 {% endif %}
 {% if typ == 'faktura' and not zakazka.zakaznik %}
-<p class="upozorneni-ram">Faktura vyžaduje zákazníka.
-  <a href="/zakazky/{{ zakazka.id }}/upravit" data-okno>Doplňte ho na zakázce</a>,
-  nebo vystavte <a href="{{ url }}?typ=vyuctovani" {% if okno %}data-okno{% endif %}>vyúčtování</a> (to jde i bez zákazníka).</p>
+<p class="upozorneni-ram">Zakázka nemá zákazníka – vyberte odběratele faktury, nebo ho vyplňte (uloží se jako nový zákazník).</p>
 {% endif %}
 
 {{ zacatek_formulare(url, 'formular-dokladu', okno, 'stredni') }}
@@ -99,26 +97,11 @@
         <textarea name="poznamka" rows="2">{{ hodnoty.get('poznamka') or '' }}</textarea></label>
     </fieldset>
 
-    <fieldset class="panel">
-      <legend>Odběratel</legend>
-      {% if typ == 'faktura' %}
-      <label>Jméno / firma <span class="povinne">*</span>
-        <input type="text" name="odb_nazev" value="{{ hodnoty.get('odb_nazev', '') }}" required></label>
-      {% else %}
-      <label>Jméno / firma <span class="tlumene">(u vyúčtování nepovinné)</span>
-        <input type="text" name="odb_nazev" value="{{ hodnoty.get('odb_nazev', '') }}"></label>
-      {% endif %}
-      <label>Ulice <input type="text" name="odb_ulice" value="{{ hodnoty.get('odb_ulice') or '' }}"></label>
-      <div class="mrizka mrizka-psc">
-        <label>PSČ <input type="text" name="odb_psc" value="{{ hodnoty.get('odb_psc') or '' }}"></label>
-        <label>Město <input type="text" name="odb_mesto" value="{{ hodnoty.get('odb_mesto') or '' }}"></label>
-      </div>
-      <div class="mrizka">
-        <label>IČO <input type="text" name="odb_ico" value="{{ hodnoty.get('odb_ico') or '' }}"></label>
-        <label>DIČ <input type="text" name="odb_dic" value="{{ hodnoty.get('odb_dic') or '' }}"></label>
-      </div>
-      <p class="tlumene napoveda">Údaje se vezmou ze zákazníka; změna tady platí jen pro tento doklad.</p>
-    </fieldset>
+    {# #208: odběratel a vozidlo dokladu – předvyplněné ze zakázky, jdou změnit jen pro tento doklad #}
+    <div class="panely-sloupec">
+    {% include "_doklad_odberatel.html" %}
+    {% include "_doklad_vozidlo.html" %}
+    </div>
   </div>
   <p class="tlumene napoveda">Po vystavení se zakázka uzavře (stav Uzavřeno). Doklad už nejde měnit – při chybě se smaže a vystaví znovu.</p>
 </form>
