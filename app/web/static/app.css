@@ -1221,7 +1221,7 @@ dialog.napoveda-okno h4 { margin: 1rem 0 .4rem; font-size: 1rem; }
 .okno-cenik .vyber-historie td.sl-vyber, .okno-cenik .vyber-historie th.sl-vyber { overflow: visible; text-overflow: clip; padding-left: .4rem; padding-right: .2rem; }
 
 /* #208: okno vystavení dokladu – Odběratel a Vozidlo pod sebou v pravém sloupci */
-.panely-sloupec { display: flex; flex-direction: column; gap: var(--mezera); min-width: 0; }
-.panely-sloupec > .panel { margin-top: 0; }
+.panely-sloupec { display: flex; flex-direction: column; gap: 0; min-width: 0; }  /* rámeček panelu má vlastní odstup */
+.panely-sloupec > .panel { margin: 0; }
 /* okno vozidel u dokladu: čára pod vozidly odběratele */
 tr.konec-skupiny > td { border-bottom: 2px solid var(--pico-muted-border-color, #888); }
