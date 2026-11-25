@@ -1426,8 +1426,10 @@ def _kontext_tisku(db, faktura_id: int) -> dict:
         cislo_uctu = nast.ucet_vyuctovani if iban and "/" in nast.ucet_vyuctovani else ""
     else:
         iban, cislo_uctu = faktury.iban_servisu(nast), nast.cislo_uctu
+    # VIN podle vozidla na dokladu (SPZ), ne podle zakázky – doklad může mít jiné vozidlo nebo žádné (#208)
+    vuz = vozidla.najdi_podle_spz(db, f.spz) if f.spz else None
     return {"f": f, "rek": faktury.rekapitulace(f), "nast": nast, "iban": iban, "cislo_uctu": cislo_uctu,
-            "qr": _qr(f, nast)}
+            "qr": _qr(f, nast), "vin": vuz.vin if vuz else None}
 
 
 @router.get("/faktury/{faktura_id}/tisk", response_class=HTMLResponse)

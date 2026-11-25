@@ -473,3 +473,26 @@ def test_okno_vystaveni_vyber_odberatele_a_vozidla_web(session, zakazka):
     f = session.exec(select(Faktura).where(Faktura.zakazka_id == zakazka.id)).one()
     assert f.zakaznik_id == platce.id and f.spz == "2PL2222"
     assert "Platce Firma" in klient.get(f"/zakaznici/{platce.id}").text
+
+
+def test_vin_v_tisku_podle_vozidla_dokladu(session, zakazka):
+    """VIN v tisku se bere z vozidla na dokladu: bez vozidla žádný, jiné vozidlo jeho VIN (ne VIN zakázky)."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+    klient = TestClient(app)
+    vozidla.uprav(session, zakazka.vozidlo_id, {"vin": "TMBZZZ1Z0A0000001"})
+    jine = vozidla.vytvor(session, {"spz": "4JJ4444", "znacka": "Ford", "vin": "WF0XXXGCDX0000002"})
+    nastaveni.uloz(session, {"ucet_vyuctovani": "2001234567/2010"})
+
+    bez = _vystav(session, zakazka, vozidlo_id="", spz="")
+    tisk = klient.get(f"/faktury/{bez.id}/tisk").text
+    assert "TMBZZZ1Z0A0000001" not in tisk and "<dt>VIN</dt>" not in tisk
+    faktury.smaz(session, bez.id)
+
+    s_jinym = _vystav(session, zakazka, vozidlo_id=str(jine.id), spz="")
+    tisk = klient.get(f"/faktury/{s_jinym.id}/tisk").text
+    assert "WF0XXXGCDX0000002" in tisk and "TMBZZZ1Z0A0000001" not in tisk
+    faktury.smaz(session, s_jinym.id)
+
+    s_vozidlem_zakazky = _vystav(session, zakazka)
+    assert "TMBZZZ1Z0A0000001" in klient.get(f"/faktury/{s_vozidlem_zakazky.id}/tisk").text

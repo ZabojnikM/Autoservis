@@ -55,9 +55,8 @@
       {% endif %}
       <dt>Variabilní symbol</dt><dd>{{ f.variabilni_symbol or '' }}</dd>
       {# #60: vozidlo po řádcích – SPZ, značka a model / VIN / km při zakázce; číslo zakázky je vpravo nahoře #}
-      {% set vuz = f.zakazka.vozidlo if f.zakazka else none %}
       {% if f.spz %}<dt>Vozidlo</dt><dd>{{ f.spz }}{% if f.vozidlo_popis and f.vozidlo_popis != '—' %} &nbsp;{{ f.vozidlo_popis }}{% endif %}</dd>{% endif %}
-      {% if vuz and vuz.vin %}<dt>VIN</dt><dd class="vin">{{ vuz.vin }}</dd>{% endif %}
+      {% if vin %}<dt>VIN</dt><dd class="vin">{{ vin }}</dd>{% endif %}
       {% if f.tachometr %}<dt>Stav tachometru</dt><dd>{{ f.tachometr|cislo }} km</dd>{% endif %}
     </dl>
   </div>
