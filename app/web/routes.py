@@ -653,7 +653,7 @@ def vozidlo_nove(request: Request, db: DB, zakaznik_id: int | None = None, okno:
     """Nové vozidlo; s `prijem` (id návštěvy z Příjmu vozidel) předvyplněné SPZ, VIN a údaji z registru."""
     zakaznik = zakaznici.ziskej(db, zakaznik_id) if zakaznik_id else None
     hodnoty = {}
-    navsteva = _navsteva(prijem)[1] if prijem else None
+    navsteva = prijem_vozidel.najdi(db, prijem) if prijem else None
     if navsteva:
         hodnoty = {k: v for k, v in registr_vozidel.na_pole_vozidla(navsteva.registr).items() if k in POLE_VOZIDLA}
         hodnoty |= {"spz": vozidla.normalizuj_spz(navsteva.spz), "z_prijmu": "1"}
@@ -770,33 +770,25 @@ def vozidlo_smazat(request: Request, db: DB, vozidlo_id: int):
 
 # ---------------------------------------------------------------- zákazníci
 
-# ---------------------------------------------------------------- příjem vozidel (#51, jen čtení)
+# ---------------------------------------------------------------- příjem vozidel (#51, #216 – zapisuje technik přes MCP)
 
-def _prijmy():
-    """Návštěvy z OpenBotu, nebo None, když soubor nejde přečíst (stránka ukáže „dočasně nedostupný“)."""
-    try:
-        return prijem_vozidel.nacti()
-    except prijem_vozidel.PrijemNedostupny:
-        return None
-
-
-def _navsteva(navsteva_id: str):
-    """(příjmy, návštěva) – návštěva None, když v souboru není; příjmy None, když soubor nejde přečíst."""
-    prijmy = _prijmy()
-    return prijmy, next((n for n in prijmy.navstevy if n.id == navsteva_id), None) if prijmy else None
+def _navsteva(db, navsteva_id: str):
+    """(příjmy, návštěva) – návštěva None, když příjem v databázi není (mezitím smazán nebo nad limit)."""
+    prijmy = prijem_vozidel.nacti(db)
+    return prijmy, next((n for n in prijmy.navstevy if n.id == navsteva_id), None)
 
 
 @router.get("/prijem", response_class=HTMLResponse)
 def prijem_seznam(request: Request, db: DB):
-    prijmy = _prijmy()
-    shody = {n.id: prijem_vozidel.sparuj(db, n) for n in prijmy.navstevy} if prijmy else {}
+    prijmy = prijem_vozidel.nacti(db)
+    shody = {n.id: prijem_vozidel.sparuj(db, n) for n in prijmy.navstevy}
     return _stranka(request, "prijem_seznam.html", aktivni="prijem", prijmy=prijmy, shody=shody)
 
 
 @router.get("/prijem/{navsteva_id}", response_class=HTMLResponse)
 def prijem_detail(request: Request, db: DB, navsteva_id: str):
-    prijmy, navsteva = _navsteva(navsteva_id)
-    if prijmy is not None and navsteva is None:
+    prijmy, navsteva = _navsteva(db, navsteva_id)
+    if navsteva is None:
         return _stranka(request, "prijem_detail.html", 404, aktivni="prijem", prijmy=prijmy, navsteva=None)
     shoda = prijem_vozidel.sparuj(db, navsteva) if navsteva else None
     return _stranka(request, "prijem_detail.html", aktivni="prijem", prijmy=prijmy, navsteva=navsteva, shoda=shoda)

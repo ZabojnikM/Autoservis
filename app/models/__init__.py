@@ -458,3 +458,19 @@ class ApiKlic(SQLModel, table=True):
     @property
     def seznam_opravneni(self) -> list[str]:
         return [o for o in self.opravneni.split(",") if o]
+
+
+class PrijemVozidla(SQLModel, table=True):
+    """Příjem vozidla od Přijímacího technika přes MCP (#216) – drží se posledních 30, fotky sem nepatří.
+
+    `technicke` je JSON s technickými údaji ve formátu Registru vozidel, `nejiste` JSON seznam nejistých polí."""
+
+    id: str = Field(primary_key=True)
+    vytvoreno: NaiveDatetime = Field(default_factory=datetime.now, index=True)
+    upraveno: NaiveDatetime = Field(default_factory=datetime.now)
+    revize: int = 1
+    spz: Optional[str] = None
+    vin: Optional[str] = None
+    km: Optional[int] = None
+    technicke: str = "{}"
+    nejiste: str = "[]"

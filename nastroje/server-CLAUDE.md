@@ -61,21 +61,10 @@ sudo systemctl daemon-reload && sudo systemctl restart autoservis
 Pak v aplikaci **Zkontrolovat aktualizace → Nainstalovat** (nebo ruční postup výše). Kdo by
 chtěl na testovacím serveru dál zkoušet nevydané změny, nechá `main` – ostrý provoz vždy `vydani`.
 
-## Příjem vozidel (záložka, jen čtení)
-Záložka **Příjem vozidel** čte soubor návštěv, které ukládá Přijímací technik (OpenBot):
-`/var/lib/openbot/OpenBot/Shared/autoservis-prototype/json-data/visits.json` (cesta je ve službě jako
-`AUTOSERVIS_PRIJEM_JSON`). Soubor se otevírá při každém načtení stránky, nic se do něj nezapisuje
-a nevystavuje se jako statický soubor. Původní stránku OpenBotu `/autoservis/view` nech v provozu.
-
-Ověření práv pod účtem služby (adresář má 0700, soubor 0600):
-```
-UCET=$(systemctl show -p User --value autoservis)
-sudo -u "$UCET" test -r /var/lib/openbot/OpenBot/Shared/autoservis-prototype/json-data/visits.json && echo "čte" || echo "NEČTE"
-```
-Když vyjde **NEČTE**, práva sám neměň – pošli uživateli název účtu (`$UCET`). Přístup pouze pro čtení
-domluví se správcem OpenBotu tak, aby fungoval i po atomickém nahrazení souboru.
-Po úpravě ověř, že po uložení nové návštěvy ji záložka po **Obnovit** ukáže bez restartu služby.
-Když soubor nejde přečíst, záložka ukáže „Příjem vozidel je dočasně nedostupný“ – zakázky fungují dál.
+## Příjem vozidel (záložka)
+Příjmy zapisuje Přijímací technik (OpenBot) přes MCP (`/mcp/`) klíčem s oprávněním **Příjem vozidel**
+(Nastavení → API pro boty). Ukládají se v databázi aplikace, drží se posledních 30, fotky se neukládají (#216).
+Soubor `visits.json` ani proměnná `AUTOSERVIS_PRIJEM_JSON` se už nepoužívají – ve službě mohou zůstat, nevadí.
 
 ## Kontrola, že aplikace běží
 - `curl -s http://localhost:8001/api/zdravi` → `"stav":"ok"` a verze (testovací server běží na portu 8001, viz `ExecStart` ve službě)
@@ -92,8 +81,7 @@ python3 -m venv .venv
 echo '@nastroje/server-CLAUDE.md' > CLAUDE.md
 ```
 Databázi (`data/autoservis.db`) a `.env` přenést ze zálohy. Služba systemd: šablona je
-v `nastroje/autoservis.service` (doplnit uživatele a cestu, `AUTOSERVIS_AKTUALIZACE=vydani`,
-`AUTOSERVIS_PRIJEM_JSON`),
+v `nastroje/autoservis.service` (doplnit uživatele a cestu, `AUTOSERVIS_AKTUALIZACE=vydani`),
 zkopírovat do `/etc/systemd/system/` a `sudo systemctl daemon-reload && sudo systemctl enable --now autoservis`.
 Složka musí patřit uživateli služby (jinak git hlásí „dubious ownership“ a aktualizace selže).
 

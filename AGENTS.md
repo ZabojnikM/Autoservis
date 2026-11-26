@@ -73,9 +73,8 @@ commitů, issues ani release notes **nepiš**:
 - Pokyny pro agenta na serveru: `nastroje/server-CLAUDE.md`, šablona služby: `nastroje/autoservis.service`.
 
 ## Napojení na okolí
-- **Příjem vozidel** (záložka, jen čtení): čte `visits.json`, který ukládá agent *Přijímací technik* v OpenBotu
-  na serveru (`AUTOSERVIS_PRIJEM_JSON`, výchozí cesta je v `app/config.py`). Do souboru se nikdy nezapisuje.
-  Když chybí, záložka ukáže „dočasně nedostupný“ a zbytek aplikace funguje dál.
+- **Příjem vozidel** (záložka): příjmy zapisuje agent *Přijímací technik* v OpenBotu přes MCP s oprávněním klíče
+  „Příjem vozidel“ do tabulky `prijemvozidla` (posledních 30, bez fotek, #216). Soubor `visits.json` se už nečte.
 - **Import ze starého systému**: export přes ODBC (602SQL, 32bit) **jen ke čtení nad zkušební kopií**
   (DSN `AutoservisTest`). Do originální databáze starého systému se nikdy nezapisuje.
   Skripty: `nastroje/stary_system_export.py` a `app/importers/stary_system.py`. Stav je v `IMPORT_STARY_SYSTEM.md`

@@ -15,7 +15,8 @@ from app.models import ApiKlic, Nastaveni
 from app.services import ChybaValidace, NenalezenoError, cisty_text
 
 OPRAVNENI = {"sklad": "Sklad (ceník, hromadné úpravy)", "zakazky": "Zakázky a jejich řádky",
-             "vozidla": "Vozidla, zákazníci a příjem zakázky"}
+             "vozidla": "Vozidla, zákazníci a příjem zakázky",
+             "prijem": "Příjem vozidel (příjmy, vozidla a registr jen ke čtení)"}
 KLIC_ZAPNUTO = "api_zapnuto"
 
 
@@ -72,8 +73,9 @@ def zrus(session: Session, klic_id: int) -> None:
     session.commit()
 
 
-def over(session: Session, hlavicka: str | None, opravneni: str | None = None) -> ApiKlic:
-    """Hlavička `Authorization: Bearer <klíč>` → aktivní klíč s požadovaným oprávněním, jinak ChybaPristupu."""
+def over(session: Session, hlavicka: str | None, opravneni: str | tuple[str, ...] | None = None) -> ApiKlic:
+    """Hlavička `Authorization: Bearer <klíč>` → aktivní klíč s požadovaným oprávněním, jinak ChybaPristupu.
+    Více oprávnění (n-tice) = stačí kterékoli z nich (např. čtení vozidel: „vozidla“ nebo „prijem“)."""
     if not zapnuto(session):
         raise ChybaPristupu("API je vypnuté. Zapnete ho v Nastavení → API pro boty.", 403)
     hlavicka = (hlavicka or "").strip()
@@ -83,8 +85,10 @@ def over(session: Session, hlavicka: str | None, opravneni: str | None = None) -
     zaznam = session.exec(select(ApiKlic).where(ApiKlic.otisk == _otisk(klic))).first()
     if zaznam is None or not zaznam.aktivni:
         raise ChybaPristupu("Neplatný nebo zrušený klíč.")
-    if opravneni and opravneni not in zaznam.seznam_opravneni:
-        raise ChybaPristupu(f"Klíč „{zaznam.nazev}“ nemá oprávnění „{OPRAVNENI.get(opravneni, opravneni)}“.", 403)
+    pozadovana = (opravneni,) if isinstance(opravneni, str) else tuple(opravneni or ())
+    if pozadovana and not set(pozadovana) & set(zaznam.seznam_opravneni):
+        nazvy = " nebo ".join(f"„{OPRAVNENI.get(o, o)}“" for o in pozadovana)
+        raise ChybaPristupu(f"Klíč „{zaznam.nazev}“ nemá oprávnění {nazvy}.", 403)
     zaznam.naposledy = datetime.now()
     session.add(zaznam)
     session.commit()

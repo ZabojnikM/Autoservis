@@ -67,5 +67,5 @@ ZIP agentovi předej přílohou ve zprávě v OpenBotu (limit 100 MB na soubor),
 ## 6. Upozornění
 - Agenti v OpenBotu běží s plným přístupem k souborům a příkazům, bez potvrzování jednotlivých kroků.
   Ostrou databázi proto dej agentovi jen jako kopii. Skutečná aplikace na :8000 a testovací server mají vlastní data.
-- Na testovacím serveru už běží agent *Přijímací technik*, který zapisuje `visits.json` (záložka Příjem vozidel).
+- Na serveru běží agent *Přijímací technik*, který zapisuje příjmy přes MCP s oprávněním Příjem vozidel (záložka Příjem vozidel, #216).
   Nový vývojářský agent jeho soubory jen čte.

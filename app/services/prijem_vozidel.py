@@ -1,40 +1,22 @@
-"""Příjem vozidel – jen čtení návštěv, které zpracoval Přijímací technik (OpenBot), z jeho visits.json (#51).
+"""Příjem vozidel (#51, #216) – příjmy, které zapisuje Přijímací technik (OpenBot) přes MCP.
 
-Zdroj je JSON soubor formátu `autoservis.visits.v1` na stejném počítači (cesta v konfiguraci nasazení,
-`AUTOSERVIS_PRIJEM_JSON`). OpenBot ho aktualizuje atomickým nahrazením, proto se soubor otevírá znovu
-při každém načtení (nová návštěva je vidět po obnovení stránky, bez restartu). Nic se nezapisuje,
-soubor se nevystavuje jako statický. `sources`, `events` a fotky se v první verzi nezobrazují.
+Příjmy jsou ve vlastní tabulce `PrijemVozidla`; drží se posledních `LIMIT` (starší se při zápisu smažou).
+Fotky sem nepatří – zůstávají u technika. Záložka Příjem vozidel jen čte a páruje příjem s databází vozidel.
 """
 from __future__ import annotations
 
 import json
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
-from pathlib import Path
 from urllib.parse import quote
 
-from sqlmodel import Session
+from sqlmodel import Session, col, select
 
-from app import config
-from app.models import Vozidlo, Zakazka
-from app.services import vozidla
+from app.models import PrijemVozidla, Vozidlo, Zakazka
+from app.services import ChybaValidace, NenalezenoError, cisty_text, vozidla
 
-SCHEMA = "autoservis.visits.v1"
-
-
-class PrijemNedostupny(Exception):
-    """Soubor nejde přečíst nebo nemá očekávaný formát – stránka ukáže „dočasně nedostupný“."""
-
-
-def _cas(hodnota) -> datetime | None:
-    """ISO čas ze zdroje (např. 2026-11-19T08:15:00Z) → místní čas; neplatný / chybějící = None."""
-    if not isinstance(hodnota, str) or not hodnota.strip():
-        return None
-    try:
-        cas = datetime.fromisoformat(hodnota.strip().replace("Z", "+00:00"))
-    except ValueError:
-        return None
-    return cas.astimezone().replace(tzinfo=None) if cas.tzinfo else cas
+LIMIT = 30
 
 
 def _text(hodnota) -> str | None:
@@ -115,38 +97,105 @@ class Prijmy:
     navstevy: list[Navsteva]
 
 
-def _navsteva(data) -> Navsteva:
-    if not isinstance(data, dict) or not _text(data.get("id")):
-        raise PrijemNedostupny("Návštěva bez id.")
-    vozidlo = data.get("vehicle") if isinstance(data.get("vehicle"), dict) else {}
-    km = vozidlo.get("odometer_km")
+def _navsteva(radek: PrijemVozidla) -> Navsteva:
     try:
-        km = int(km) if km not in (None, "") else None
-    except (TypeError, ValueError):
-        km = None
-    technicke = vozidlo.get("technical_data")
+        technicke = json.loads(radek.technicke or "{}")
+    except ValueError:
+        technicke = {}
+    try:
+        nejiste = json.loads(radek.nejiste or "[]")
+    except ValueError:
+        nejiste = []
+    technicke = technicke if isinstance(technicke, dict) else {}
     return Navsteva(
-        id=_text(data["id"]), created_at=_cas(data.get("created_at")), updated_at=_cas(data.get("updated_at")),
-        revision=_text(data.get("revision")), spz=_text(vozidlo.get("spz")), vin=_text(vozidlo.get("vin")), km=km,
-        technicke=_ploche(technicke) if isinstance(technicke, dict) else [],
-        nejiste=_nejiste(vozidlo.get("uncertain_fields")),
-        registr=technicke if isinstance(technicke, dict) else {},
+        id=radek.id, created_at=radek.vytvoreno, updated_at=radek.upraveno, revision=str(radek.revize),
+        spz=radek.spz, vin=radek.vin, km=radek.km, technicke=_ploche(technicke), nejiste=_nejiste(nejiste),
+        registr=technicke,
     )
 
 
-def nacti(cesta: str | Path | None = None) -> Prijmy:
-    """Načte a zkontroluje soubor (vždy znovu otevřený). Návštěvy od nejnověji založené."""
-    cesta = Path(cesta or config.PRIJEM_JSON)
+def nacti(session: Session) -> Prijmy:
+    """Příjmy od nejnověji založeného."""
+    radky = list(session.exec(select(PrijemVozidla).order_by(col(PrijemVozidla.vytvoreno).desc())))
+    navstevy = [_navsteva(r) for r in radky]
+    posledni = max((r.upraveno for r in radky), default=None)
+    return Prijmy(version=None, updated_at=posledni, navstevy=navstevy)
+
+
+def najdi(session: Session, prijem_id: str) -> Navsteva | None:
+    radek = session.get(PrijemVozidla, prijem_id)
+    return _navsteva(radek) if radek else None
+
+
+# ---------------------------------------------------------------- zápis přes MCP (#216)
+
+POLE = ("id", "spz", "vin", "km", "technicke", "nejiste")
+
+
+def _km(hodnota) -> int | None:
+    if hodnota in (None, ""):
+        return None
     try:
-        with open(cesta, encoding="utf-8") as soubor:
-            data = json.load(soubor)
-    except (OSError, ValueError) as e:
-        raise PrijemNedostupny(f"Soubor příjmů nejde přečíst: {e.__class__.__name__}") from e
-    if not isinstance(data, dict) or data.get("schema") != SCHEMA or not isinstance(data.get("visits"), list):
-        raise PrijemNedostupny("Neočekávaný formát souboru příjmů.")
-    navstevy = [_navsteva(v) for v in data["visits"]]
-    navstevy.sort(key=lambda n: n.created_at or datetime.min, reverse=True)
-    return Prijmy(version=_text(data.get("version")), updated_at=_cas(data.get("updated_at")), navstevy=navstevy)
+        km = int(str(hodnota).replace(" ", ""))
+    except ValueError:
+        raise ChybaValidace("Stav tachometru (km) musí být celé číslo.", "km") from None
+    if km < 0:
+        raise ChybaValidace("Stav tachometru (km) nemůže být záporný.", "km")
+    return km
+
+
+def uloz(session: Session, data: dict | None) -> PrijemVozidla:
+    """Nový příjem, nebo oprava existujícího podle `id` (mění jen zadaná pole). Pak se smažou příjmy nad limit."""
+    data = dict(data or {})
+    nezname = sorted(k for k in data if k not in POLE)
+    if nezname:
+        raise ChybaValidace(f"Neznámá pole: {', '.join(nezname)}. Povolená: {', '.join(POLE)}.")
+    prijem_id = cisty_text(data.pop("id", None))
+    radek = session.get(PrijemVozidla, prijem_id) if prijem_id else None
+    if radek is None:
+        radek = PrijemVozidla(id=prijem_id or str(uuid.uuid4()), revize=0)
+    if "spz" in data:
+        radek.spz = vozidla.normalizuj_spz(str(data["spz"] or "")) or None
+    if "vin" in data:
+        radek.vin = vozidla.normalizuj_vin(str(data["vin"] or "")) or None
+    if "km" in data:
+        radek.km = _km(data["km"])
+    if "technicke" in data:
+        if not isinstance(data["technicke"] or {}, dict):
+            raise ChybaValidace("technicke musí být objekt (technické údaje ve formátu Registru vozidel).")
+        radek.technicke = json.dumps(data["technicke"] or {}, ensure_ascii=False)
+    if "nejiste" in data:
+        nejiste = data["nejiste"] or []
+        if not isinstance(nejiste, list) or not all(isinstance(x, str) for x in nejiste):
+            raise ChybaValidace("nejiste musí být seznam názvů polí, např. [\"vin\", \"km\"].")
+        radek.nejiste = json.dumps(nejiste, ensure_ascii=False)
+    if not radek.spz and not radek.vin:
+        raise ChybaValidace("Příjem potřebuje SPZ nebo VIN.", "spz")
+    radek.revize += 1
+    radek.upraveno = datetime.now()
+    session.add(radek)
+    session.commit()
+    _orizni(session)
+    session.refresh(radek)
+    return radek
+
+
+def _orizni(session: Session) -> int:
+    """Smaže příjmy nad limit (nejstarší podle založení). Vrací počet smazaných."""
+    stare = list(session.exec(select(PrijemVozidla).order_by(col(PrijemVozidla.vytvoreno).desc()).offset(LIMIT)))
+    for radek in stare:
+        session.delete(radek)
+    if stare:
+        session.commit()
+    return len(stare)
+
+
+def smaz(session: Session, prijem_id: str) -> None:
+    radek = session.get(PrijemVozidla, prijem_id)
+    if radek is None:
+        raise NenalezenoError(f"Příjem {prijem_id} neexistuje.")
+    session.delete(radek)
+    session.commit()
 
 
 # ---------------------------------------------------------------- návštěva × naše databáze vozidel
