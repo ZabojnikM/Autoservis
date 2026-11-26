@@ -265,10 +265,17 @@ zrušit jde kdykoli.
 - **MCP server** na `/mcp/` (streamable HTTP, stejný klíč v hlavičce) nabízí stejné funkce jako nástroje pro boty
   (`hledej_dily`, `nahled_hromadne_akce`, `proved_hromadnou_akci`, `hledej_radky_zakazek`, `prijem_zakazky`…).
 - **Příjem vozidel (#216):** záložku Příjem vozidel plní Přijímací technik (OpenBot) přes MCP s oprávněním
-  **Příjem vozidel**: `prijmy`, `uloz_prijem` (nový nebo oprava podle `id`: SPZ, VIN, km, technické údaje, nejistá pole),
-  `smaz_prijem`, jen ke čtení `hledej_vozidla`, `vozidlo_detail` a `registr_vozidla` (údaje z Registru vozidel podle
-  VIN, klíč registru zůstává v Nastavení). Příjem se ukládá bez náhledu, drží se **posledních 30**, fotky se
-  neukládají (zůstávají u technika). Vozidla, zákazníky ani zakázky tento klíč měnit nemůže.
+  **Příjem vozidel**. Technik posílá jen přečtené údaje (`uloz_prijem`: SPZ, VIN, km, nejistá pole; `id` při doplnění),
+  zbytek udělá Autoservis:
+  - VIN opraví (bez mezer a pomlček, O/Q → 0, I → 1 – tato písmena ve VIN nikdy nejsou) a zkontroluje 17 znaků,
+  - příjem se stejnou SPZ / VIN z posledních 24 hodin doplní, nový nezaloží; jiná SPZ je vždy jiné auto,
+  - vozidlo najde v databázi (chybějící VIN doplní z ní), u nového auta načte údaje z Registru vozidel
+    (klíč registru je v Nastavení),
+  - vrátí stav (hotovo, nové auto, chybí VIN, neplatný VIN, VIN není v registru, VIN nesedí, SPZ nesedí, konflikt, registr
+    nedostupný) s dalším krokem pro technika; stav čekající na doplnění ukáže záložka u VIN.
+  Dále `prijmy`, `smaz_prijem` a ke čtení `hledej_vozidla`, `vozidlo_detail`. Drží se **posledních 30** příjmů, fotky
+  se neukládají. Vozidla, zákazníky ani zakázky tento klíč měnit nemůže. Oprava VIN (O/Q → 0, I → 1) platí i pro
+  vozidla ve formuláři.
 - Přeformátování kódu podle vzoru (`UFI ##.###.##`) je i ve Správě dat → Díly → Úprava kódů.
 - **Vzor kódu** ve filtru Správy dat → Díly (a `kod_vzor` v API / MCP, #151): zástupné znaky jako v Excelu a Accessu –
   `*` cokoli, `?` jeden znak, `#` číslice, `[abc]` / `[a-c]` výběr, `[!abc]` mimo výběr, ostatní znaky doslova; platí na

@@ -421,6 +421,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-23 | Nápověda: po Esc seznam zase poslouchá šipky, text okna se nezalamuje do posuvníku; Ctrl+šipka na zakázce mění množství opakovaně (#204) |
 | 2026-11-23 | Esc na detailu zakázky, vozidla a zákazníka vrátí na seznam (z pole nejdřív vyskočí, okno se zavře první) (#206) |
 | 2026-11-26 | Příjem vozidel z databáze: technik zapisuje přes MCP (oprávnění Příjem vozidel, posledních 30, bez fotek, registr podle VIN), visits.json se už nečte (#216) |
+| 2026-11-26 | Příjem: vyhodnocení v Autoservisu – oprava VIN (O/Q → 0, I → 1), spojení se stejnou SPZ / VIN za 24 h, VIN z databáze, registr u nového auta, stav s dalším krokem; technik už registr nevolá (#216) |
 
 ## Zdroje průzkumu
 

@@ -16,7 +16,7 @@ from app.services import ChybaValidace, NenalezenoError, cisty_text
 
 OPRAVNENI = {"sklad": "Sklad (ceník, hromadné úpravy)", "zakazky": "Zakázky a jejich řádky",
              "vozidla": "Vozidla, zákazníci a příjem zakázky",
-             "prijem": "Příjem vozidel (příjmy, vozidla a registr jen ke čtení)"}
+             "prijem": "Příjem vozidel (příjmy, vozidla jen ke čtení)"}
 KLIC_ZAPNUTO = "api_zapnuto"
 
 

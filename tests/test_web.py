@@ -1580,18 +1580,18 @@ def test_kopirovat_vin_ikona_misto_napisu():
 
 def test_ikona_kopirovani_pred_vin_a_kodem_materialu():
     """#156: ikona kopírování je před VIN a před kódem materiálu (zakázka, ceník, Správa dat), u práce ne."""
-    loc = _prijem(spz="1KO1560", v_vin="TMBKOPIE00000156A").headers["location"].split("?")[0]
+    loc = _prijem(spz="1KO1560", v_vin="TMBKXPXE00000156A").headers["location"].split("?")[0]
     client.post(f"{loc}/polozky", data={"typ": "material", "kod": "OPT FAF10128", "nazev": "Vzduchový filtr",
                                         "mnozstvi": "1", "cena": "399"})
     client.post(f"{loc}/polozky", data={"typ": "prace", "kod": "MECH", "nazev": "Mechanická práce",
                                         "mnozstvi": "1", "cena": "450"})
     detail = client.get(loc).text
     # VIN: tlačítko před textem
-    assert re.search(r'data-kopirovat="TMBKOPIE00000156A"[^>]*>.*?</button><span>TMBKOPIE00000156A</span>', detail, re.S)
+    assert re.search(r'data-kopirovat="TMBKXPXE00000156A"[^>]*>.*?</button><span>TMBKXPXE00000156A</span>', detail, re.S)
     # kód materiálu s ikonou před kódem, práce bez ikony
     assert re.search(r'data-kopirovat="OPT FAF10128" title="Zkopírovat kód do schránky".*?</button>OPT FAF10128</td>', detail, re.S)
     assert 'data-kopirovat="MECH"' not in detail
-    assert 'data-kopirovat="TMBKOPIE00000156A"' in client.get("/zakazky").text
+    assert 'data-kopirovat="TMBKXPXE00000156A"' in client.get("/zakazky").text
 
 
 def test_kod_materialu_tucne_v_zakazce_a_na_karte_vozidla():

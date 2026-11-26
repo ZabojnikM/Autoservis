@@ -180,7 +180,7 @@ def pridej_dil_do_zakazky(zakazka_id: int, karta_ceniku_id: int, mnozstvi: str =
 
 # ---------------------------------------------------------------- vozidla, zákazníci, příjem
 
-CTENI_VOZIDEL = ("vozidla", "prijem")  # #216: technik s oprávněním Příjem vozidel vozidla jen čte
+CTENI_VOZIDEL = ("vozidla", "prijem")  # #216: technik s oprávněním Příjem vozidel vozidla jen čte (nepotřebuje je)
 
 
 @mcp.tool(description="Hledá vozidla podle SPZ, VIN, značky, modelu nebo zákazníka.")
@@ -249,11 +249,12 @@ def prijmy() -> dict:
         return api_prijem.prijmy(s)
 
 
-@mcp.tool(description="Uloží příjem vozidla (bez náhledu – příjem je jen podklad pro zakázku, fotky se neposílají). "
-                      "data: id (pro opravu existujícího, jinak se založí nový), spz, vin, km (stav tachometru), "
-                      "technicke (objekt s technickými údaji ve formátu Registru vozidel, např. z registr_vozidla), "
-                      "nejiste (seznam nejistých polí, např. [\"vin\"]). Potřebuje aspoň SPZ nebo VIN. "
-                      "Oprava mění jen zadaná pole. Starší příjmy nad 30 se smažou.")
+@mcp.tool(description="Uloží příjem vozidla z toho, co jsi přečetl z fotek a textu: data {spz, vin, km, nejiste}, "
+                      "pro doplnění příjmu, na který se právě ptáš, i id. Posílej jen přečtené údaje – databázi vozidel "
+                      "i Registr vozidel prohledá Autoservis. VIN opraví (mezery pryč, O/Q → 0, I → 1). Bez id doplní "
+                      "příjem se stejnou SPZ / VIN z posledních 24 h, jinak založí nový; jiná SPZ je vždy jiné auto. "
+                      "Vrací stav (hotovo, nove_auto, chybi_vin, vin_neplatny, vin_nenalezen, vin_nesedi, spz_nesedi, konflikt, "
+                      "registr_nedostupny), zprava a dalsi_krok – podle něj odpověz uživateli. Bez náhledu, fotky se neposílají.")
 def uloz_prijem(data: dict) -> dict:
     with _spojeni("prijem") as (s, _):
         return api_prijem.uloz(s, data)
@@ -263,14 +264,6 @@ def uloz_prijem(data: dict) -> dict:
 def smaz_prijem(prijem_id: str) -> dict:
     with _spojeni("prijem") as (s, _):
         return api_prijem.smaz(s, prijem_id)
-
-
-@mcp.tool(description="Technické údaje vozidla ze státního Registru silničních vozidel podle VIN (jen čtení). "
-                      "Vrací data (pro uloz_prijem jako technicke) a vozidlo (pole ve tvaru Autoservisu). "
-                      "Limit registru je 27 dotazů za minutu.")
-def registr_vozidla(vin: str) -> dict:
-    with _spojeni(CTENI_VOZIDEL) as (s, _):
-        return api_prijem.registr(s, vin)
 
 
 # ---------------------------------------------------------------- ASGI aplikace pro /mcp

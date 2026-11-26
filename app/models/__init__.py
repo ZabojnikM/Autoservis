@@ -474,3 +474,5 @@ class PrijemVozidla(SQLModel, table=True):
     km: Optional[int] = None
     technicke: str = "{}"
     nejiste: str = "[]"
+    stav: str = ""      # vyhodnocení při uložení (#216): hotovo, nove_auto, chybi_vin, vin_nenalezen…
+    zprava: str = ""    # vysvětlení stavu pro uživatele
