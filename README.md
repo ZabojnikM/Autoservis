@@ -271,7 +271,7 @@ zrušit jde kdykoli.
   - příjem se stejnou SPZ / VIN z posledních 24 hodin doplní, nový nezaloží; jiná SPZ je vždy jiné auto,
   - vozidlo najde v databázi (chybějící VIN doplní z ní), u nového auta načte údaje z Registru vozidel
     (klíč registru je v Nastavení),
-  - vrátí stav (hotovo, nové auto, chybí VIN, neplatný VIN, VIN není v registru, VIN nesedí, konflikt, registr
+  - vrátí stav (hotovo, nové auto, chybí VIN, neplatný VIN, VIN není v registru, VIN nesedí, SPZ nesedí, konflikt, registr
     nedostupný) s dalším krokem pro technika; stav čekající na doplnění ukáže záložka u VIN.
   Dále `prijmy`, `smaz_prijem` a ke čtení `hledej_vozidla`, `vozidlo_detail`. Drží se **posledních 30** příjmů, fotky
   se neukládají. Vozidla, zákazníky ani zakázky tento klíč měnit nemůže. Oprava VIN (O/Q → 0, I → 1) platí i pro

@@ -242,7 +242,11 @@ def test_neplatny_vin_nesedi_a_konflikt(session, registr):
     with pytest.raises(ChybaValidace, match="není platný"):
         prijem_vozidel.uloz(session, {"vin": "TMB123"})  # bez SPZ a s neplatným VIN příjem nevznikne
     assert prijem_vozidel.uloz(session, {"spz": "1AB2345", "vin": "TMBAA000000000009"}).stav == "vin_nesedi"
-    assert prijem_vozidel.uloz(session, {"spz": "9JJ9999", "vin": "WVWZZZ00000000002"}).stav == "hotovo"  # podle VIN
+    jina_spz = prijem_vozidel.uloz(session, {"spz": "9JJ9999", "vin": "WVWZZZ00000000002"})
+    assert jina_spz.stav == "spz_nesedi" and "2BB2222" in jina_spz.zprava  # VIN z databáze, ale jiná SPZ
+    vozidla.vytvor(session, {"spz": "3CC3333", "vin": "WVWZZZ00000000003"})
+    jen_vin = prijem_vozidel.uloz(session, {"vin": "WVWZZZ00000000003", "km": 3})  # jen VIN, bez SPZ
+    assert jen_vin.stav == "hotovo" and not jen_vin.spojeno
     k = prijem_vozidel.uloz(session, {"spz": "1AB2345", "vin": "WVWZZZ00000000002"})
     assert k.spojeno and k.stav == "konflikt"
     assert a.id

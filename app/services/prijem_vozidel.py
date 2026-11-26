@@ -36,6 +36,8 @@ STAVY = {
     "vin_nenalezen": ("VIN není v registru", "VIN v registru není – nejspíš je přečtený špatně. Napiš, které znaky jsou "
                                              "nejisté (8/B, 5/S, 2/Z, 6/G, 0/D), a požádej o čitelnější fotku nebo VIN v textu."),
     "vin_nesedi": ("VIN nesedí", "VIN se liší od VIN vozidla v databázi. Oznam rozpor uživateli, nic dalšího nedělej."),
+    "spz_nesedi": ("SPZ nesedí", "VIN patří vozidlu z databáze, které tam má jinou SPZ. Oznam rozpor uživateli "
+                                 "(nová SPZ, nebo špatně přečtený VIN), nic dalšího nedělej."),
     "konflikt": ("Konflikt SPZ / VIN", "SPZ a VIN patří v databázi různým vozidlům. Oznam rozpor, nic dalšího nedělej."),
     "registr_nedostupny": ("Registr nedostupný", "Příjem je uložený bez údajů z registru; Autoservis to zkusí znovu "
                                                  "při dalším doplnění. Řekni to uživateli."),
@@ -270,6 +272,8 @@ def _vyhodnot(session: Session, radek: PrijemVozidla, nacti_registr) -> tuple[st
         if not radek.vin and vin_db and vozidla.je_vin(vin_db):
             radek.vin = vin_db
             return "hotovo", f"Vozidlo je v databázi ({vuz.spz}), VIN doplněn z databáze.", True
+        if shoda.podle_vin and not shoda.podle_spz and radek.spz and vozidla.normalizuj_spz(vuz.spz) != radek.spz:
+            return "spz_nesedi", shoda.upozorneni or f"V databázi má vozidlo SPZ {vuz.spz}.", False
         if radek.vin and vin_db and radek.vin != vin_db:
             return "vin_nesedi", shoda.upozorneni or f"V databázi má vozidlo VIN {vuz.vin}.", False
         if not radek.vin:

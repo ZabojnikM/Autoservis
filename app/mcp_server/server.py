@@ -253,7 +253,7 @@ def prijmy() -> dict:
                       "pro doplnění příjmu, na který se právě ptáš, i id. Posílej jen přečtené údaje – databázi vozidel "
                       "i Registr vozidel prohledá Autoservis. VIN opraví (mezery pryč, O/Q → 0, I → 1). Bez id doplní "
                       "příjem se stejnou SPZ / VIN z posledních 24 h, jinak založí nový; jiná SPZ je vždy jiné auto. "
-                      "Vrací stav (hotovo, nove_auto, chybi_vin, vin_neplatny, vin_nenalezen, vin_nesedi, konflikt, "
+                      "Vrací stav (hotovo, nove_auto, chybi_vin, vin_neplatny, vin_nenalezen, vin_nesedi, spz_nesedi, konflikt, "
                       "registr_nedostupny), zprava a dalsi_krok – podle něj odpověz uživateli. Bez náhledu, fotky se neposílají.")
 def uloz_prijem(data: dict) -> dict:
     with _spojeni("prijem") as (s, _):
