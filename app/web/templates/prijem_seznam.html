@@ -8,9 +8,7 @@
 <div class="lista-filtru-seznamu">
   <a href="/prijem" role="button" class="secondary">Obnovit</a>
 </div>
-{% if prijmy is none %}
-<p class="prazdna-mrizka chyba-text">Příjem vozidel je dočasně nedostupný</p>
-{% elif not prijmy.navstevy %}
+{% if not prijmy.navstevy %}
 <p class="prazdna-mrizka tlumene">Zatím žádné příjmy</p>
 {% else %}
 <div class="overflow-auto">

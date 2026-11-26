@@ -13,7 +13,7 @@ from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
 from mcp.server.transport_security import TransportSecuritySettings
 
-from app.api import sklad as api_sklad, vozidla as api_vozidla, zakazky as api_zakazky
+from app.api import prijem as api_prijem, sklad as api_sklad, vozidla as api_vozidla, zakazky as api_zakazky
 from app.services import ChybaValidace, NenalezenoError, api_klice
 
 _hlavicka: contextvars.ContextVar[str | None] = contextvars.ContextVar("autoservis_mcp_hlavicka", default=None)
@@ -24,13 +24,14 @@ Pravidla:
   až po jeho výslovném souhlasu – s otiskem a stejnými parametry z náhledu.
 - Ceny jsou bez DPH, jako text s desetinnou tečkou. Ve starých zakázkách se ceny nemění, vystavené doklady nikdy.
 - Kód dílu se v hledání porovnává i bez mezer a teček (25.011.00 = 2501100); předpona výrobce je první slovo (UFI, BO…).
-- Každá hromadná změna se zálohuje a zapíše do deníku úprav v aplikaci."""
+- Každá hromadná změna se zálohuje a zapíše do deníku úprav v aplikaci.
+- Výjimka: příjem vozidla (uloz_prijem) se ukládá rovnou, bez náhledu – je to jen podklad pro zakázku."""
 
 mcp = MCPServer(name="Autoservis", instructions=POKYNY)
 
 
 @contextlib.contextmanager
-def _spojeni(opravneni: str | None):
+def _spojeni(opravneni: str | tuple[str, ...] | None):
     """Spojení s databází (v testech přesměrované jako u webu) + ověřený klíč; chyby → ToolError pro model."""
     from app.db import get_session
     from app.main import app
@@ -179,15 +180,18 @@ def pridej_dil_do_zakazky(zakazka_id: int, karta_ceniku_id: int, mnozstvi: str =
 
 # ---------------------------------------------------------------- vozidla, zákazníci, příjem
 
+CTENI_VOZIDEL = ("vozidla", "prijem")  # #216: technik s oprávněním Příjem vozidel vozidla jen čte
+
+
 @mcp.tool(description="Hledá vozidla podle SPZ, VIN, značky, modelu nebo zákazníka.")
 def hledej_vozidla(q: str = "", limit: int = 50) -> dict:
-    with _spojeni("vozidla") as (s, _):
+    with _spojeni(CTENI_VOZIDEL) as (s, _):
         return api_vozidla.vozidla(s, q, limit)
 
 
 @mcp.tool(description="Detail vozidla se zákazníkem a historií zakázek.")
 def vozidlo_detail(vozidlo_id: int) -> dict:
-    with _spojeni("vozidla") as (s, _):
+    with _spojeni(CTENI_VOZIDEL) as (s, _):
         return api_vozidla.vozidlo(s, vozidlo_id)
 
 
@@ -234,6 +238,39 @@ def uprav_zakaznika(zakaznik_id: int, data: dict) -> dict:
 def prijem_zakazky(zakazka: dict, vozidlo: dict | None = None, zakaznik: dict | None = None) -> dict:
     with _spojeni("vozidla") as (s, klic):
         return api_vozidla.prijem(s, klic, zakazka, vozidlo, zakaznik)
+
+
+# ---------------------------------------------------------------- příjem vozidel (#216)
+
+@mcp.tool(description="Příjmy vozidel v Autoservisu (záložka Příjem vozidel), od nejnovějšího; drží se posledních 30. "
+                      "U každého je, jestli je vozidlo v databázi (stav v_databazi / neni / konflikt).")
+def prijmy() -> dict:
+    with _spojeni("prijem") as (s, _):
+        return api_prijem.prijmy(s)
+
+
+@mcp.tool(description="Uloží příjem vozidla (bez náhledu – příjem je jen podklad pro zakázku, fotky se neposílají). "
+                      "data: id (pro opravu existujícího, jinak se založí nový), spz, vin, km (stav tachometru), "
+                      "technicke (objekt s technickými údaji ve formátu Registru vozidel, např. z registr_vozidla), "
+                      "nejiste (seznam nejistých polí, např. [\"vin\"]). Potřebuje aspoň SPZ nebo VIN. "
+                      "Oprava mění jen zadaná pole. Starší příjmy nad 30 se smažou.")
+def uloz_prijem(data: dict) -> dict:
+    with _spojeni("prijem") as (s, _):
+        return api_prijem.uloz(s, data)
+
+
+@mcp.tool(description="Smaže příjem vozidla podle id (např. omylem založený duplicitní příjem).")
+def smaz_prijem(prijem_id: str) -> dict:
+    with _spojeni("prijem") as (s, _):
+        return api_prijem.smaz(s, prijem_id)
+
+
+@mcp.tool(description="Technické údaje vozidla ze státního Registru silničních vozidel podle VIN (jen čtení). "
+                      "Vrací data (pro uloz_prijem jako technicke) a vozidlo (pole ve tvaru Autoservisu). "
+                      "Limit registru je 27 dotazů za minutu.")
+def registr_vozidla(vin: str) -> dict:
+    with _spojeni(CTENI_VOZIDEL) as (s, _):
+        return api_prijem.registr(s, vin)
 
 
 # ---------------------------------------------------------------- ASGI aplikace pro /mcp

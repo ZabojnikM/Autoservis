@@ -249,7 +249,7 @@ Aplikace tiskne jen tyto doklady:
 ## API a MCP pro boty (#145–#148)
 
 *Nastavení → API pro boty*: zapnutí (výchozí vypnuto) a klíče pro boty v OpenBotu. Každý klíč má oprávnění
-**sklad**, **zakázky** a / nebo **vozidla a příjem**. Klíč se ukáže jen při vytvoření (v databázi je jen otisk),
+**sklad**, **zakázky**, **vozidla a příjem** a / nebo **příjem vozidel**. Klíč se ukáže jen při vytvoření (v databázi je jen otisk),
 zrušit jde kdykoli.
 
 - **REST API** `/api/v1` (hlavička `Authorization: Bearer <klíč>`, odpovědi JSON, ceny bez DPH jako text):
@@ -264,6 +264,11 @@ zrušit jde kdykoli.
   mezitím nezměnila). Před zápisem záloha, každý zápis v **Deníku úprav** s názvem klíče.
 - **MCP server** na `/mcp/` (streamable HTTP, stejný klíč v hlavičce) nabízí stejné funkce jako nástroje pro boty
   (`hledej_dily`, `nahled_hromadne_akce`, `proved_hromadnou_akci`, `hledej_radky_zakazek`, `prijem_zakazky`…).
+- **Příjem vozidel (#216):** záložku Příjem vozidel plní Přijímací technik (OpenBot) přes MCP s oprávněním
+  **Příjem vozidel**: `prijmy`, `uloz_prijem` (nový nebo oprava podle `id`: SPZ, VIN, km, technické údaje, nejistá pole),
+  `smaz_prijem`, jen ke čtení `hledej_vozidla`, `vozidlo_detail` a `registr_vozidla` (údaje z Registru vozidel podle
+  VIN, klíč registru zůstává v Nastavení). Příjem se ukládá bez náhledu, drží se **posledních 30**, fotky se
+  neukládají (zůstávají u technika). Vozidla, zákazníky ani zakázky tento klíč měnit nemůže.
 - Přeformátování kódu podle vzoru (`UFI ##.###.##`) je i ve Správě dat → Díly → Úprava kódů.
 - **Vzor kódu** ve filtru Správy dat → Díly (a `kod_vzor` v API / MCP, #151): zástupné znaky jako v Excelu a Accessu –
   `*` cokoli, `?` jeden znak, `#` číslice, `[abc]` / `[a-c]` výběr, `[!abc]` mimo výběr, ostatní znaky doslova; platí na

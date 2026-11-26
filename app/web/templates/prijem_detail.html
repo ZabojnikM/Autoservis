@@ -11,9 +11,7 @@
 {% if text %}{{ text }}{% if nejiste %} <span class="nejiste" title="Hodnota není potvrzená – ověřte ji">nejisté</span>{% endif %}{% else %}<span class="tlumene">Neuvedeno</span>{% endif %}
 {%- endmacro %}
 {% block content %}
-{% if prijmy is none %}
-<p class="prazdna-mrizka chyba-text">Příjem vozidel je dočasně nedostupný</p>
-{% elif navsteva is none %}
+{% if navsteva is none %}
 <p class="prazdna-mrizka tlumene">Tento příjem už v seznamu není (zdroj uchovává posledních 30 návštěv). <a href="/prijem">Seznam příjmů</a></p>
 {% else %}
 {% set n = navsteva %}
