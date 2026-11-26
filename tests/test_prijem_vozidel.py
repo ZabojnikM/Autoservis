@@ -219,6 +219,14 @@ def test_jina_spz_je_nove_auto(session, registr):
     v2 = prijem_vozidel.uloz(session, {"spz": "4DD4444"})
     assert not v2.spojeno and v2.radek.id != v.radek.id
     assert [n.stav for n in prijem_vozidel.nacti(session).navstevy] == ["chybi_vin", "chybi_vin"]  # první zůstal
+    # stejný VIN, ale jiná SPZ = jiné auto, SPZ prvního příjmu se nepřepíše
+    s_vin = prijem_vozidel.uloz(session, {"id": v.radek.id, "vin": "WVWZZZ1KZ0W111111"})
+    druhy = prijem_vozidel.uloz(session, {"spz": "5EE5555", "vin": "WVWZZZ1KZ0W111111"})
+    assert not druhy.spojeno and druhy.radek.id != s_vin.radek.id
+    assert prijem_vozidel.najdi(session, v.radek.id).spz == "3CC3333"
+    # jen VIN bez SPZ doplní příjem se stejným VIN; příjem jen s VIN se pak doplní i podle SPZ
+    bez_spz = prijem_vozidel.uloz(session, {"vin": "WVWZZZ1KZ0W222222"})
+    assert prijem_vozidel.uloz(session, {"spz": "6FF6666", "vin": "WVWZZZ1KZ0W222222"}).radek.id == bez_spz.radek.id
 
 
 def test_nove_auto_z_registru_a_chyby_registru(session, registr):

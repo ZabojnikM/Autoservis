@@ -190,15 +190,16 @@ class Vysledek:
 
 
 def _k_doplneni(session: Session, spz: str | None, vin: str | None) -> PrijemVozidla | None:
-    """Nedávný příjem stejného auta (stejná SPZ nebo VIN, mladší než SPOJIT_DO)."""
-    podminky = [c for c in ((PrijemVozidla.spz == spz) if spz else None, (PrijemVozidla.vin == vin) if vin else None)
-                if c is not None]
-    if not podminky:
-        return None
-    from sqlalchemy import or_
-    return session.exec(select(PrijemVozidla).where(or_(*podminky))
-                        .where(PrijemVozidla.vytvoreno >= datetime.now() - SPOJIT_DO)
-                        .order_by(col(PrijemVozidla.vytvoreno).desc())).first()
+    """Nedávný příjem stejného auta (mladší než SPOJIT_DO). Jiná SPZ je vždy jiné auto:
+    se SPZ se hledá podle SPZ, podle VIN jen příjem bez SPZ; bez SPZ podle VIN."""
+    nedavne = select(PrijemVozidla).where(PrijemVozidla.vytvoreno >= datetime.now() - SPOJIT_DO) \
+        .order_by(col(PrijemVozidla.vytvoreno).desc())
+    if spz:
+        radek = session.exec(nedavne.where(PrijemVozidla.spz == spz)).first()
+        if radek or not vin:
+            return radek
+        return session.exec(nedavne.where(PrijemVozidla.vin == vin).where(col(PrijemVozidla.spz).is_(None))).first()
+    return session.exec(nedavne.where(PrijemVozidla.vin == vin)).first() if vin else None
 
 
 def uloz(session: Session, data: dict | None, nacti_registr=None) -> Vysledek:
