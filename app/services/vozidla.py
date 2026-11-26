@@ -28,6 +28,16 @@ def normalizuj_vin(vin: str | None) -> str | None:
     return vin or None
 
 
+ZAMENY_VIN = {"O": "0", "Q": "0", "I": "1"}  # ISO 3779: I, O, Q ve VIN nikdy nejsou (#216)
+
+
+def oprav_vin(vin: str | None) -> tuple[str | None, list[str]]:
+    """VIN bez mezer a pomlček, velkými písmeny, O/Q → 0 a I → 1. Vrací (VIN, seznam provedených oprav)."""
+    vin = re.sub(r"[\s\-]", "", vin or "").upper()
+    opravy = [f"{z} → {ZAMENY_VIN[z]} (pozice {i + 1})" for i, z in enumerate(vin) if z in ZAMENY_VIN]
+    return ("".join(ZAMENY_VIN.get(z, z) for z in vin) or None), opravy
+
+
 def je_vin(text: str | None) -> bool:
     """Vypadá text jako VIN? 17 znaků, písmena a číslice (VIN nepoužívá I, O, Q). SPZ má nejvýš 8 znaků."""
     return bool(re.fullmatch(r"[A-HJ-NPR-Z0-9]{17}", normalizuj_vin(text) or ""))
@@ -46,7 +56,7 @@ def _nastav(session: Session, vozidlo: Vozidlo, data: dict) -> None:
     if not vozidlo.spz:
         raise ChybaValidace("Vyplňte SPZ vozidla.", "spz")
     if "vin" in data:
-        vozidlo.vin = normalizuj_vin(data["vin"])
+        vozidlo.vin = oprav_vin(data["vin"])[0]
     if vozidlo.vin and len(vozidlo.vin) != 17:
         raise ChybaValidace("VIN musí mít 17 znaků.", "vin")
     for pole in POLE_TEXT:

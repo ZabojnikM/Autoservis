@@ -58,6 +58,7 @@
     <h2 class="titulek-panelu">Příjem</h2>
     <dl>
       <dt>Přijato</dt><dd>{{ hodnota(n.created_at|datumcas if n.created_at else None) }}</dd>
+      {% if n.stav %}<dt>Stav</dt><dd>{% if n.stav in stavy_u_vin %}<span class="nejiste">{{ n.nazev_stavu }}</span>{% else %}{{ n.nazev_stavu }}{% endif %}{% if n.zprava %}<br><span class="tlumene">{{ n.zprava }}</span>{% endif %}</dd>{% endif %}
       <dt>Změněno</dt><dd>{{ hodnota(n.updated_at|datumcas if n.updated_at else None) }}</dd>
       <dt>Revize</dt><dd>{{ hodnota(n.revision) }}</dd>
     </dl>

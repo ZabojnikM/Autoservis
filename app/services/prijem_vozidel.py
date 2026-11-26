@@ -2,21 +2,44 @@
 
 Příjmy jsou ve vlastní tabulce `PrijemVozidla`; drží se posledních `LIMIT` (starší se při zápisu smažou).
 Fotky sem nepatří – zůstávají u technika. Záložka Příjem vozidel jen čte a páruje příjem s databází vozidel.
+
+Technik posílá jen to, co přečetl (SPZ, VIN, km). Zbytek dělá Autoservis při uložení: opraví VIN (O/Q → 0, I → 1),
+spojí příjem se stejnou SPZ / VIN z posledních 24 hodin, najde vozidlo v databázi (doplní z ní VIN), u nového auta
+načte údaje z Registru vozidel a vrátí stav s dalším krokem pro technika.
 """
 from __future__ import annotations
 
 import json
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from urllib.parse import quote
 
 from sqlmodel import Session, col, select
 
 from app.models import PrijemVozidla, Vozidlo, Zakazka
-from app.services import ChybaValidace, NenalezenoError, cisty_text, vozidla
+from app.services import ChybaValidace, NenalezenoError, cisty_text, nastaveni, registr_vozidel, vozidla
 
 LIMIT = 30
+SPOJIT_DO = timedelta(hours=24)  # příjem se stejnou SPZ / VIN mladší než tohle se doplní, nový se nezaloží
+
+# stavy, které záložka ukáže u VIN (čeká se na doplnění)
+STAVY_U_VIN = ("chybi_vin", "vin_neplatny", "vin_nenalezen", "registr_nedostupny")
+# stav → (název pro záložku, další krok pro technika)
+STAVY = {
+    "hotovo": ("Hotovo", "Příjem je kompletní. Napiš uživateli, že je hotovo (a odkud je VIN)."),
+    "nove_auto": ("Nové auto", "Vozidlo v databázi není, údaje jsou z registru. Napiš značku a model; vozidlo "
+                               "založí uživatel v Autoservisu."),
+    "chybi_vin": ("Chybí VIN", "Zeptej se uživatele na VIN nebo fotku technického průkazu a pošli VIN s id tohoto příjmu."),
+    "vin_neplatny": ("Neplatný VIN", "Přečtený VIN neplatí (17 znaků, bez I, O, Q). Požádej o čitelnější fotku nebo VIN "
+                                     "v textu. Nejisté znaky nehádej."),
+    "vin_nenalezen": ("VIN není v registru", "VIN v registru není – nejspíš je přečtený špatně. Napiš, které znaky jsou "
+                                             "nejisté (8/B, 5/S, 2/Z, 6/G, 0/D), a požádej o čitelnější fotku nebo VIN v textu."),
+    "vin_nesedi": ("VIN nesedí", "VIN se liší od VIN vozidla v databázi. Oznam rozpor uživateli, nic dalšího nedělej."),
+    "konflikt": ("Konflikt SPZ / VIN", "SPZ a VIN patří v databázi různým vozidlům. Oznam rozpor, nic dalšího nedělej."),
+    "registr_nedostupny": ("Registr nedostupný", "Příjem je uložený bez údajů z registru; Autoservis to zkusí znovu "
+                                                 "při dalším doplnění. Řekni to uživateli."),
+}
 
 
 def _text(hodnota) -> str | None:
@@ -67,6 +90,12 @@ class Navsteva:
     technicke: list[tuple[str, str]] = field(default_factory=list)
     nejiste: set[str] = field(default_factory=set)
     registr: dict = field(default_factory=dict)  # technical_data tak, jak přišla (formát Registru vozidel)
+    stav: str = ""
+    zprava: str = ""
+
+    @property
+    def nazev_stavu(self) -> str:
+        return STAVY.get(self.stav, ("", ""))[0]
 
     def _technicky(self, *nazvy: str) -> str | None:
         for nazev, hodnota in self.technicke:
@@ -110,7 +139,7 @@ def _navsteva(radek: PrijemVozidla) -> Navsteva:
     return Navsteva(
         id=radek.id, created_at=radek.vytvoreno, updated_at=radek.upraveno, revision=str(radek.revize),
         spz=radek.spz, vin=radek.vin, km=radek.km, technicke=_ploche(technicke), nejiste=_nejiste(nejiste),
-        registr=technicke,
+        registr=technicke, stav=radek.stav or "", zprava=radek.zprava or "",
     )
 
 
@@ -129,7 +158,7 @@ def najdi(session: Session, prijem_id: str) -> Navsteva | None:
 
 # ---------------------------------------------------------------- zápis přes MCP (#216)
 
-POLE = ("id", "spz", "vin", "km", "technicke", "nejiste")
+POLE = ("id", "spz", "vin", "km", "nejiste")  # technické údaje doplňuje Autoservis z registru sám
 
 
 def _km(hodnota) -> int | None:
@@ -144,26 +173,72 @@ def _km(hodnota) -> int | None:
     return km
 
 
-def uloz(session: Session, data: dict | None) -> PrijemVozidla:
-    """Nový příjem, nebo oprava existujícího podle `id` (mění jen zadaná pole). Pak se smažou příjmy nad limit."""
+@dataclass
+class Vysledek:
+    radek: PrijemVozidla
+    stav: str
+    zprava: str
+    spojeno: bool = False            # doplněn existující příjem (stejná SPZ / VIN), nový nevznikl
+    opravy_vin: list[str] = field(default_factory=list)
+    vin_z_databaze: bool = False
+
+    @property
+    def dalsi_krok(self) -> str:
+        return STAVY[self.stav][1]
+
+
+def _k_doplneni(session: Session, spz: str | None, vin: str | None) -> PrijemVozidla | None:
+    """Nedávný příjem stejného auta (stejná SPZ nebo VIN, mladší než SPOJIT_DO)."""
+    podminky = [c for c in ((PrijemVozidla.spz == spz) if spz else None, (PrijemVozidla.vin == vin) if vin else None)
+                if c is not None]
+    if not podminky:
+        return None
+    from sqlalchemy import or_
+    return session.exec(select(PrijemVozidla).where(or_(*podminky))
+                        .where(PrijemVozidla.vytvoreno >= datetime.now() - SPOJIT_DO)
+                        .order_by(col(PrijemVozidla.vytvoreno).desc())).first()
+
+
+def uloz(session: Session, data: dict | None, nacti_registr=None) -> Vysledek:
+    """Uloží, co technik přečetl, a vyhodnotí to (viz popis modulu).
+
+    Bez `id`: doplní nedávný příjem stejného auta, jinak založí nový. S `id`: doplní ten příjem (jen zadaná pole);
+    jiná SPZ než u příjmu = jiné auto → odmítne. Pak se smažou příjmy nad limit."""
     data = dict(data or {})
     nezname = sorted(k for k in data if k not in POLE)
     if nezname:
         raise ChybaValidace(f"Neznámá pole: {', '.join(nezname)}. Povolená: {', '.join(POLE)}.")
     prijem_id = cisty_text(data.pop("id", None))
-    radek = session.get(PrijemVozidla, prijem_id) if prijem_id else None
-    if radek is None:
-        radek = PrijemVozidla(id=prijem_id or str(uuid.uuid4()), revize=0)
-    if "spz" in data:
-        radek.spz = vozidla.normalizuj_spz(str(data["spz"] or "")) or None
-    if "vin" in data:
-        radek.vin = vozidla.normalizuj_vin(str(data["vin"] or "")) or None
+    spz = vozidla.normalizuj_spz(str(data["spz"] or "")) or None if "spz" in data else None
+    vin, opravy = vozidla.oprav_vin(str(data["vin"] or "")) if "vin" in data else (None, [])
+    vin_neplatny = vin if vin and not vozidla.je_vin(vin) else None
+    if vin_neplatny:
+        vin = None  # neplatný VIN se neukládá, příjem (SPZ, km) ano
+    spojeno = False
+    if prijem_id:
+        radek = session.get(PrijemVozidla, prijem_id)
+        if radek is None:
+            raise NenalezenoError(f"Příjem {prijem_id} neexistuje (mezitím smazán?). Pošli údaje bez id jako nový příjem.")
+        if spz and radek.spz and spz != radek.spz:
+            raise ChybaValidace(f"Příjem {prijem_id} má SPZ {radek.spz}, ne {spz} – jiná SPZ je jiné auto. "
+                                "Pošli údaje bez id.", "spz")
+    else:
+        radek = _k_doplneni(session, spz, vin)
+        spojeno = radek is not None
+        if radek is None:
+            if not spz and not vin:
+                raise ChybaValidace(f"VIN {vin_neplatny} není platný (17 znaků, bez I, O, Q) a SPZ chybí – "
+                                    "příjem nejde založit." if vin_neplatny else "Příjem potřebuje SPZ nebo VIN.", "spz")
+            radek = PrijemVozidla(id=str(uuid.uuid4()), revize=0)
+    if spz:
+        radek.spz = spz
+    elif "spz" in data and prijem_id:
+        radek.spz = None
+    if vin and vin != radek.vin:
+        radek.vin = vin
+        radek.technicke = "{}"  # údaje z registru patřily k jinému VIN
     if "km" in data:
         radek.km = _km(data["km"])
-    if "technicke" in data:
-        if not isinstance(data["technicke"] or {}, dict):
-            raise ChybaValidace("technicke musí být objekt (technické údaje ve formátu Registru vozidel).")
-        radek.technicke = json.dumps(data["technicke"] or {}, ensure_ascii=False)
     if "nejiste" in data:
         nejiste = data["nejiste"] or []
         if not isinstance(nejiste, list) or not all(isinstance(x, str) for x in nejiste):
@@ -171,13 +246,50 @@ def uloz(session: Session, data: dict | None) -> PrijemVozidla:
         radek.nejiste = json.dumps(nejiste, ensure_ascii=False)
     if not radek.spz and not radek.vin:
         raise ChybaValidace("Příjem potřebuje SPZ nebo VIN.", "spz")
+    stav, zprava, z_databaze = _vyhodnot(session, radek, nacti_registr or registr_vozidel.nacti)
+    if vin_neplatny:
+        stav, zprava = "vin_neplatny", f"VIN {vin_neplatny} není platný: musí mít 17 znaků a nesmí obsahovat I, O ani Q."
+    radek.stav, radek.zprava = stav, zprava
     radek.revize += 1
     radek.upraveno = datetime.now()
     session.add(radek)
     session.commit()
     _orizni(session)
     session.refresh(radek)
-    return radek
+    return Vysledek(radek, stav, zprava, spojeno, opravy, z_databaze)
+
+
+def _vyhodnot(session: Session, radek: PrijemVozidla, nacti_registr) -> tuple[str, str, bool]:
+    """(stav, zpráva, VIN doplněn z databáze) – porovná příjem s databází, u nového auta načte registr."""
+    shoda = sparuj(session, _navsteva(radek))
+    if shoda.stav == "konflikt":
+        return "konflikt", shoda.upozorneni or "", False
+    if shoda.stav == "v_databazi":
+        vuz = shoda.vozidlo
+        vin_db = vozidla.normalizuj_vin(vuz.vin)
+        if not radek.vin and vin_db and vozidla.je_vin(vin_db):
+            radek.vin = vin_db
+            return "hotovo", f"Vozidlo je v databázi ({vuz.spz}), VIN doplněn z databáze.", True
+        if radek.vin and vin_db and radek.vin != vin_db:
+            return "vin_nesedi", shoda.upozorneni or f"V databázi má vozidlo VIN {vuz.vin}.", False
+        if not radek.vin:
+            return "chybi_vin", f"Vozidlo je v databázi ({vuz.spz}), ale nemá VIN.", False
+        return "hotovo", f"Vozidlo je v databázi ({vuz.spz}).", False
+    if not radek.vin:
+        return "chybi_vin", "Vozidlo podle SPZ v databázi není a VIN chybí.", False
+    if radek.technicke not in ("", "{}"):
+        return "nove_auto", "Vozidlo v databázi není, údaje z registru jsou načtené.", False
+    try:
+        data = nacti_registr(nastaveni.nacti(session).api_klic_registr, vin=radek.vin)
+    except registr_vozidel.ChybaRegistru as e:
+        text = str(e)
+        if "nenalezeno" in text or "víc vozidel" in text:
+            return "vin_nenalezen", f"VIN {radek.vin} v registru vozidel není.", False
+        return "registr_nedostupny", text, False
+    radek.technicke = json.dumps(data, ensure_ascii=False)
+    pole = registr_vozidel.na_pole_vozidla(data)
+    popis = " ".join(x for x in (pole.get("znacka"), pole.get("model")) if x)
+    return "nove_auto", f"Vozidlo v databázi není, z registru: {popis or 'údaje načtené'}.", False
 
 
 def _orizni(session: Session) -> int:

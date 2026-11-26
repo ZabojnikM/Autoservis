@@ -782,7 +782,8 @@ def _navsteva(db, navsteva_id: str):
 def prijem_seznam(request: Request, db: DB):
     prijmy = prijem_vozidel.nacti(db)
     shody = {n.id: prijem_vozidel.sparuj(db, n) for n in prijmy.navstevy}
-    return _stranka(request, "prijem_seznam.html", aktivni="prijem", prijmy=prijmy, shody=shody)
+    return _stranka(request, "prijem_seznam.html", aktivni="prijem", prijmy=prijmy, shody=shody,
+                    stavy_u_vin=prijem_vozidel.STAVY_U_VIN)
 
 
 @router.get("/prijem/{navsteva_id}", response_class=HTMLResponse)
@@ -791,7 +792,8 @@ def prijem_detail(request: Request, db: DB, navsteva_id: str):
     if navsteva is None:
         return _stranka(request, "prijem_detail.html", 404, aktivni="prijem", prijmy=prijmy, navsteva=None)
     shoda = prijem_vozidel.sparuj(db, navsteva) if navsteva else None
-    return _stranka(request, "prijem_detail.html", aktivni="prijem", prijmy=prijmy, navsteva=navsteva, shoda=shoda)
+    return _stranka(request, "prijem_detail.html", aktivni="prijem", prijmy=prijmy, navsteva=navsteva, shoda=shoda,
+                    stavy_u_vin=prijem_vozidel.STAVY_U_VIN)
 
 
 @router.get("/zakaznici", response_class=HTMLResponse)

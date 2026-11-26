@@ -162,26 +162,105 @@ def test_otevrena_zakazka_a_zalozeni_vozidla_z_prijmu(soubor, session):
     assert "Vozidlo je v databázi" in radek and ">Nová zakázka</a>" in radek
 
 
-# ---------------------------------------------------------------- #216 zápis přes MCP, limit, oprávnění
+# ---------------------------------------------------------------- #216 zápis přes MCP, vyhodnocení v Autoservisu
 
-def test_uloz_oprava_a_limit_30(session):
-    p = prijem_vozidel.uloz(session, {"spz": "1ab 2345", "km": "120 500",
-                                      "technicke": {"TovarniZnacka": "ŠKODA"}, "nejiste": ["vin"]})
-    assert p.spz == "1AB2345" and p.km == 120500 and p.revize == 1 and p.id
-    p2 = prijem_vozidel.uloz(session, {"id": p.id, "vin": "tmbaa000000000001"})
-    assert p2.id == p.id and p2.revize == 2 and p2.spz == "1AB2345" and p2.vin == "TMBAA000000000001"
-    assert p2.km == 120500  # oprava mění jen zadaná pole
-    with pytest.raises(ChybaValidace):
-        prijem_vozidel.uloz(session, {"km": "10"})  # bez SPZ i VIN
+REGISTR_FABIA = {"VIN": "TMBZZZ5J0A1234567", "TovarniZnacka": "ŠKODA", "ObchodniOznaceni": "FABIA"}
+
+
+@pytest.fixture
+def registr(monkeypatch, session):
+    """Podstrčený Registr vozidel – skutečný se v testech nevolá. Vrací seznam volaných VIN."""
+    from app.services import nastaveni
+    nastaveni.uloz(session, {"api_klic_registr": "testovaci-klic"})
+    volani = []
+
+    def falesny(parametry, klic):
+        volani.append(parametry["vin"])
+        if parametry["vin"] == REGISTR_FABIA["VIN"]:
+            return {"Data": REGISTR_FABIA}
+        if parametry["vin"] == "TMBZZZ5J0A9999999":
+            raise registr_vozidel.ChybaRegistru("Registr vozidel neodpovídá – zkontrolujte připojení k internetu.")
+        return {"Data": None}
+    monkeypatch.setattr(registr_vozidel, "_stahni", falesny)
+    return volani
+
+
+def test_oprava_vin():
+    assert vozidla.oprav_vin(" tmb-zzz 5j oa1234567 ") == ("TMBZZZ5J0A1234567", ["O → 0 (pozice 9)"])
+    assert vozidla.oprav_vin("TMBIZZ5JQA1234567")[0] == "TMB1ZZ5J0A1234567"
+    assert vozidla.oprav_vin("") == (None, [])
+
+
+def test_spz_v_databazi_doplni_vin_a_km(session, registr):
+    vozidla.vytvor(session, {"spz": "1AB2345", "vin": "TMBAA000000000001"})
+    v = prijem_vozidel.uloz(session, {"spz": "1ab 2345", "km": "156 000"})
+    assert (v.stav, v.vin_z_databaze, v.spojeno) == ("hotovo", True, False)
+    assert v.radek.vin == "TMBAA000000000001" and v.radek.km == 156000 and registr == []  # registr se nevolá
+
+
+def test_chybi_vin_pak_doplneni_stejneho_auta(session, registr):
+    vozidla.vytvor(session, {"spz": "2BB2222"})  # v databázi bez VIN
+    v = prijem_vozidel.uloz(session, {"spz": "2BB2222", "km": 90000})
+    assert v.stav == "chybi_vin" and "VIN" in v.dalsi_krok
+    # VIN poslaný s id příjmu (technik se na něj ptal) – O se opraví na 0
+    v2 = prijem_vozidel.uloz(session, {"id": v.radek.id, "vin": "WVWZZZ1KZOW123456"})
+    assert v2.radek.id == v.radek.id and v2.radek.vin == "WVWZZZ1KZ0W123456" and v2.opravy_vin == ["O → 0 (pozice 10)"]
+    assert v2.stav == "hotovo" and v2.radek.km == 90000
+    # stejná SPZ znovu bez id = doplnění, ne druhý příjem
+    v3 = prijem_vozidel.uloz(session, {"spz": "2BB 2222", "km": 90100})
+    assert v3.spojeno and v3.radek.id == v.radek.id and len(prijem_vozidel.nacti(session).navstevy) == 1
+
+
+def test_jina_spz_je_nove_auto(session, registr):
+    v = prijem_vozidel.uloz(session, {"spz": "3CC3333", "km": 10})
+    assert v.stav == "chybi_vin"
+    with pytest.raises(ChybaValidace, match="jiné auto"):
+        prijem_vozidel.uloz(session, {"id": v.radek.id, "spz": "4DD4444"})
+    v2 = prijem_vozidel.uloz(session, {"spz": "4DD4444"})
+    assert not v2.spojeno and v2.radek.id != v.radek.id
+    assert [n.stav for n in prijem_vozidel.nacti(session).navstevy] == ["chybi_vin", "chybi_vin"]  # první zůstal
+
+
+def test_nove_auto_z_registru_a_chyby_registru(session, registr):
+    v = prijem_vozidel.uloz(session, {"spz": "5EE5555", "vin": "TMBZZZ5J0A1234567", "km": 1})
+    assert v.stav == "nove_auto" and "Škoda Fabia" in v.zprava and registr == ["TMBZZZ5J0A1234567"]
+    assert prijem_vozidel.najdi(session, v.radek.id).popis == "ŠKODA FABIA"
+    prijem_vozidel.uloz(session, {"id": v.radek.id, "km": 2})
+    assert registr == ["TMBZZZ5J0A1234567"]  # údaje už má, registr se znovu nevolá
+    assert prijem_vozidel.uloz(session, {"spz": "6FF6666", "vin": "TMBZZZ5J0A0000000"}).stav == "vin_nenalezen"
+    nedostupny = prijem_vozidel.uloz(session, {"spz": "7GG7777", "vin": "TMBZZZ5J0A9999999"})
+    assert nedostupny.stav == "registr_nedostupny" and "neodpovídá" in nedostupny.zprava
+    assert prijem_vozidel.uloz(session, {"id": nedostupny.radek.id, "km": 5}).stav == "registr_nedostupny"
+    assert registr.count("TMBZZZ5J0A9999999") == 2  # při doplnění se registr zkusí znovu
+
+
+def test_neplatny_vin_nesedi_a_konflikt(session, registr):
+    a = vozidla.vytvor(session, {"spz": "1AB2345", "vin": "TMBAA000000000001"})
+    vozidla.vytvor(session, {"spz": "2BB2222", "vin": "WVWZZZ00000000002"})
+    v = prijem_vozidel.uloz(session, {"spz": "8HH8888", "vin": "TMB123"})
+    assert v.stav == "vin_neplatny" and v.radek.vin is None and v.radek.spz == "8HH8888"
+    with pytest.raises(ChybaValidace, match="není platný"):
+        prijem_vozidel.uloz(session, {"vin": "TMB123"})  # bez SPZ a s neplatným VIN příjem nevznikne
+    assert prijem_vozidel.uloz(session, {"spz": "1AB2345", "vin": "TMBAA000000000009"}).stav == "vin_nesedi"
+    assert prijem_vozidel.uloz(session, {"spz": "9JJ9999", "vin": "WVWZZZ00000000002"}).stav == "hotovo"  # podle VIN
+    k = prijem_vozidel.uloz(session, {"spz": "1AB2345", "vin": "WVWZZZ00000000002"})
+    assert k.spojeno and k.stav == "konflikt"
+    assert a.id
+
+
+def test_limit_30_a_smazani(session, registr):
+    prvni = prijem_vozidel.uloz(session, {"spz": "9Z99999"})
     with pytest.raises(ChybaValidace):
         prijem_vozidel.uloz(session, {"spz": "1AB2345", "km": "-1"})
     with pytest.raises(ChybaValidace):
         prijem_vozidel.uloz(session, {"spz": "1AB2345", "fotky": ["x.jpg"]})  # fotky sem nepatří
+    with pytest.raises(ChybaValidace):
+        prijem_vozidel.uloz(session, {"spz": "1AB2345", "technicke": {}})  # registr hledá Autoservis sám
     for i in range(35):
         prijem_vozidel.uloz(session, {"spz": f"9Z{i:05d}"})
     zbylo = prijem_vozidel.nacti(session).navstevy
     assert len(zbylo) == prijem_vozidel.LIMIT == 30
-    assert zbylo[0].spz == "9Z00034" and p.id not in {n.id for n in zbylo}  # nejstarší pryč
+    assert zbylo[0].spz == "9Z00034" and prvni.radek.id not in {n.id for n in zbylo}  # nejstarší pryč
     prijem_vozidel.smaz(session, zbylo[0].id)
     assert len(prijem_vozidel.nacti(session).navstevy) == 29
 
@@ -202,22 +281,29 @@ def _volej(klic, nazev, **argumenty):
     return json.loads(vysledek.content[0].text)
 
 
-def test_mcp_prijem_a_cteni_vozidel(session, technik):
+def test_mcp_prijem_a_zalozka(session, technik, registr):
     a = vozidla.vytvor(session, {"spz": "1AB2345", "vin": "TMBAA000000000001", "znacka": "Škoda"})
     assert _volej(technik, "hledej_vozidla", q="1AB2345")["vozidla"][0]["vin"] == "TMBAA000000000001"
     assert _volej(technik, "vozidlo_detail", vozidlo_id=a.id)["spz"] == "1AB2345"
-    ulozeno = _volej(technik, "uloz_prijem", data={"spz": "1AB2345", "km": 91262})
-    prijem = ulozeno["prijem"]
-    assert prijem["v_databazi"] == {"stav": "v_databazi", "vozidlo_id": a.id, "upozorneni": None}
-    novy = _volej(technik, "uloz_prijem", data={"spz": "7X77777", "vin": "ZZZ00000000000007",
-                                                  "technicke": {"TovarniZnacka": "ŠKODA", "ObchodniOznaceni": "FABIA"}})
-    assert novy["prijem"]["v_databazi"]["stav"] == "neni" and novy["prijem"]["popis"] == "ŠKODA FABIA"
+    hotovo = _volej(technik, "uloz_prijem", data={"spz": "1AB2345", "km": 91262})
+    assert hotovo["stav"] == "hotovo" and hotovo["vin_z_databaze"] and hotovo["dalsi_krok"]
+    assert hotovo["prijem"]["v_databazi"] == {"stav": "v_databazi", "vozidlo_id": a.id, "upozorneni": None}
+    chybi = _volej(technik, "uloz_prijem", data={"spz": "7X77777", "km": 5000})
+    assert chybi["stav"] == "chybi_vin"
+    nove = _volej(technik, "uloz_prijem", data={"id": chybi["prijem"]["id"], "vin": "TMBZZZ5JOA1234567"})
+    assert nove["stav"] == "nove_auto" and nove["opravy_vin"] == ["O → 0 (pozice 9)"]
+    assert nove["prijem"]["popis"] == "ŠKODA FABIA" and nove["prijem"]["km"] == 5000
+    _volej(technik, "uloz_prijem", data={"spz": "8Y88888"})
     seznam = _volej(technik, "prijmy")
-    assert seznam["celkem"] == 2 and seznam["limit"] == 30
-    text = client.get("/prijem").text  # záložka ukáže oba příjmy jako dřív
+    assert seznam["celkem"] == 3 and seznam["limit"] == 30
+    text = client.get("/prijem").text  # záložka ukáže příjmy jako dřív + stav u chybějícího VIN
     assert "1AB2345" in text and "7X77777" in text and "ŠKODA FABIA" in text and "91 262" in text.replace("\xa0", " ")
-    assert _volej(technik, "smaz_prijem", prijem_id=novy["prijem"]["id"]) == {"smazano": novy["prijem"]["id"]}
-    assert _volej(technik, "prijmy")["celkem"] == 1
+    assert "Chybí VIN" in _radek(text, seznam["prijmy"][0]["id"]) and "Chybí VIN" not in _radek(text, nove["prijem"]["id"])
+    detail = client.get(f"/prijem/{seznam['prijmy'][0]['id']}").text
+    assert "<dt>Stav</dt>" in detail and "Chybí VIN" in detail
+    assert _volej(technik, "smaz_prijem", prijem_id=nove["prijem"]["id"]) == {"smazano": nove["prijem"]["id"]}
+    assert _volej(technik, "prijmy")["celkem"] == 2
+    assert "registr_vozidla" not in {t.name for t in asyncio.run(server.mcp.list_tools())}
 
 
 def test_mcp_prijem_nesmi_zapisovat_vozidla_zakazniky_ani_zakazky(session, technik):
@@ -235,22 +321,6 @@ def test_mcp_prijem_nesmi_zapisovat_vozidla_zakazniky_ani_zakazky(session, techn
     session.expire_all()
     assert pocty == (len(session.exec(select(Vozidlo)).all()), len(session.exec(select(Zakaznik)).all()),
                      len(session.exec(select(Zakazka)).all()))
-    # a naopak klíč bez oprávnění Příjem do příjmů nesmí
     _, sklad = api_klice.vytvor(session, "Skladník", ["sklad"])
     with pytest.raises(ToolError, match="Příjem vozidel"):
         _volej(sklad, "uloz_prijem", data={"spz": "1AB2345"})
-
-
-def test_mcp_registr_vozidla_podle_vin(session, technik, monkeypatch):
-    """Skutečný registr se nevolá – odpověď je podstrčená."""
-    volani = []
-
-    def falesny(parametry, klic):
-        volani.append((parametry, klic))
-        return {"Data": {"VIN": "ZZZ00000000000007", "TovarniZnacka": "ŠKODA", "ObchodniOznaceni": "FABIA"}}
-    monkeypatch.setattr(registr_vozidel, "_stahni", falesny)
-    from app.services import nastaveni
-    nastaveni.uloz(session, {"api_klic_registr": "testovaci-klic"})
-    v = _volej(technik, "registr_vozidla", vin="zzz 00000000000007")
-    assert v["data"]["TovarniZnacka"] == "ŠKODA" and v["vozidlo"]["vin"] == "ZZZ00000000000007"
-    assert volani == [({"vin": "ZZZ00000000000007"}, "testovaci-klic")]
