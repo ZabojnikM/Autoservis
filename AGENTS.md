@@ -4,36 +4,41 @@ Tento soubor čtou agenti (OpenBot, Codex, Claude Code a další), kteří na pr
 Popis aplikace a ovládání je v [README.md](README.md), historie a deník změn v [PLAN.md](PLAN.md),
 předání projektu a nastavení agenta v OpenBotu v [docs/OPENBOT.md](docs/OPENBOT.md).
 
-> **Běžíš na testovacím serveru (Linux, služba systemd `autoservis`, port 8001)?**
+> **Běžíš u ostrého provozu (Linux, služba systemd `autoservis`, port 8001)?**
 > Pak tento soubor neplatí. Řiď se jen [nastroje/server-CLAUDE.md](nastroje/server-CLAUDE.md):
-> na serveru se kód neupravuje, necommituje ani nepushuje.
+> v ostrém provozu se kód neupravuje, necommituje ani nepushuje a nic se tam nezkouší.
+
+## Prostředí
+| Prostředí | Kde | K čemu |
+|---|---|---|
+| **Ostrý provoz** | Linux, služba systemd `autoservis`, **port 8001**, ostrá databáze | práce servisu; aktualizuje se jen vydanými verzemi tlačítkem v Nastavení, **instaluje je výhradně majitel** |
+| **Vývoj a testy** | Linux, **port 8002**, samostatné klony a kopie databáze | vývoj, náhledy a zkoušení před vydáním |
+
+Jiné prostředí se nepoužívá.
 
 ## Komunikace
 - S uživatelem mluv **česky**: v chatu, v souhrnech, v issues, v commitech i v textech aplikace.
 - Uživatel je majitel autoservisu, ne programátor. Piš věcně a srozumitelně a vysvětluj, co se změnilo pro práci v dílně.
 
-## Technologie a spuštění (vývojový počítač, Windows)
+## Technologie a spuštění (vývoj, Linux)
 - Python 3.12, FastAPI, SQLite (SQLModel), Jinja2 + HTMX, Pico.css + vlastní `app/web/static/app.css`.
-- Prostředí: `py -3.12 -m venv .venv` a pak `.\.venv\Scripts\python -m pip install -r requirements.txt`.
-- Testy: `.\.venv\Scripts\python -m pytest`. **Před každým commitem musí procházet.**
-- Spuštění: `spustit.bat`, případně `.\.venv\Scripts\python -m uvicorn app.main:app --reload --port 8000`.
-  Konfigurace pro náhled jsou v `.claude/launch.json` (porty 8000, 8001, 8002, 8010).
-- Jinou databázi vybere proměnná `AUTOSERVIS_DB`, například kopie na portu 8010.
-- **`uvicorn --reload` na Windows zamrzá**: vypíše „Reloading…“, ale dál běží starý Python kód. Šablony a CSS se
-  načtou, `.py` ne. Po změně `.py` server zastav a spusť znovu. Uživateli připomeň, ať po aktualizaci zavře
-  okno `spustit.bat` a spustí ho znovu.
+- Prostředí: `python3.12 -m venv .venv` a pak `.venv/bin/python -m pip install -r requirements.txt`.
+- Testy: `.venv/bin/python -m pytest`. **Před každým commitem musí procházet.**
+- Spuštění: `.venv/bin/python -m uvicorn app.main:app --port <port>`.
+- Jinou databázi vybere proměnná `AUTOSERVIS_DB` – pro náhledy a testy v prohlížeči vždy **kopie** databáze.
+- Na testovací instanci 8002 se nasazuje ověřený `main` do samostatného klonu; před přepnutím konzistentní záloha
+  SQLite (backup API) a pracovní kopie databáze. Kód se po změně `.py` načte až po restartu procesu.
 
 ## Data – ostrý provoz
-- `data/autoservis.db` obsahuje **skutečná data servisu** (zákazníci, vozidla, zakázky, doklady). Do gitu nepatří
-  (`.gitignore`). Kopie a zálohy dostaneš soukromě, ne přes GitHub.
-- Aplikace uživatele na `http://localhost:8000` běží nad ostrou DB. Po uložení `.py` se restartuje a při startu
-  (`init_db` v `app/db.py`) **hned spustí migrace**. Z toho plyne:
-  - Migraci a změnu schématu napiš a otestuj **nejdřív mimo `app/`**, skriptem nad kopií DB. Do `app/db.py`
-    ji vlož až hotovou. Případně požádej uživatele, ať aplikaci na :8000 zastaví.
+- Ostrá databáze (8001) obsahuje **skutečná data servisu** (zákazníci, vozidla, zakázky, doklady). Do gitu nepatří
+  (`.gitignore`). Ve vývoji se pracuje jen s kopií.
+- Aplikace při startu (`init_db` v `app/db.py`) **hned spustí migrace**. Po instalaci vydání se tak migrace provede
+  i nad ostrou databází. Z toho plyne:
+  - Migraci a změnu schématu napiš a otestuj **nejdřív nad kopií DB** (8002), do vydání ji pusť až ověřenou.
   - Před každým zásahem do DB (migrace, hromadné úpravy, import) udělej zálohu do `data/backups/`
     (`pred-<co>-RRRRMMDD-HHMMSS.db`).
 - Při testování v prohlížeči zakládej jen záznamy označené **TEST** a po testu maž **jen ty své**.
-  Nikdy nemaž celou databázi. Na testy používej kopii (port 8010, `AUTOSERVIS_DB`).
+  Nikdy nemaž celou databázi. Testuje se jen na kopii (8002, `AUTOSERVIS_DB`), **nikdy v ostrém provozu**.
 - Peníze se ukládají jako přesná desetinná čísla (text), ne float. Vystavený doklad je kopie a už se nemění.
 
 ## Veřejné repo – co sem nepatří
@@ -60,20 +65,20 @@ commitů, issues ani release notes **nepiš**:
   v `VZHLED.md`, `UX_PROBLEMY.md` a v README v části „Ovládání“.
 - Změnu UI ověř v prohlížeči (náhled nad kopií DB), ne jen testy.
 
-## Verze, vydání a testovací server
-- Verze má tvar `MAJOR.MINOR.OPRAVA`, zatím `0.x`. Verze `1.0.0` přijde s úplným přechodem ze starého systému.
+## Verze, vydání a ostrý provoz
+- Verze má tvar `MAJOR.MINOR.OPRAVA`. Verze `1.0.0` přišla s úplným přechodem ze starého systému.
   Nová funkce zvýší MINOR, oprava vydané verze OPRAVA.
 - Postup vydání je v README v části „Verze a vydání“: `APP_VERSION` v `app/config.py`, commit „Verze X.Y.Z“,
   `git tag -a vX.Y.Z`, push větve i značky a `gh release create` se seznamem uzavřených issues.
-- **Testovací server** (Linux, systemd `autoservis`, port 8001) instaluje **jen vydané verze**
-  (`AUTOSERVIS_AKTUALIZACE=vydani`) tlačítkem *Nastavení → Aktualizace aplikace*. Běžný push na `main`
-  se na server nedostane.
+- **Ostrý provoz** (Linux, systemd `autoservis`, port 8001) instaluje **jen vydané verze**
+  (`AUTOSERVIS_AKTUALIZACE=vydani`) tlačítkem *Nastavení → Aktualizace aplikace*; instaluje je **jen majitel**.
+  Běžný push na `main` se tam nedostane. Vydává se jen verze ověřená na 8002.
 - **Na server nic nekopíruj** (sdílený disk, scp, robocopy). Ručně změněné soubory zablokují aktualizaci.
   „Nahrát na server“ znamená vydat verzi a uživatel ji na serveru nainstaluje tlačítkem.
-- Pokyny pro agenta na serveru: `nastroje/server-CLAUDE.md`, šablona služby: `nastroje/autoservis.service`.
+- Pokyny pro agenta u ostrého provozu: `nastroje/server-CLAUDE.md`, šablona služby: `nastroje/autoservis.service`.
 
 ## Napojení na okolí
-- **Příjem vozidel** (záložka): příjmy zapisuje agent *Přijímací technik* v OpenBotu přes MCP s oprávněním klíče
+- **Příjem vozidel** (záložka): příjmy zapisuje agent *Luigi* (přijímací technik) v OpenBotu přes MCP s oprávněním klíče
   „Příjem vozidel“ do tabulky `prijemvozidla` (posledních 30, bez fotek, #216). Soubor `visits.json` se už nečte.
 - **Import ze starého systému**: export přes ODBC (602SQL, 32bit) **jen ke čtení nad zkušební kopií**
   (DSN `AutoservisTest`). Do originální databáze starého systému se nikdy nezapisuje.
