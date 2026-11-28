@@ -8,7 +8,7 @@ from sqlalchemy import inspect
 
 from app import db as dbm
 from app.services import ChybaValidace, faktury, polozky, zakazky
-from tests.test_web import client
+from tests.web_pomucky import client
 
 PRAZDNE_VOZIDLO = {"spz": "", "v_znacka": "", "v_model": ""}
 

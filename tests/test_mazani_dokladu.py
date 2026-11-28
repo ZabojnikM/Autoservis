@@ -5,7 +5,7 @@ import pytest
 
 from app.models import TypDokladu
 from app.services import ChybaValidace, faktury, nastaveni, polozky, zakazky
-from tests.test_web import client
+from tests.web_pomucky import client
 
 ROK = date.today().year
 PREDPONY = {TypDokladu.FAKTURA: f"FV{ROK}", TypDokladu.VYUCTOVANI: f"VY{ROK}"}
