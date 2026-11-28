@@ -277,7 +277,7 @@ zrušit jde kdykoli.
 
 ## Import ze starého systému
 
-Postup, stav a otevřená rozhodnutí: [IMPORT_STARY_SYSTEM.md](IMPORT_STARY_SYSTEM.md). Export běží přes ODBC ovladač 602SQL
+Postup, stav a otevřená rozhodnutí: [IMPORT_STARY_SYSTEM.md](docs/archiv/IMPORT_STARY_SYSTEM.md) (archiv, převod je hotový). Export běží přes ODBC ovladač 602SQL
 **jen ke čtení nad kopií** databáze (DSN `AutoservisTest`); do originální databáze starého systému se nikdy nezapisuje.
 Zatím naimportován testovací vzorek 50 zakázek (záznamy mají poznámku „Importováno ze starého systému“).
 

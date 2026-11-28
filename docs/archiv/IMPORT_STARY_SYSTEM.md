@@ -1,6 +1,8 @@
 # Plán importu dat ze starého systému → Autoservis
 
-Stav: **etapa 1 schválena** (17. 11. 2026). Odpovídá fázi 5 v [PLAN.md](PLAN.md).
+> **Archiv – převod ze starého systému je dokončený (ostrý převod 23. 11. 2026).** Dokument zůstává jako historie.
+
+Stav: **etapa 1 schválena** (17. 11. 2026). Odpovídá fázi 5 v [PLAN.md](../../PLAN.md).
 
 ## Etapa 1 – testovací vzorek (rozhodnutí uživatele 17. 11. 2026)
 

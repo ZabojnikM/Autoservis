@@ -1,5 +1,7 @@
 # Okno Materiál – naše aplikace vs. starý systém
 
+> **Archiv – převod ze starého systému je dokončený (ostrý převod 23. 11. 2026).** Dokument zůstává jako historie.
+
 Stav k 18. 11. 2026. Podle snímku okna Materiál (skladová karta) ve starém systému a formuláře položky ceníku u nás
 (Ceník → Nová položka / Upravit, typ „Materiál“).
 Sloupec „Stav“: ✅ máme · ⚠️ máme jinak / částečně · ❌ chybí · 🚫 záměrně nepoužíváme · 📝 v plánu.

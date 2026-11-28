@@ -82,7 +82,7 @@ commitů, issues ani release notes **nepiš**:
   „Příjem vozidel“ do tabulky `prijemvozidla` (posledních 30, bez fotek, #216). Soubor `visits.json` se už nečte.
 - **Import ze starého systému**: export přes ODBC (602SQL, 32bit) **jen ke čtení nad zkušební kopií**
   (DSN `AutoservisTest`). Do originální databáze starého systému se nikdy nezapisuje.
-  Skripty: `nastroje/stary_system_export.py` a `app/importers/stary_system.py`. Stav je v `IMPORT_STARY_SYSTEM.md`
+  Skripty: `nastroje/stary_system_export.py` a `app/importers/stary_system.py`. Převod je hotový, historie je v `docs/archiv/IMPORT_STARY_SYSTEM.md`
   a v issue #10.
 - **MCP ke starému systému** je samostatné soukromé repo `ZabojnikM/autoservis-mcp`. MCP server samotného
   Autoservisu (`app/mcp_server/server.py`, na `/mcp/`) a REST API (`app/api/`, `/api/v1`) jsou pro boty v OpenBotu;

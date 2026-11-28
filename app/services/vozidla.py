@@ -1,9 +1,9 @@
 """Vozidla."""
 import re
-from datetime import date, datetime
+from datetime import date
 
 from sqlalchemy import or_
-from sqlmodel import Session, col, func, select
+from sqlmodel import Session, col, select
 
 from app.models import PolozkaZakazky, Vozidlo, Zakazka, Zakaznik
 from app.services import ChybaValidace, NenalezenoError, cislo_nebo_none, cisty_text, cti_datum

@@ -1,5 +1,7 @@
 # Okno Zakázka – naše aplikace vs. starý systém
 
+> **Archiv – převod ze starého systému je dokončený (ostrý převod 23. 11. 2026).** Dokument zůstává jako historie.
+
 Stav k 18. 11. 2026 (aktualizováno po úpravách téhož dne). Podle snímku okna Zakázka ve starém systému a formuláře nové / upravené zakázky u nás.
 Sloupec „Stav“: ✅ máme · ⚠️ máme jinak / částečně · ❌ chybí · 🚫 záměrně nepoužíváme · 📝 v plánu (GitHub Issues).
 

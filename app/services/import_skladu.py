@@ -26,7 +26,7 @@ from decimal import Decimal
 from sqlmodel import Session, col, select
 
 from app.models import PolozkaCeniku, TypPolozky
-from app.services import ChybaValidace, cenik, cisty_text, desetinne_nebo_none, import_lkq, katalogy, slouceni
+from app.services import ChybaValidace, cenik, desetinne_nebo_none, import_lkq, katalogy, slouceni
 
 CHYBA_SOUBORU = ("Soubor se nepodařilo přečíst. Nahrajte dodací list LKQ (CSV) nebo tabulku CSV se záhlavím, "
                  "ve kterém jsou sloupce Kód, Název a Prodej (případně MOC nebo Cena) a nepovinně Nákup.")
