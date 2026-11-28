@@ -8,6 +8,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse, Response
 from sqlmodel import Session
 
 from app.db import get_session
+from app.services import pin
 from app.models import TypPolozky
 from app.services import (
     cenik, cisty_text, katalogy, nastaveni, polozky, vozidla,
@@ -31,9 +32,12 @@ def _udaje_listy(request: Request) -> dict:
     zdroj = request.app.dependency_overrides.get(get_session, get_session)
     gen = zdroj()
     try:
-        nast = nastaveni.nacti(next(gen))
+        session = next(gen)
+        nast = nastaveni.nacti(session)
+        # #219: odemčené Nastavení → odkaz rovnou, jinak okno pro PIN
+        odemceno = not pin.ZAPNUTO or pin.odemceno(session, request.cookies.get(pin.COOKIE))
         return {"nazev": nast.nazev_do_listy, "logo": nast.logo, "sprava_dat": nast.sprava_dat,
-                "statistiky": nast.statistiky}
+                "statistiky": nast.statistiky, "nastaveni_odemceno": odemceno}
     except Exception:  # lišta nesmí shodit stránku
         return {"nazev": "Autoservis", "logo": "", "sprava_dat": False, "statistiky": False}
     finally:

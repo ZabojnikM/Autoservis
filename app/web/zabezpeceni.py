@@ -11,7 +11,6 @@ from __future__ import annotations
 from urllib.parse import urlsplit
 
 from fastapi import Request
-from fastapi.responses import HTMLResponse
 
 from app.web.sablony import templates
 

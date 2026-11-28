@@ -63,6 +63,10 @@ Příjmy zapisuje agent Luigi (přijímací technik v OpenBotu) přes MCP (`/mcp
 (Nastavení → API pro boty). Ukládají se v databázi aplikace, drží se posledních 30, fotky se neukládají (#216).
 Soubor `visits.json` ani proměnná `AUTOSERVIS_PRIJEM_JSON` se už nepoužívají – ve službě mohou zůstat, nevadí.
 
+## Zapomenutý PIN pro Nastavení (#219)
+Jen na pokyn majitele: `.venv/bin/python -m app.nastroje.pin --zrusit` (ve složce aplikace, jako účet služby).
+Aplikace pak při kliknutí na Nastavení vyzve k vytvoření nového PINu. Restart není potřeba.
+
 ## Kontrola, že aplikace běží
 - `curl -s http://localhost:8001/api/zdravi` → `"stav":"ok"` a verze (ostrý provoz běží na portu 8001, viz `ExecStart` ve službě)
 - `systemctl status autoservis`, logy: `journalctl -u autoservis -n 50`

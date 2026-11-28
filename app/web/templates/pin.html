@@ -1,0 +1,38 @@
+{% extends "_okno.html" if okno else "base.html" %}
+{# #219: PIN pro vstup do Nastavení – okno nad stránkou (klik na Nastavení), nebo celá stránka (přímá adresa).
+   Enter = potvrdit (formulář bez enter-dalsi), Esc = zavřít okno. #}
+{% block title %}PIN – Nastavení{% endblock %}
+{% block akce %}
+  <button type="submit" form="formular-pin" {% if blokace %}disabled{% endif %}>{{ 'Odemknout' if nastaven else 'Nastavit PIN' }}</button>
+  {% if okno %}<button type="button" class="zpet" data-zavrit-okno>Zrušit</button>
+  {% else %}<a href="/zakazky" class="zpet" role="button">Zpět</a>{% endif %}
+  <p class="tlumene poznamka">Enter = potvrdit · Esc = zavřít</p>
+{% endblock %}
+{% block content %}
+<div class="nadpis-radek"><h1>{{ 'Nastavení je zamčené' if nastaven else 'Nastavte PIN pro Nastavení' }}</h1></div>
+<form method="post" action="/pin" class="formular pin-formular" id="formular-pin" data-bez-potvrzeni
+      {% if okno %}hx-post="/pin" hx-target="#okno-formular-obsah"{% endif %}>
+  {% if okno %}<input type="hidden" name="okno" value="1">{% endif %}
+  <input type="hidden" name="dalsi" value="{{ dalsi }}">
+  <fieldset class="panel uzky">
+    {% if blokace %}
+    <p class="upozorneni-ram">Po {{ max_pokusu }} chybných pokusech je zadávání PINu zablokované do {{ blokace|datumcas }}.</p>
+    {% elif nastaven %}
+    <label>PIN
+      <input type="password" name="pin" inputmode="numeric" autocomplete="off" required autofocus
+             maxlength="{{ max_delka }}" {% if chyba %}aria-invalid="true"{% endif %}></label>
+    <p class="tlumene poznamka">Odemčení platí 30 minut od poslední práce v Nastavení. Zapomenutý PIN vynuluje správce aplikace.</p>
+    {% else %}
+    <p>Nastavení (zálohy, aktualizace, klíče pro boty) bude chráněné PINem. Zvolte {{ min_delka }} až {{ max_delka }} číslic.</p>
+    <div class="mrizka">
+      <label>Nový PIN
+        <input type="password" name="pin_novy" inputmode="numeric" autocomplete="new-password" required autofocus
+               maxlength="{{ max_delka }}"></label>
+      <label>Zopakovat PIN
+        <input type="password" name="pin_znovu" inputmode="numeric" autocomplete="new-password" required
+               maxlength="{{ max_delka }}"></label>
+    </div>
+    {% endif %}
+  </fieldset>
+</form>
+{% endblock %}
