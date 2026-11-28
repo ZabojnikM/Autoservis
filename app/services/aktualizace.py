@@ -17,7 +17,6 @@ import json
 import os
 import re
 import signal
-import sqlite3
 import subprocess
 import sys
 import threading
@@ -127,12 +126,8 @@ def zalohuj_db(db_path: Path, zalohy: Path, oznaceni: str) -> Path | None:
         return None
     zalohy.mkdir(parents=True, exist_ok=True)
     cil = zalohy / f"pred-aktualizaci-{datetime.now():%Y%m%d-%H%M%S}-{oznaceni}.db"
-    zdroj, kopie = sqlite3.connect(db_path), sqlite3.connect(cil)
-    try:
-        zdroj.backup(kopie)
-    finally:
-        kopie.close()
-        zdroj.close()
+    from app.db import kopie_databaze
+    kopie_databaze(db_path, cil)
     return cil
 
 

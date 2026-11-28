@@ -306,6 +306,11 @@ Před aktualizací programu přesto doporučujeme zálohu (zkopírovat `data/aut
 
 ## Zálohy databáze
 
+> **Databáze běží v režimu WAL (#228):** vedle `autoservis.db` jsou soubory `autoservis.db-wal` a `autoservis.db-shm`.
+> Patří k databázi – **nemažte je a databázi za běhu aplikace nekopírujte prostým kopírováním souboru**
+> (použijte Zálohovat teď nebo SQLite backup). Zálohy samy jsou vždy jeden soubor `.db` v běžném režimu.
+> Souběžný zápis (uživatel, boty, záloha) počká na uvolnění až 15 s, než ohlásí chybu.
+
 *Nastavení → Zálohy databáze* (#76):
 
 - **Denní záloha** se dělá automaticky na serveru do `data/backups` (`denni-…db`), uchovává se posledních 14.

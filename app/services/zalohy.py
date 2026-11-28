@@ -97,13 +97,8 @@ def vytvor(db_path: Path, slozka: Path, predpona: str, ted: datetime | None = No
     cil = slozka / f"{predpona}{(ted or datetime.now()).strftime(_FORMAT_CASU)}.db"
     docasny = cil.with_suffix(".db.tmp")
     try:
-        zdroj = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-        kopie = sqlite3.connect(docasny)
-        try:
-            zdroj.backup(kopie)
-        finally:
-            kopie.close()
-            zdroj.close()
+        from app.db import kopie_databaze
+        kopie_databaze(db_path, docasny, jen_cteni=True)
         _zkontroluj(docasny)
         os.chmod(docasny, 0o600)
         os.replace(docasny, cil)
