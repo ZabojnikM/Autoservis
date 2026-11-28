@@ -45,3 +45,15 @@ def bez_pinu(request, monkeypatch):
     from app.services import pin
     if "pin" not in request.keywords:
         monkeypatch.setattr(pin, "ZAPNUTO", False)
+
+
+@pytest.fixture(autouse=True, scope="session")
+def zaznam_do_docasne_slozky(tmp_path_factory):
+    """#225: start aplikace v testech (TestClient ve `with`) zapisuje záznam událostí do dočasné složky, ne do repa."""
+    from app import zaznam
+    puvodni = zaznam.soubor
+    slozka = tmp_path_factory.mktemp("zaznam")
+    zaznam.soubor = lambda: slozka / "autoservis.log"
+    yield
+    zaznam.soubor = puvodni
+    zaznam.ukonci()

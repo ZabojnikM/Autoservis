@@ -13,6 +13,7 @@ import urllib.request
 from datetime import datetime
 
 from app.services import ChybaValidace
+from app.zaznam import log
 
 API_URL = "https://api.dataovozidlech.cz/api/vehicletechnicaldata/v2"
 REGISTRACE_URL = "https://dataovozidlech.cz/registraceapi"
@@ -63,7 +64,11 @@ def nacti(api_klic: str | None, vin: str | None = None, tp: str | None = None, o
     parametry = {k: re.sub(r"\s", "", v).upper() for k, v in (("vin", vin), ("tp", tp), ("orv", orv)) if v and v.strip()}
     if not parametry:
         raise ChybaRegistru("Zadejte VIN vozidla.", "vin")
-    odpoved = _stahni(parametry, api_klic)
+    try:
+        odpoved = _stahni(parametry, api_klic)
+    except ChybaRegistru as e:  # #225: výpadek / odmítnutí registru do záznamu (bez VIN)
+        log.warning("Registr vozidel: %s", e)
+        raise
     data = odpoved.get("Data") if isinstance(odpoved, dict) else None
     if isinstance(data, list):
         if len(data) > 1:

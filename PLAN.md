@@ -425,6 +425,8 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-28 | Návody pro agenty a README podle ostrého provozu: 8001 ostrý provoz, 8002 vývoj a testy, bez Windows (#230) |
 | 2026-11-28 | Úklid kódu: webové stránky rozdělené podle oblastí, JavaScript v static/app.js, testy webu po oblastech; nepoužívané importy pryč, dokumenty převodu v docs/archiv (#233, #234) |
 | 2026-11-28 | PIN pro vstup do Nastavení (30 min, blokace po 5 pokusech, příkaz pro zrušení) a ochrana proti podvrženým požadavkům z cizích stránek (#219, #220) |
+| 2026-11-28 | Databáze v režimu WAL s čekáním na zámek 15 s; zálohy vždy jeden soubor v běžném režimu (#228) |
+| 2026-11-28 | Záznam událostí do logs/autoservis.log s rotací, náhled a stažení v Nastavení, bez osobních údajů (#225) |
 
 ## Zdroje průzkumu
 

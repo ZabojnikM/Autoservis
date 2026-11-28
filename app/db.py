@@ -43,12 +43,23 @@ def _porovnej_cesky(a: str, b: str) -> int:
     return (ka > kb) - (ka < kb)
 
 
+CEKANI_NA_ZAMEK_MS = 15000  # #228: souběžný zápis počká až 15 s, než ohlásí „database is locked“
+
+
 @event.listens_for(Engine, "connect")
 def _zapni_cizi_klice(dbapi_conn, _record):
     """SQLite má kontrolu cizích klíčů ve výchozím stavu vypnutou.
-    Zároveň registruje řazení „cs“ (česká abeceda) pro řazení seznamů: `sloupec.collate("cs")`."""
+    Zároveň registruje řazení „cs“ (česká abeceda) pro řazení seznamů: `sloupec.collate("cs")`.
+
+    #228: souborová databáze běží v režimu WAL (čtení a zápis se neblokují – zálohy, Statistiky a prohlížení
+    nezdrží uložení), zápis počká na zámek až CEKANI_NA_ZAMEK_MS. Vedle databáze jsou soubory `-wal` a `-shm`."""
     cur = dbapi_conn.cursor()
     cur.execute("PRAGMA foreign_keys=ON")
+    cur.execute(f"PRAGMA busy_timeout={CEKANI_NA_ZAMEK_MS}")
+    hlavni = next((r for r in cur.execute("PRAGMA database_list") if r[1] == "main"), None)
+    if hlavni and hlavni[2]:  # souborová databáze (v paměti je cesta prázdná)
+        cur.execute("PRAGMA journal_mode=WAL")
+        cur.execute("PRAGMA synchronous=NORMAL")
     cur.close()
     if hasattr(dbapi_conn, "create_collation"):
         dbapi_conn.create_collation("cs", _porovnej_cesky)
@@ -60,6 +71,30 @@ def _vychozi_katalog(_mapper, connection, polozka):
     if polozka.katalog_id is None:
         polozka.katalog_id = connection.execute(
             text("SELECT id FROM katalog WHERE vychozi = 1 ORDER BY id")).scalar()
+
+
+def kopie_databaze(zdroj: str | Path, cil: str | Path, jen_cteni: bool = False) -> None:
+    """Konzistentní kopie běžící databáze přes SQLite backup API (#228).
+
+    Kopie je jeden soubor v běžném režimu (bez `-wal`/`-shm`), i když zdroj běží ve WAL. Po kopii se zdroj zkusí
+    „vyčistit“ (checkpoint), ať soubor `-wal` neroste; když to nejde (běží zápis), nevadí."""
+    zdroj_spojeni = (sqlite3.connect(f"file:{zdroj}?mode=ro", uri=True, timeout=CEKANI_NA_ZAMEK_MS / 1000) if jen_cteni
+                     else sqlite3.connect(zdroj, timeout=CEKANI_NA_ZAMEK_MS / 1000))
+    kopie = sqlite3.connect(cil)
+    try:
+        zdroj_spojeni.backup(kopie)
+        kopie.execute("PRAGMA journal_mode=DELETE")
+    finally:
+        kopie.close()
+        zdroj_spojeni.close()
+    try:
+        spojeni = sqlite3.connect(zdroj, timeout=5)
+        try:
+            spojeni.execute("PRAGMA wal_checkpoint(TRUNCATE)")
+        finally:
+            spojeni.close()
+    except sqlite3.Error:
+        pass
 
 
 def vytvor_engine(url: str = config.DATABASE_URL) -> Engine:
@@ -76,8 +111,12 @@ def init_db(eng: Engine | None = None) -> None:
     pridane = doplnit_sloupce(eng)
     if "faktura.vytisteno" in pridane:
         oznacit_stare_doklady_vytistene(eng)
-    uvolnit_povinne_sloupce(eng)
-    zavest_katalogy(eng)
+    uvolnene = uvolnit_povinne_sloupce(eng)
+    katalogy = zavest_katalogy(eng)
+    if pridane or uvolnene or katalogy:  # #225: změny databáze při startu do záznamu událostí
+        from app.zaznam import log
+        log.info("Migrace databáze: přidané sloupce %s, uvolněné sloupce %s, katalogy %s",
+                 ", ".join(pridane) or "–", ", ".join(uvolnene) or "–", "zavedeny" if katalogy else "beze změny")
 
 
 def doplnit_sloupce(eng: Engine) -> list[str]:
@@ -127,12 +166,7 @@ def _zaloha_pred_migraci(eng: Engine) -> Path | None:
     zalohy = Path(soubor).resolve().parent / "backups"
     zalohy.mkdir(parents=True, exist_ok=True)
     cil = zalohy / f"pred-migraci-{datetime.now():%Y%m%d-%H%M%S}.db"
-    zdroj, kopie = sqlite3.connect(soubor), sqlite3.connect(cil)
-    try:
-        zdroj.backup(kopie)
-    finally:
-        kopie.close()
-        zdroj.close()
+    kopie_databaze(soubor, cil)
     return cil
 
 

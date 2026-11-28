@@ -28,6 +28,7 @@ from sqlmodel import Session
 from app import config
 from app.models import Nastaveni
 from app.services import ChybaValidace
+from app.zaznam import log
 
 ZALOHY = config.DATA_DIR / "backups"
 STAV = "zalohy.json"           # v adresáři záloh
@@ -97,13 +98,8 @@ def vytvor(db_path: Path, slozka: Path, predpona: str, ted: datetime | None = No
     cil = slozka / f"{predpona}{(ted or datetime.now()).strftime(_FORMAT_CASU)}.db"
     docasny = cil.with_suffix(".db.tmp")
     try:
-        zdroj = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-        kopie = sqlite3.connect(docasny)
-        try:
-            zdroj.backup(kopie)
-        finally:
-            kopie.close()
-            zdroj.close()
+        from app.db import kopie_databaze
+        kopie_databaze(db_path, docasny, jen_cteni=True)
         _zkontroluj(docasny)
         os.chmod(docasny, 0o600)
         os.replace(docasny, cil)
@@ -207,6 +203,11 @@ def _uloz_stav(zalohy: Path, druh: str, **udaje) -> None:
     zalohy.mkdir(parents=True, exist_ok=True)
     stav = nacti_stav(zalohy)
     stav[druh] = {**stav.get(druh, {}), **udaje, "cas": datetime.now().isoformat(timespec="seconds")}
+    # #225: výsledek každé zálohy a obnovy do záznamu událostí
+    if udaje.get("chyba"):
+        log.warning("Záloha (%s) selhala: %s", druh, udaje["chyba"])
+    elif udaje.get("uspech"):
+        log.info("Záloha (%s) v pořádku: %s", druh, Path(str(udaje.get("soubor", ""))).name)
     soubor = zalohy / STAV
     docasny = soubor.with_suffix(".tmp")
     docasny.write_text(json.dumps(stav, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -471,7 +472,7 @@ def _smycka(nacti_slozku, interval: float) -> None:
         try:
             naplanovane(nacti_slozku())
         except Exception:  # plánovač nesmí shodit aplikaci; chyby záloh jsou ve stavu
-            pass
+            log.exception("Plánovač záloh: neočekávaná chyba")
         _stop.wait(interval)
 
 

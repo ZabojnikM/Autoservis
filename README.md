@@ -258,6 +258,15 @@ Aplikace tiskne jen tyto doklady:
   (kontrola hlavičky `Origin` / `Referer` proti adrese serveru). Pokus z cizí webové stránky skončí hláškou
   „Požadavek nepřišel z Autoservisu“ a nic se nezmění. Funguje přes jakoukoli adresu serveru.
 
+## Záznam událostí (#225)
+
+Aplikace zapisuje, co se v ní děje, do souboru `logs/autoservis.log` vedle databáze (např. `data/logs/`); soubor se sám
+promazává (10 souborů po 1 MB). *Nastavení → Záznam událostí* ukáže posledních 200 záznamů (nejnovější nahoře,
+filtr **Jen chyby**) a tlačítko **Stáhnout**. Zapisuje se start a vypnutí (verze), neošetřené chyby s výpisem, zálohy
+a obnova, aktualizace a vrácení verze, změny databáze při startu, výpadky Registru vozidel / ARES / LKQ, volání REST API
+a MCP (jen název klíče a nástroj), chybný PIN a odmítnuté požadavky z cizích stránek. **Osobní údaje, obsah dokladů,
+klíče ani PIN se nezapisují** (z výpisů chyb databáze se vynechávají hodnoty).
+
 ## API a MCP pro boty (#145–#148)
 
 *Nastavení → API pro boty*: zapnutí (výchozí vypnuto) a klíče pro boty v OpenBotu. Každý klíč má oprávnění
@@ -305,6 +314,11 @@ Při spuštění se do existující databáze automaticky doplní nové tabulky 
 Před aktualizací programu přesto doporučujeme zálohu (zkopírovat `data/autoservis.db`).
 
 ## Zálohy databáze
+
+> **Databáze běží v režimu WAL (#228):** vedle `autoservis.db` jsou soubory `autoservis.db-wal` a `autoservis.db-shm`.
+> Patří k databázi – **nemažte je a databázi za běhu aplikace nekopírujte prostým kopírováním souboru**
+> (použijte Zálohovat teď nebo SQLite backup). Zálohy samy jsou vždy jeden soubor `.db` v běžném režimu.
+> Souběžný zápis (uživatel, boty, záloha) počká na uvolnění až 15 s, než ohlásí chybu.
 
 *Nastavení → Zálohy databáze* (#76):
 

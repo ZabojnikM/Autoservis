@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+{# #225: záznam událostí aplikace (logs/autoservis.log) – nejnovější nahoře #}
+{% block title %}Záznam událostí – Nastavení{% endblock %}
+{% block akce %}
+  <a href="/nastaveni/zaznam/stahnout" role="button">Stáhnout záznam</a>
+  <a href="/nastaveni#zaznam" role="button" class="zpet">Zpět</a>
+{% endblock %}
+{% block content %}
+<div class="nadpis-radek">
+  <h1>Záznam událostí <span class="oznaceni">zobrazeno {{ pocet }} (nejnovější nahoře)</span></h1>
+</div>
+<div class="lista-filtru-seznamu">
+  <nav class="prepinac-katalogu" aria-label="Filtr záznamu">
+    <a href="/nastaveni/zaznam" role="button" class="katalog-tlacitko{% if not jen_chyby %} aktivni{% endif %}"
+       {% if not jen_chyby %}aria-current="true"{% endif %}>Vše</a>
+    <a href="/nastaveni/zaznam?jen_chyby=1" role="button" class="katalog-tlacitko{% if jen_chyby %} aktivni{% endif %}"
+       {% if jen_chyby %}aria-current="true"{% endif %}>Jen chyby</a>
+  </nav>
+</div>
+<p class="tlumene napoveda">Start a vypnutí aplikace, chyby, zálohy, aktualizace, výpadky registru / ARES / LKQ, volání botů
+  (jen klíč a nástroj) a chybný PIN. Osobní údaje se nezapisují. Soubor: <code>{{ soubor_nazev }}</code>
+  (uchovává se cca 10 MB, starší záznamy se mažou samy).</p>
+{% if zaznamy %}
+<div class="overflow-auto">
+<table class="striped zaznam-udalosti">
+  <thead><tr><th>Kdy</th><th>Úroveň</th><th>Událost</th></tr></thead>
+  <tbody>
+  {% for z in zaznamy %}
+    {% set uroven = z[20:27].strip() %}
+    <tr class="{{ 'chyba-text' if uroven in ('WARNING', 'ERROR', 'CRITICAL') else '' }}">
+      <td class="tlumene">{{ z[:19] }}</td>
+      <td>{{ {'INFO': 'info', 'WARNING': 'varování', 'ERROR': 'chyba', 'CRITICAL': 'chyba'}.get(uroven, uroven) }}</td>
+      <td><pre class="zaznam-text">{{ z[28:]|replace("autoservis: ", "", 1) }}</pre></td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>
+{% else %}
+<p class="tlumene prazdna-mrizka">{{ 'Žádné chyby.' if jen_chyby else 'Záznam je zatím prázdný.' }}</p>
+{% endif %}
+{% endblock %}

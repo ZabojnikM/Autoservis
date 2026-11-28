@@ -12,6 +12,7 @@ from decimal import Decimal, InvalidOperation
 
 from sqlmodel import Session, func, select
 
+from app.zaznam import log
 from app.models import PolozkaCeniku, TypPolozky, zaokrouhli
 from app.services import ChybaValidace
 from app.services import katalogy
@@ -172,6 +173,7 @@ def nacti_pdf(obsah: bytes) -> DodaciList:
         stranky = PdfReader(io.BytesIO(obsah)).pages
         texty = [(s.extract_text() or "", s.extract_text(extraction_mode="layout") or "") for s in stranky]
     except Exception:  # poškozené nebo zašifrované PDF
+        log.warning("Import LKQ: PDF dodacího listu nejde přečíst (poškozené nebo zašifrované)")
         raise ChybaValidace(CHYBA_PDF) from None
     vysledek = DodaciList()
     s_dph = Decimal("0")

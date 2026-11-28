@@ -89,6 +89,11 @@ commitů, issues ani release notes **nepiš**:
   logika je v `app/api/*.py` (sdílí ji REST i MCP), klíče a zapnutí v *Nastavení → API pro boty* (#145–#148).
 - **Registr silničních vozidel**: tlačítko Načti u VIN. API klíč je v Nastavení aplikace (v DB), ne v kódu.
 
+## Záznam událostí (#225)
+- `from app.zaznam import log` → `log.info / warning / exception`. Do zpráv nepiš osobní údaje (jména, adresy, telefony,
+  e-maily, IČO, SPZ, VIN), obsah dokladů, klíče ani PIN – jen druh události, názvy souborů a počty.
+- Soubor `logs/autoservis.log` vedle databáze (na 8001 a 8002 ho Vývojář čte bez IT Specialisty), náhled v Nastavení.
+
 ## Bezpečnost
 - Agent v OpenBotu běží s plným přístupem a bez potvrzování. O to opatrněji zacházej s ostrou DB:
   vždy nejdřív záloha a pak jen kopie.

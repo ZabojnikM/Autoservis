@@ -9,7 +9,10 @@ venv/
 # Data (databáze a zálohy se necommitují)
 data/*.db
 data/*.db-*
+*.db-wal
+*.db-shm
 data/backups/
+data/logs/
 data/stary-system-export/
 data/pro-server/
 

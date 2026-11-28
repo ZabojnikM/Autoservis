@@ -4,7 +4,7 @@ Chyby vrací JSON `{"chyba": "…"}`: 401 klíč, 403 oprávnění / vypnuté AP
 """
 from typing import Annotated
 
-from fastapi import APIRouter, Body, Depends, Header
+from fastapi import APIRouter, Body, Depends, Header, Request
 
 from app.api import sklad, vozidla, zakazky
 from app.models import ApiKlic
@@ -15,8 +15,10 @@ router = APIRouter(prefix="/api/v1", tags=["API pro boty"])
 
 
 def _klic(opravneni: str | None):
-    def zavislost(db: DB, authorization: Annotated[str | None, Header()] = None) -> ApiKlic:
-        return api_klice.over(db, authorization, opravneni)
+    def zavislost(request: Request, db: DB, authorization: Annotated[str | None, Header()] = None) -> ApiKlic:
+        klic = api_klice.over(db, authorization, opravneni)
+        request.state.api_klic = klic.nazev  # #225: název klíče do záznamu událostí
+        return klic
     return zavislost
 
 
