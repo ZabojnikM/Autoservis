@@ -11,6 +11,12 @@ from app.main import app
 client = TestClient(app)
 
 
+def _se_skriptem(stranka: str) -> str:
+    """Stránka + JavaScript aplikace (#233: skript je v /static/app.js, ne v base.html)."""
+    assert '<script src="/static/app.js?v=' in stranka
+    return stranka + client.get("/static/app.js").text
+
+
 @pytest.fixture(autouse=True)
 def ucet_pro_vyuctovani(session):
     """#55: vyúčtování bez účtu pro QR platbu vystavit nejde – v testech je účet nastavený předem."""
@@ -1385,7 +1391,7 @@ def test_okno_materialu_enter_podle_kodu_a_tlacitka():
     assert 'data-kod="GAT 6PK1018"' in vyber
     okno = client.get(f"{loc}/cenik", params={"okno": "1", "typ": "material"}).text
     assert 'class="maly tlacitko-novy" data-okno' in okno and 'data-s-hledanim="kod"' in okno
-    base = client.get(loc).text
+    base = _se_skriptem(client.get(loc).text)
     assert "function enterVHledaniMaterialu" in base and "kodProShodu(tr.dataset.kod) === hledany" in base
     css = client.get("/static/app.css").text
     assert ".okno-formular .rozvrzeni:not(.s-akcemi) > .obsah { padding-left: 20px; }" in css
@@ -1774,16 +1780,16 @@ def test_prehled_faktur_pamatuje_typ_dokladu():
 
 def test_ovladani_sipkami_znacky_v_sablonach():
     """#185: Insert má v seznamech a v detailu zakázky svůj cíl (data-insert), stavový řádek ukazuje nápovědu kláves."""
-    zakazky = client.get("/zakazky").text
+    zakazky = _se_skriptem(client.get("/zakazky").text)
     for url in ("/vozidla", "/zakaznici", "/cenik", "/prace"):
         assert "data-insert" in client.get(url).text, url
     assert "data-insert" in zakazky
     loc = _zakazka_s_polozkou(spz="1KL1850")
-    detail = client.get(loc).text
+    detail = _se_skriptem(client.get(loc).text)
     assert re.search(r'cenik\?typ=material" role="button" data-okno data-insert', detail)
     assert re.search(r'cenik\?typ=prace" role="button" data-okno data-insert', detail)
     assert "↑↓ výběr · Enter otevřít" in client.get("/vozidla").text
-    assert "radkyKlavesnici" in detail  # obsluha kláves je v base.html
+    assert "radkyKlavesnici" in detail  # obsluha kláves je v static/app.js (#233)
     # Nápověda v liště vlevo od ozubeného kola, okno není stránka menu.
     assert zakazky.index('aria-label="Nápověda"') < zakazky.index('aria-label="Nastavení"')
     assert 'id="okno-napoveda-klaves"' in zakazky and "PageDown" in zakazky and "polozkyNapovedy" in zakazky
@@ -1795,7 +1801,7 @@ def test_ovladani_sipkami_znacky_v_sablonach():
     assert 'e.key === "Escape"' in detail and ".akce a.zpet" in detail
     assert "zpět na seznam zakázek" in detail
     vid = re.search(r'href="/vozidla/(\d+)"', detail).group(1)
-    karta = client.get(f"/vozidla/{vid}").text
+    karta = _se_skriptem(client.get(f"/vozidla/{vid}").text)
     assert 'href="/vozidla" role="button" class="zpet"' in karta
     assert "RADKY_NAPOVEDY.karta" in karta
     import pathlib
@@ -1805,7 +1811,7 @@ def test_ovladani_sipkami_znacky_v_sablonach():
 
 def test_kopirovani_nahradne_pres_udalost_copy():
     """#195: náhradní kopírování (http) vkládá text přímo v události copy a fajfku ukáže jen při úspěchu."""
-    stranka = client.get("/zakazky").text
+    stranka = _se_skriptem(client.get("/zakazky").text)
     assert "function kopirujNahradne(text)" in stranka
     assert 'ev.clipboardData.setData("text/plain", text)' in stranka
     assert "Kopírování se nepovedlo" in stranka
