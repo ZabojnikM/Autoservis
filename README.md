@@ -106,7 +106,9 @@ app/
     polozky.py   #   položky zakázky, součty a DPH
     nastaveni.py #   DPH, údaje servisu, číselné řady
     faktury.py   #   faktury, úhrady, storno, QR platba
-  web/           # stránky: routes.py, templates/ (Jinja2 + HTMX), static/app.css
+  web/           # stránky po oblastech (zakazky.py, vozidla.py, zakaznici.py, prijem.py, cenik.py, faktury.py,
+                 #   nastaveni.py, společné pomůcky spolecne.py; routes.py je spojí), templates/ (Jinja2 + HTMX),
+                 #   static/app.css a static/app.js (ovládání: okna, klávesnice, kopírování)
   api/           # REST endpointy (později)
   mcp_server/    # MCP server (fáze 6)
   importers/     # stary_system.py – import z exportu starého systému; další importy (fáze 7)

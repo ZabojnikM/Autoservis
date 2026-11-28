@@ -168,7 +168,7 @@ autoservis/
     main.py, config.py, db.py   # vstup, nastavení (AUTOSERVIS_DB), SQLite + doplňování sloupců
     models/        # datové modely (DB tabulky)
     services/      # business logika – sdílená pro UI, MCP, importy
-    web/           # routes.py, sablony.py, templates/, static/app.css
+    web/           # stránky po oblastech + routes.py (spojení), spolecne.py, sablony.py, templates/, static/app.css, static/app.js
     importers/     # stary_system.py (import z JSON exportu starého systému)
     api/           # REST endpointy (zatím jen /api/zdravi v main.py)
     mcp_server/    # MCP server (fáze 6, prázdné)
@@ -423,6 +423,7 @@ používané moduly starého systému (zakázky, sklad, faktury + vyúčtování
 | 2026-11-26 | Příjem vozidel z databáze: technik zapisuje přes MCP (oprávnění Příjem vozidel, posledních 30, bez fotek, registr podle VIN), visits.json se už nečte (#216) |
 | 2026-11-26 | Příjem: vyhodnocení v Autoservisu – oprava VIN (O/Q → 0, I → 1), spojení se stejnou SPZ / VIN za 24 h, VIN z databáze, registr u nového auta, stav s dalším krokem; technik už registr nevolá (#216) |
 | 2026-11-28 | Návody pro agenty a README podle ostrého provozu: 8001 ostrý provoz, 8002 vývoj a testy, bez Windows (#230) |
+| 2026-11-28 | Úklid kódu: webové stránky rozdělené podle oblastí, JavaScript v static/app.js, testy webu po oblastech; nepoužívané importy pryč, dokumenty převodu v docs/archiv (#233, #234) |
 
 ## Zdroje průzkumu
 
