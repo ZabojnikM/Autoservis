@@ -18,6 +18,7 @@ from app.web.sprava_dat import router as sprava_dat_router
 from app.web.statistiky import router as statistiky_router
 from app.web.api_klice import router as api_klice_router
 from app.web.sablony import templates
+from app.web import zabezpeceni
 
 
 @asynccontextmanager
@@ -45,6 +46,7 @@ app.include_router(statistiky_router)
 app.include_router(api_router)
 app.include_router(api_klice_router)
 app.mount("/mcp", mcp_server.asgi)
+app.middleware("http")(zabezpeceni.kontrola_puvodu)  # #220: požadavky měnící data jen ze stránky Autoservisu
 
 
 def _je_api(request: Request) -> bool:
