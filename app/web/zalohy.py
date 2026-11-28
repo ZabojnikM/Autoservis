@@ -7,7 +7,7 @@ from fastapi.responses import FileResponse, PlainTextResponse
 
 from app import config
 from app.services import ChybaValidace, zalohy
-from app.web.routes import DB
+from app.web.spolecne import DB
 from app.web.sablony import templates
 
 router = APIRouter(prefix="/nastaveni/zalohy")

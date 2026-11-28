@@ -11,7 +11,7 @@ from sqlmodel import select
 from app.mcp_server import server
 from app.models import PrijemVozidla, Vozidlo, Zakaznik, Zakazka
 from app.services import ChybaValidace, api_klice, prijem_vozidel, registr_vozidel, vozidla, zakazky
-from tests.test_web import client
+from tests.web_pomucky import client
 
 
 def _navsteva(id_, created, spz="1AB2345", vin="TMBAA00000000001", km=120000, technicke=None, nejiste=None):

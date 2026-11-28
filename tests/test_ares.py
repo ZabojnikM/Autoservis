@@ -31,7 +31,7 @@ def test_pole_zakaznika_z_ares(monkeypatch):
 
 
 def test_web_ares(monkeypatch):
-    from tests.test_web import client
+    from tests.web_pomucky import client
     monkeypatch.setattr(ares, "_stahni", lambda ico: MF)
     r = client.get("/zakaznici/ares", params={"ico": "00006947"}).json()
     assert r["pole"]["nazev"] == "Ministerstvo financí" and r["pole"]["dic"] == "CZ00006947"

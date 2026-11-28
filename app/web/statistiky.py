@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse
 
 from app.services import NenalezenoError, nastaveni, statistiky
-from app.web.routes import DB, _stranka
+from app.web.spolecne import DB, _stranka
 
 VYPNUTO = "Záložka Statistiky je vypnutá. Zapnete ji v Nastavení (Statistiky)."
 

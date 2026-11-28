@@ -7,7 +7,7 @@ from sqlmodel import select
 
 from app.models import PolozkaCeniku
 from app.services import ChybaValidace, cenik, import_lkq, zakazky
-from tests.test_web import _prijem, client
+from tests.web_pomucky import _prijem, client
 
 CSV = """Verze formatu;1.10
 LKQ CZ s.r.o., pobočka ZLIN - dodaci list c.;3116034551

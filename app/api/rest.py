@@ -9,7 +9,7 @@ from fastapi import APIRouter, Body, Depends, Header
 from app.api import sklad, vozidla, zakazky
 from app.models import ApiKlic
 from app.services import api_klice
-from app.web.routes import DB
+from app.web.spolecne import DB
 
 router = APIRouter(prefix="/api/v1", tags=["API pro boty"])
 
