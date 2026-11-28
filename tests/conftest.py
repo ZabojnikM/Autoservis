@@ -37,3 +37,11 @@ def testovaci_db(engine):
     app.dependency_overrides[get_session] = _session
     yield
     app.dependency_overrides.clear()
+
+
+@pytest.fixture(autouse=True)
+def bez_pinu(request, monkeypatch):
+    """#219: PIN pro Nastavení je v testech vypnutý, kromě testů označených @pytest.mark.pin."""
+    from app.services import pin
+    if "pin" not in request.keywords:
+        monkeypatch.setattr(pin, "ZAPNUTO", False)

@@ -18,6 +18,7 @@ from app.web.sprava_dat import router as sprava_dat_router
 from app.web.statistiky import router as statistiky_router
 from app.web.api_klice import router as api_klice_router
 from app.web.sablony import templates
+from app.web import pin as pin_web, zabezpeceni
 
 
 @asynccontextmanager
@@ -37,6 +38,7 @@ def _slozka_zaloh() -> str:
 
 app = FastAPI(title=config.APP_NAME, version=config.APP_VERSION, lifespan=lifespan)
 app.mount("/static", StaticFiles(directory=config.STATIC_DIR), name="static")
+app.include_router(pin_web.router)  # #219: PIN pro Nastavení (/nastaveni/pin před ostatními trasami Nastavení)
 app.include_router(web_router)
 app.include_router(aktualizace_router)
 app.include_router(zalohy_router)
@@ -45,6 +47,8 @@ app.include_router(statistiky_router)
 app.include_router(api_router)
 app.include_router(api_klice_router)
 app.mount("/mcp", mcp_server.asgi)
+app.middleware("http")(pin_web.ochrana_nastaveni)    # #219: Nastavení jen po zadání PINu
+app.middleware("http")(zabezpeceni.kontrola_puvodu)  # #220: požadavky měnící data jen ze stránky Autoservisu (běží první)
 
 
 def _je_api(request: Request) -> bool:

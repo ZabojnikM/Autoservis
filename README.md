@@ -242,6 +242,22 @@ Aplikace tiskne jen tyto doklady:
   **vyžaduje zákazníka** na zakázce
 - **Vyúčtování zakázky** – jde i **bez zákazníka** (odběratel nepovinný)
 
+## Zabezpečení (#219, #220)
+
+- **PIN pro Nastavení:** ozubené kolo (Nastavení) otevře okno pro PIN; bez PINu se do Nastavení (údaje servisu,
+  zálohy a jejich stažení, aktualizace, klíče pro boty, registr) nedostanete ani přímou adresou. Ostatní práce
+  (zakázky, doklady, mazání, Statistiky, Správa dat) PIN nepotřebuje.
+  - Při prvním kliknutí na Nastavení aplikace vyzve k vytvoření PINu (4–12 číslic, 2× zadat).
+  - Okno: Enter = potvrdit, Esc = zavřít. Odemčení platí **30 minut** od poslední práce v Nastavení (na daném
+    prohlížeči), tlačítko **Zamknout** v Nastavení zamkne hned. PIN jde změnit v Nastavení → PIN pro Nastavení.
+  - Po **5 chybných pokusech** se zadávání na 5 minut zablokuje; pokusy jsou v Deníku úprav.
+  - **Zapomenutý PIN** zruší správce na serveru: `.venv/bin/python -m app.nastroje.pin --zrusit`; aplikace pak
+    vyzve k vytvoření nového. PIN se ukládá jen jako otisk.
+  - REST API a MCP (boty Luigi, Skladník) PIN nepotřebují – mají vlastní klíče.
+- **Ochrana proti podvrženým požadavkům:** akce, které mění data, aplikace provede jen ze své vlastní stránky
+  (kontrola hlavičky `Origin` / `Referer` proti adrese serveru). Pokus z cizí webové stránky skončí hláškou
+  „Požadavek nepřišel z Autoservisu“ a nic se nezmění. Funguje přes jakoukoli adresu serveru.
+
 ## API a MCP pro boty (#145–#148)
 
 *Nastavení → API pro boty*: zapnutí (výchozí vypnuto) a klíče pro boty v OpenBotu. Každý klíč má oprávnění

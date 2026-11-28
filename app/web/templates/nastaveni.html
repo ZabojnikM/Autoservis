@@ -9,6 +9,8 @@
 {% block akce %}
   <button type="submit" form="formular-nastaveni">Uložit nastavení</button>
   <a href="/zakazky" role="button" class="zpet">Zpět</a>
+  {# #219: zamknout Nastavení hned (jinak se zamkne samo po 30 minutách) #}
+  <form method="post" action="/pin/zamknout"><button type="submit" class="secondary outline">Zamknout</button></form>
 {% endblock %}
 {% block content %}
 {% if ulozeno %}<p class="uspech" role="status">Nastavení uloženo.</p>{% endif %}
@@ -209,6 +211,21 @@
         <em>Další informace → Přesto spustit</em>.</li>
       <li>Okno instalátoru vypíše, kde zástupce vytvořil; zavře se libovolnou klávesou.</li>
     </ol>
+  </fieldset>
+</section>
+
+{# #219: změna PINu pro vstup do Nastavení #}
+<section class="formular" id="pin">
+  <fieldset class="panel">
+    <legend>PIN pro Nastavení</legend>
+    <p class="tlumene">Nastavení je chráněné PINem. Odemčení platí 30 minut od poslední práce v Nastavení, tlačítkem
+      <strong>Zamknout</strong> vlevo se zamkne hned. Zapomenutý PIN vynuluje správce aplikace na serveru.</p>
+    <form method="post" action="/nastaveni/pin" class="mrizka">
+      <label>Současný PIN <input type="password" name="pin_stary" inputmode="numeric" autocomplete="off" required></label>
+      <label>Nový PIN <input type="password" name="pin_novy" inputmode="numeric" autocomplete="new-password" required></label>
+      <label>Zopakovat nový PIN <input type="password" name="pin_znovu" inputmode="numeric" autocomplete="new-password" required></label>
+      <div><button type="submit" class="secondary">Změnit PIN</button></div>
+    </form>
   </fieldset>
 </section>
 
