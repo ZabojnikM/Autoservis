@@ -6,34 +6,30 @@ Pokyny pro AI agenty: [AGENTS.md](AGENTS.md), předání projektu do OpenBotu: [
 
 **Technologie:** Python 3.12, FastAPI, SQLite, Jinja2 + HTMX, Pico.css + vlastní desktopový styl (`app.css`).
 
-> ⚠️ `data/autoservis.db` obsahuje **ostrá data**. Před aktualizací programu ji zkopírujte (záloha).
+> ⚠️ Ostrý provoz běží na linuxovém serveru (služba systemd `autoservis`, port 8001) s **ostrými daty**.
+> Vývoj a zkoušení probíhá na testovací instanci (port 8002) nad kopií databáze. Aktualizace se instalují
+> tlačítkem v Nastavení (aplikace před instalací sama zazálohuje databázi).
 
-## První spuštění (Windows, PowerShell)
+## Instalace a spuštění (Linux)
 
-```powershell
-py -3.12 -m venv .venv
-.\.venv\Scripts\python -m pip install -r requirements.txt
+```bash
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m uvicorn app.main:app --host 0.0.0.0 --port 8001
 ```
 
-## Spuštění aplikace
+V ostrém provozu běží aplikace jako služba systemd (šablona `nastroje/autoservis.service`, postup
+v `nastroje/server-CLAUDE.md`). Spuštění nad jinou databází (např. kopií pro zkoušení) – proměnná `AUTOSERVIS_DB`:
 
-```powershell
-.\.venv\Scripts\python -m uvicorn app.main:app --reload --port 8000
-```
-
-Nebo dvojklikem na `spustit.bat`. Aplikace pak běží na <http://localhost:8000>.
-
-Spuštění nad jinou databází (např. kopií s importem ze starého systému) – proměnná `AUTOSERVIS_DB`:
-
-```powershell
-$env:AUTOSERVIS_DB = "data\autoservis-import.db"; .\.venv\Scripts\python -m uvicorn app.main:app --port 8001
+```bash
+AUTOSERVIS_DB=data/autoservis-kopie.db .venv/bin/python -m uvicorn app.main:app --port 8002
 ```
 
 ## Zástupce na ploše (pracovní počítače)
 
 Aplikace se na pracovních počítačích neinstaluje – běží na serveru a otevírá se v prohlížeči. Aby vypadala jako
 samostatný program (vlastní okno bez adresního řádku, ikona na ploše a v nabídce Start), stačí na každém počítači
-jednou spustit `nastroje\zastupce-autoservis.bat` (dvojklik) a zadat adresu serveru, např. `http://server:8000`.
+jednou spustit `nastroje\zastupce-autoservis.bat` (dvojklik) a zadat adresu serveru, např. `http://server:8001`.
 Skript použije Chrome (případně Edge) v režimu `--app` a stáhne ikonu ze serveru. Zástupce jde kdykoli smazat.
 
 Nejjednodušší je stáhnout instalátor přímo z aplikace: **Nastavení → Aplikace v samostatném okně (Windows)**.
@@ -42,7 +38,7 @@ Stáhne se jediný soubor `Autoservis-zastupce.bat` s už vyplněnou adresou ser
 Bez dotazu na adresu:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File nastroje\zastupce-autoservis.ps1 -Adresa http://server:8000
+powershell -ExecutionPolicy Bypass -File nastroje\zastupce-autoservis.ps1 -Adresa http://server:8001
 ```
 
 ## Ovládání (desktopový vzhled jako starý systém)
@@ -135,8 +131,6 @@ tests/
   Zákazníka jde kdykoli doplnit, změnit nebo odebrat (prázdný panel = bez zákazníka); vozidlu bez zákazníka
   se zákazník zakázky přiřadí automaticky.
 
-> **Po aktualizaci programu server restartujte** (zavřít okno `spustit.bat` a spustit znovu) –
-> automatické načtení změn kódu na Windows někdy zamrzne a běží dál stará verze.
 - **Seznam zakázek** se řadí podle čísla od nejnovější – nejnovější zakázka nahoře (#210); jinak řadit jde kliknutím na záhlaví sloupce.
 - **Zakázky**: číslování `RRRR-0001`, stavy Přijato → V opravě → Předáno → Uzavřeno (s dokladem).
   V jedné liště jsou zleva **Nová zakázka**, přepínač **Všechny** / **Otevřené**, hledání a výběr roku (#213).
@@ -242,7 +236,7 @@ Aplikace tiskne jen tyto doklady:
 - **Zakázkový list** (A4) – detail zakázky → **Zakázkový list** (otevře se v nové kartě rovnou s tiskem);
   bez položek má prázdné řádky pro ruční zápis, vždy podpisy pro příjem a předání vozidla
 - **Odběratel a vozidlo dokladu** (#208) – v okně vystavení jsou předvyplněné ze zakázky a jdou změnit jen pro doklad (zakázka zůstává): odběratel přes **Vybrat** / **Nový**, vozidlo přes SPZ, **Vybrat** (vozidla odběratele nahoře) nebo **Bez vozidla**. Ručně vyplněný odběratel se při vystavení uloží jako nový zákazník (se stejným IČO se použije existující). Doklad je na kartě vybraného zákazníka; stav tachometru jen u vozidla zakázky. Faktura jde vystavit i ze zakázky bez zákazníka;
-- **Faktura – daňový doklad** – placená převodem (účet + QR) nebo hotově; tlačítko **Otevřít PDF** (v detailu, v seznamu dokladů odkaz PDF) otevře doklad jako PDF `<číslo>.pdf` ze stejné šablony jako tisk v nové záložce a označí ho jako vytištěný; uložit jde ikonou stahování v prohlížeči PDF nebo Ctrl+S (#189, #193 – Chrome přes http přímé stažení blokuje; na Windows bez GTK se PDF nevytvoří, zůstává Tisk / PDF v prohlížeči); částka k úhradě se zaokrouhlí na celé koruny (vypnout jde v Nastavení → Doklady);
+- **Faktura – daňový doklad** – placená převodem (účet + QR) nebo hotově; tlačítko **Otevřít PDF** (v detailu, v seznamu dokladů odkaz PDF) otevře doklad jako PDF `<číslo>.pdf` ze stejné šablony jako tisk v nové záložce a označí ho jako vytištěný; uložit jde ikonou stahování v prohlížeči PDF nebo Ctrl+S (#189, #193 – Chrome přes http přímé stažení blokuje); částka k úhradě se zaokrouhlí na celé koruny (vypnout jde v Nastavení → Doklady);
   **vyžaduje zákazníka** na zakázce
 - **Vyúčtování zakázky** – jde i **bez zákazníka** (odběratel nepovinný)
 
@@ -264,7 +258,7 @@ zrušit jde kdykoli.
   mezitím nezměnila). Před zápisem záloha, každý zápis v **Deníku úprav** s názvem klíče.
 - **MCP server** na `/mcp/` (streamable HTTP, stejný klíč v hlavičce) nabízí stejné funkce jako nástroje pro boty
   (`hledej_dily`, `nahled_hromadne_akce`, `proved_hromadnou_akci`, `hledej_radky_zakazek`, `prijem_zakazky`…).
-- **Příjem vozidel (#216):** záložku Příjem vozidel plní Přijímací technik (OpenBot) přes MCP s oprávněním
+- **Příjem vozidel (#216):** záložku Příjem vozidel plní Luigi (přijímací technik v OpenBotu) přes MCP s oprávněním
   **Příjem vozidel**. Technik posílá jen přečtené údaje (`uloz_prijem`: SPZ, VIN, km, nejistá pole; `id` při doplnění),
   zbytek udělá Autoservis:
   - VIN opraví (bez mezer a pomlček, O/Q → 0, I → 1 – tato písmena ve VIN nikdy nejsou) a zkontroluje 17 znaků,
@@ -322,7 +316,7 @@ Změny provedené po čase zálohy se obnovou ztratí, proto aplikace před obno
 
 **Ruční obnova, když aplikace nenaběhne:**
 
-1. Aplikaci zastavte (server: služba `autoservis`, správce serveru; Windows: zavřít okno `spustit.bat`).
+1. Aplikaci zastavte (služba `autoservis` – správce serveru).
 2. Poškozenou databázi přejmenujte, například `data/autoservis.db` → `data/autoservis-poskozena-RRRRMMDD.db`
    (i soubory `-wal` a `-shm`, pokud vedle ní jsou). Nic nemažte.
 3. Vybranou zálohu (`data/backups/…db` nebo týdenní ze sdílené složky) zkopírujte jako `data/autoservis.db`.
@@ -333,12 +327,12 @@ Změny provedené po čase zálohy se obnovou ztratí, proto aplikace před obno
 
 ## Verze a vydání
 
-Číslování `MAJOR.MINOR.OPRAVA` (zatím `0.x` – vývoj; `1.0.0` = úplný přechod ze starého systému):
-nová funkce / větší změna = další MINOR (0.3.0 → 0.4.0), jen oprava vydané verze = OPRAVA (0.3.0 → 0.3.1).
-Server instaluje **jen vydané verze** (`AUTOSERVIS_AKTUALIZACE=vydani`, viz `nastroje/server-CLAUDE.md`),
+Číslování `MAJOR.MINOR.OPRAVA` (`1.0.0` = úplný přechod ze starého systému, hotový):
+nová funkce / větší změna = další MINOR (1.4.0 → 1.5.0), jen oprava vydané verze = OPRAVA (1.4.0 → 1.4.1).
+Ostrý provoz instaluje **jen vydané verze**, ověřené na testovací instanci 8002 (`AUTOSERVIS_AKTUALIZACE=vydani`, viz `nastroje/server-CLAUDE.md`),
 běžné commity do `main` se na něj nedostanou.
 
-Vydání nové verze (na vývojovém počítači, testy musí procházet):
+Vydání nové verze (ve vývojovém klonu, testy musí procházet):
 1. zvýšit `APP_VERSION` v `app/config.py` a commitnout („Verze X.Y.Z“),
 2. `git tag -a vX.Y.Z -m "Verze X.Y.Z"` a `git push origin main vX.Y.Z`,
 3. GitHub Release ze značky se seznamem změn (uzavřená issues od minulé verze):

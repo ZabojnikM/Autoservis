@@ -200,7 +200,7 @@
     // Chyba HTMX požadavku (např. neaktuální server) nesmí tiše zmizet.
     document.addEventListener("htmx:responseError", (e) => {
       upozorni("Akci se nepodařilo provést (chyba " + e.detail.xhr.status + "). " +
-               "Pokud jste aktualizovali program, restartujte aplikaci (zavřít okno spustit.bat a spustit znovu).");
+               "Zkuste obnovit stránku (F5). Pokud chyba trvá, dejte vědět správci aplikace.");
     });
     document.addEventListener("htmx:sendError", () => upozorni("Aplikace neodpovídá – je spuštěná?"));
 

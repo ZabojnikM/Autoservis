@@ -2,13 +2,13 @@
 # ve vlastním okně Chrome nebo Edge bez adresního řádku (režim --app). Nic neinstaluje, jde smazat jako běžný zástupce.
 #
 # Použití (nebo dvojklik na zastupce-autoservis.bat):
-#   powershell -ExecutionPolicy Bypass -File zastupce-autoservis.ps1 -Adresa http://server:8000
+#   powershell -ExecutionPolicy Bypass -File zastupce-autoservis.ps1 -Adresa http://server:8001
 param(
     [string]$Adresa
 )
 
 if (-not $Adresa) {
-    $Adresa = Read-Host 'Adresa Autoservisu (např. http://server:8000)'
+    $Adresa = Read-Host 'Adresa Autoservisu (např. http://server:8001)'
 }
 $Adresa = $Adresa.Trim().TrimEnd('/')
 if (-not $Adresa) { Write-Host 'Adresa nevyplněna, konec.'; exit 1 }

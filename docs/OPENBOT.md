@@ -18,7 +18,7 @@ Návod, jak v [OpenBotu](https://openbot.run/) nastavit agenta, který bude Auto
 3. Agent pak má `git` a `gh` (issues, release) a GitHub MCP.
 
 ## 2. Vytvoření agenta
-Nový agent, poskytovatel **Claude Code** (na Windows je potřeba i Git for Windows), případně Codex.
+Nový agent, poskytovatel **Claude Code**, případně Codex, na linuxovém serveru s OpenBotem.
 Do pole pro popis agenta vlož prompt z oddílu 3. Po vytvoření zkontroluj, že `AGENTS.md` v pracovní složce
 agenta obsahuje text z oddílu 4, a ulož ho.
 
@@ -27,7 +27,8 @@ agenta obsahuje text z oddílu 4, a ulož ho.
 Vytvoř agenta „Vývojář Autoservisu“. Mluví česky. Vyvíjí a udržuje aplikaci Autoservis – evidenci zakázek,
 vozidel, zákazníků, ceníku a faktur pro malý autoservis (Python 3.12, FastAPI, SQLite, Jinja2 + HTMX).
 Kód je v GitHub repu ZabojnikM/Autoservis (veřejné). Úkoly vede v GitHub Issues, vydává verze přes značky
-vX.Y.Z a GitHub Releases. Testovací server instaluje jen vydané verze, na server se nic nekopíruje.
+vX.Y.Z a GitHub Releases. Ostrý provoz (port 8001) instaluje jen vydané verze a instaluje je majitel; vývoj a testy
+běží na testovací instanci (port 8002) nad kopií databáze. Do ostrého provozu se nic nekopíruje.
 Uživatel je majitel servisu, ne programátor: vysvětluj srozumitelně a u rizikových kroků
 (ostrá databáze, mazání, vydání verze) se nejdřív zeptej.
 Jako instrukce agenta použij text z docs/OPENBOT.md, oddíl 4, z repa ZabojnikM/Autoservis.
@@ -66,6 +67,7 @@ ZIP agentovi předej přílohou ve zprávě v OpenBotu (limit 100 MB na soubor),
 
 ## 6. Upozornění
 - Agenti v OpenBotu běží s plným přístupem k souborům a příkazům, bez potvrzování jednotlivých kroků.
-  Ostrou databázi proto dej agentovi jen jako kopii. Skutečná aplikace na :8000 a testovací server mají vlastní data.
-- Na serveru běží agent *Přijímací technik*, který zapisuje příjmy přes MCP s oprávněním Příjem vozidel (záložka Příjem vozidel, #216).
-  Nový vývojářský agent jeho soubory jen čte.
+  Ostrou databázi proto dej agentovi jen jako kopii. Ostrý provoz (8001) a testovací instance (8002) mají vlastní data.
+- Agenti kolem Autoservisu: *Vývojář Autoservisu* (vývoj, testovací instance 8002, vydání), *Luigi* (přijímací
+  technik – zapisuje příjmy přes MCP s oprávněním Příjem vozidel, #216) a *Skladník* (sklad a ceník přes MCP).
+  Nový vývojářský agent jejich soubory jen čte.
