@@ -7,7 +7,7 @@
 {% endblock %}
 {% block content %}
 <div class="nadpis-radek">
-  <h1>Záznam událostí <span class="oznaceni">{{ pocet }} posledních</span></h1>
+  <h1>Záznam událostí <span class="oznaceni">zobrazeno {{ pocet }} (nejnovější nahoře)</span></h1>
 </div>
 <div class="lista-filtru-seznamu">
   <nav class="prepinac-katalogu" aria-label="Filtr záznamu">
@@ -30,7 +30,7 @@
     <tr class="{{ 'chyba-text' if uroven in ('WARNING', 'ERROR', 'CRITICAL') else '' }}">
       <td class="tlumene">{{ z[:19] }}</td>
       <td>{{ {'INFO': 'info', 'WARNING': 'varování', 'ERROR': 'chyba', 'CRITICAL': 'chyba'}.get(uroven, uroven) }}</td>
-      <td><pre class="zaznam-text">{{ z[28:] }}</pre></td>
+      <td><pre class="zaznam-text">{{ z[28:]|replace("autoservis: ", "", 1) }}</pre></td>
     </tr>
   {% endfor %}
   </tbody>
