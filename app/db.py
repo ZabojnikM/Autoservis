@@ -111,8 +111,12 @@ def init_db(eng: Engine | None = None) -> None:
     pridane = doplnit_sloupce(eng)
     if "faktura.vytisteno" in pridane:
         oznacit_stare_doklady_vytistene(eng)
-    uvolnit_povinne_sloupce(eng)
-    zavest_katalogy(eng)
+    uvolnene = uvolnit_povinne_sloupce(eng)
+    katalogy = zavest_katalogy(eng)
+    if pridane or uvolnene or katalogy:  # #225: změny databáze při startu do záznamu událostí
+        from app.zaznam import log
+        log.info("Migrace databáze: přidané sloupce %s, uvolněné sloupce %s, katalogy %s",
+                 ", ".join(pridane) or "–", ", ".join(uvolnene) or "–", "zavedeny" if katalogy else "beze změny")
 
 
 def doplnit_sloupce(eng: Engine) -> list[str]:

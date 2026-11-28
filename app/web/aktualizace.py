@@ -3,6 +3,7 @@ from fastapi import APIRouter, Request
 
 from app.services import aktualizace as akt
 from app.web.sablony import templates
+from app.zaznam import log
 
 router = APIRouter(prefix="/nastaveni/aktualizace")
 
@@ -29,6 +30,7 @@ def zkontrolovat(request: Request):
     try:
         return _blok(request, akt.stav(zkontrolovat=True))
     except akt.ChybaAktualizace as e:
+        log.warning("Aktualizace: %s", e)
         return _blok(request, chyba=str(e))
 
 
@@ -44,6 +46,7 @@ def instalovat(request: Request):
     try:
         z = akt.nainstaluj()
     except akt.ChybaAktualizace as e:
+        log.warning("Aktualizace: %s", e)
         return _blok(request, chyba=str(e))
     return _po_zmene(request, z["nova"], f"Nainstalováno {z['cil']} ({z['nova'][:7]}).")
 
@@ -53,6 +56,7 @@ def vratit(request: Request):
     try:
         z = akt.vrat()
     except akt.ChybaAktualizace as e:
+        log.warning("Aktualizace: %s", e)
         return _blok(request, chyba=str(e))
     return _po_zmene(request, z["predchozi"], f"Vrácena předchozí verze ({z['predchozi'][:7]}).")
 

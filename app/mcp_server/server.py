@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import contextlib
 import contextvars
+import sys
 
 from mcp.server.mcpserver import MCPServer
 from mcp.server.mcpserver.exceptions import ToolError
@@ -15,6 +16,7 @@ from mcp.server.transport_security import TransportSecuritySettings
 
 from app.api import prijem as api_prijem, sklad as api_sklad, vozidla as api_vozidla, zakazky as api_zakazky
 from app.services import ChybaValidace, NenalezenoError, api_klice
+from app.zaznam import log
 
 _hlavicka: contextvars.ContextVar[str | None] = contextvars.ContextVar("autoservis_mcp_hlavicka", default=None)
 
@@ -37,12 +39,20 @@ def _spojeni(opravneni: str | tuple[str, ...] | None):
     from app.main import app
     gen = app.dependency_overrides.get(get_session, get_session)()
     session = next(gen)
+    nastroj = sys._getframe(2).f_code.co_name  # nástroj MCP, který spojení otevřel (kvůli záznamu)
+    klic = None
     try:
         klic = api_klice.over(session, _hlavicka.get(), opravneni)
         yield session, klic
+        log.info("MCP %s: %s", klic.nazev, nastroj)  # #225: jen klíč a nástroj, ne data
     except (ChybaValidace, NenalezenoError, api_klice.ChybaPristupu) as e:
         session.rollback()
+        druh = "přístup odmítnut" if isinstance(e, api_klice.ChybaPristupu) else type(e).__name__
+        log.warning("MCP %s: %s – %s", klic.nazev if klic else "bez platného klíče", nastroj, druh)
         raise ToolError(str(e)) from None
+    except Exception:
+        log.exception("MCP %s: %s – neočekávaná chyba", klic.nazev if klic else "?", nastroj)
+        raise
     finally:
         gen.close()
 

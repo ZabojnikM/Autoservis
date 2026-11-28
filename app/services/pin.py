@@ -19,6 +19,7 @@ from sqlmodel import Session
 
 from app.models import Nastaveni
 from app.services import ChybaValidace, sprava
+from app.zaznam import log
 
 ZAPNUTO = True               # v testech mimo testy PINu vypnuto (conftest)
 COOKIE = "odemceno"
@@ -120,10 +121,12 @@ def over(session: Session, pin: str | None, ted: datetime | None = None) -> bool
         _zapis(session, K_POKUSY, "0")
         session.commit()
         sprava.zapis(session, "PIN", f"{MAX_POKUSU}× chybný PIN – zadávání zablokované do {konec:%H:%M}.", pokusy)
+        log.warning("PIN: %s× chybně, zadávání zablokované do %s", MAX_POKUSU, f"{konec:%H:%M}")
     else:
         _zapis(session, K_POKUSY, str(pokusy))
         session.commit()
         sprava.zapis(session, "PIN", f"Chybný PIN (pokus {pokusy} z {MAX_POKUSU}).", pokusy)
+        log.warning("PIN: chybný pokus %s z %s", pokusy, MAX_POKUSU)
     return False
 
 

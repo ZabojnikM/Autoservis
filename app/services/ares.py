@@ -4,10 +4,12 @@ Veřejné REST API bez klíče: GET https://ares.gov.cz/ekonomicke-subjekty-v-be
 Posílá se jen IČO. Vrací se název, adresa sídla a DIČ (jen když je firma plátce DPH / má DIČ přidělené).
 """
 import json
+import re
 import urllib.error
 import urllib.request
 
 from app.services import ChybaValidace
+from app.zaznam import log
 
 API_URL = "https://ares.gov.cz/ekonomicke-subjekty-v-be/rest/ekonomicke-subjekty/"
 TIMEOUT = 15  # s
@@ -58,7 +60,11 @@ def nacti(ico: str | None) -> dict:
         raise ChybaAres("Nejdřív zadejte IČO.", "ico")
     if not je_platne_ico(ico):
         raise ChybaAres(f"IČO {ico} není platné (nesedí kontrolní číslice).", "ico")
-    return _stahni(ico)
+    try:
+        return _stahni(ico)
+    except ChybaAres as e:  # #225: do záznamu bez IČO
+        log.warning("ARES: %s", re.sub(r"\d{6,}", "…", str(e)))
+        raise
 
 
 def _ulice(sidlo: dict) -> str | None:

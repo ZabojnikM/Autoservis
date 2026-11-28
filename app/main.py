@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from app import config
+from app import config, zaznam
 from app.db import engine, init_db
 from app.api.rest import router as api_router
 from app.mcp_server import server as mcp_server
@@ -17,17 +17,24 @@ from app.web.zalohy import router as zalohy_router
 from app.web.sprava_dat import router as sprava_dat_router
 from app.web.statistiky import router as statistiky_router
 from app.web.api_klice import router as api_klice_router
+from app.web.zaznam import router as zaznam_router
 from app.web.sablony import templates
 from app.web import pin as pin_web, zabezpeceni
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    zaznam.nastav()  # #225: záznam událostí do logs/autoservis.log vedle databáze
+    from app.services import aktualizace
+    zaznam.log.info("Start Autoservis %s (commit %s), databáze %s", config.APP_VERSION,
+                    aktualizace.spusteny_commit() or "–", config.DB_PATH.name)
     init_db()
     zalohy.spust_planovac(_slozka_zaloh)
     async with mcp_server.mcp.session_manager.run():   # MCP pro boty (#148)
         yield
     zalohy.zastav_planovac()
+    zaznam.log.info("Vypnutí Autoservis %s", config.APP_VERSION)
+    zaznam.ukonci()
 
 
 def _slozka_zaloh() -> str:
@@ -46,7 +53,9 @@ app.include_router(sprava_dat_router)
 app.include_router(statistiky_router)
 app.include_router(api_router)
 app.include_router(api_klice_router)
+app.include_router(zaznam_router)
 app.mount("/mcp", mcp_server.asgi)
+app.middleware("http")(zabezpeceni.zaznam_pozadavku)  # #225: neošetřené chyby a volání REST API do záznamu
 app.middleware("http")(pin_web.ochrana_nastaveni)    # #219: Nastavení jen po zadání PINu
 app.middleware("http")(zabezpeceni.kontrola_puvodu)  # #220: požadavky měnící data jen ze stránky Autoservisu (běží první)
 

@@ -1227,3 +1227,8 @@ dialog.napoveda-okno h4 { margin: 1rem 0 .4rem; font-size: 1rem; }
 .panely-sloupec > .panel { margin: 0; }
 /* okno vozidel u dokladu: čára pod vozidly odběratele */
 tr.konec-skupiny > td { border-bottom: 2px solid var(--pico-muted-border-color, #888); }
+
+/* #225: záznam událostí – víceřádkový výpis chyby zůstane čitelný */
+.zaznam-udalosti pre.zaznam-text { margin: 0; padding: 0; background: none; white-space: pre-wrap; word-break: break-word;
+  font-size: .85rem; color: inherit; }
+.zaznam-udalosti td:first-child { white-space: nowrap; }

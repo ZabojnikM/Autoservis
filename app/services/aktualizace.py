@@ -25,6 +25,7 @@ from datetime import datetime
 from pathlib import Path
 
 from app import config
+from app.zaznam import log
 
 KANALY = {"vydani": "poslední vydání (tag vX.Y.Z)", "main": "větev main"}
 ZALOHY = config.DATA_DIR / "backups"
@@ -197,6 +198,8 @@ def nainstaluj(repo: Path = config.BASE_DIR, db_path: Path = config.DB_PATH, zal
         zaznam = {"predchozi": stary, "nova": novy, "cil": s.cil, "zavislosti": zavislosti,
                   "zaloha_db": str(zaloha or ""), "cas": datetime.now().isoformat(timespec="seconds")}
         _uloz_zaznam(zalohy, zaznam)
+        log.info("Aktualizace: nainstalováno %s (%s → %s), závislosti %s, záloha %s", s.cil, stary[:7], novy[:7],
+                 "instalovány" if zavislosti else "beze změny", Path(str(zaloha or "")).name or "–")
         return zaznam
     finally:
         _zamek.release()
@@ -213,6 +216,7 @@ def vrat(repo: Path = config.BASE_DIR, zalohy: Path = ZALOHY, pip=pip_install) -
             raise ChybaAktualizace("Není záznam o předchozí aktualizaci.")
         _prepni(repo, _git(repo, "rev-parse", "HEAD"), s.predchozi["predchozi"], pip)
         _uloz_zaznam(zalohy, None)
+        log.info("Aktualizace: vrácena předchozí verze %s", str(s.predchozi.get("predchozi", ""))[:7])
         return s.predchozi
     finally:
         _zamek.release()

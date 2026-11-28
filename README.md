@@ -258,6 +258,15 @@ Aplikace tiskne jen tyto doklady:
   (kontrola hlavičky `Origin` / `Referer` proti adrese serveru). Pokus z cizí webové stránky skončí hláškou
   „Požadavek nepřišel z Autoservisu“ a nic se nezmění. Funguje přes jakoukoli adresu serveru.
 
+## Záznam událostí (#225)
+
+Aplikace zapisuje, co se v ní děje, do souboru `logs/autoservis.log` vedle databáze (např. `data/logs/`); soubor se sám
+promazává (10 souborů po 1 MB). *Nastavení → Záznam událostí* ukáže posledních 200 záznamů (nejnovější nahoře,
+filtr **Jen chyby**) a tlačítko **Stáhnout**. Zapisuje se start a vypnutí (verze), neošetřené chyby s výpisem, zálohy
+a obnova, aktualizace a vrácení verze, změny databáze při startu, výpadky Registru vozidel / ARES / LKQ, volání REST API
+a MCP (jen název klíče a nástroj), chybný PIN a odmítnuté požadavky z cizích stránek. **Osobní údaje, obsah dokladů,
+klíče ani PIN se nezapisují** (z výpisů chyb databáze se vynechávají hodnoty).
+
 ## API a MCP pro boty (#145–#148)
 
 *Nastavení → API pro boty*: zapnutí (výchozí vypnuto) a klíče pro boty v OpenBotu. Každý klíč má oprávnění
