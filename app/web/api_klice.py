@@ -3,7 +3,7 @@ from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse
 
 from app.services import ChybaValidace, api_klice
-from app.web.routes import DB, _presmeruj, _stranka
+from app.web.spolecne import DB, _presmeruj, _stranka
 
 router = APIRouter(prefix="/nastaveni/api")
 

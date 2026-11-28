@@ -14,7 +14,7 @@ from fastapi.responses import HTMLResponse, Response
 
 from app.services import (ChybaValidace, NenalezenoError, cisty_text, hromadne, import_skladu, katalogy, kontroly,
                           nastaveni, slouceni, sprava, zalohy)
-from app.web.routes import DB, _presmeruj, _stranka
+from app.web.spolecne import DB, _presmeruj, _stranka
 
 VYPNUTO = "Záložka Správa dat je vypnutá. Zapnete ji v Nastavení (Správa dat)."
 
